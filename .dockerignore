@@ -9,8 +9,7 @@ web/node_modules
 # Next.js build cache
 web/.next
 
-# DB files (mounted as volume)
-web/data/*.db
+# DB files (WAL/SHM/backup excluded, main DB included for build)
 web/data/*.db-shm
 web/data/*.db-wal
 web/data/*.db.bak

@@ -37,8 +37,8 @@ ENV NODE_ENV=production
 # ビルド時の env チェックをスキップ（本番 env はランタイムで設定）
 ENV SESSION_SECRET=build-time-placeholder
 ENV APP_BASE_URL=http://localhost:3000
-# SSG ページが参照するDBをビルド時に初期化
-RUN node scripts/init-build-db.mjs
+# SSG ページが参照するDBはソースから COPY 済み（web/data/ 内）
+# 本番ランタイムでは volume マウントで上書きされる
 RUN npx next build
 
 # ─── 3. 本番イメージ ─────────────────────
