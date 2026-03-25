@@ -30,8 +30,13 @@ RUN npm ci
 COPY web/ ./
 
 # Next.js ビルド（standalone 出力）
+# SSG ページが DB を参照するため、ビルド時に空の data ディレクトリを用意
+RUN mkdir -p ./data
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+# ビルド時の env チェックをスキップ（本番 env はランタイムで設定）
+ENV SESSION_SECRET=build-time-placeholder
+ENV APP_BASE_URL=http://localhost:3000
 RUN npx next build
 
 # ─── 3. 本番イメージ ─────────────────────
