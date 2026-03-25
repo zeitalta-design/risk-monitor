@@ -51,8 +51,8 @@ RUN apt-get update && apt-get install -y libsqlite3-0 && rm -rf /var/lib/apt/lis
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# standalone 出力をコピー
-COPY --from=builder /app/web/.next/standalone/web ./
+# standalone 出力をコピー（monorepo なしの場合はルート直下に出力される）
+COPY --from=builder /app/web/.next/standalone ./
 COPY --from=builder /app/web/.next/static ./.next/static
 COPY --from=builder /app/web/public ./public
 
