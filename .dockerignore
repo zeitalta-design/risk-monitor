@@ -1,0 +1,32 @@
+# Git
+.git
+.gitignore
+
+# Node
+node_modules
+web/node_modules
+
+# Next.js build cache
+web/.next
+
+# DB files (mounted as volume)
+web/data/*.db
+web/data/*.db-shm
+web/data/*.db-wal
+web/data/*.db.bak
+
+# Environment (secrets)
+web/.env
+.env
+
+# IDE
+.vscode
+.idea
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Scraper data
+scraper/

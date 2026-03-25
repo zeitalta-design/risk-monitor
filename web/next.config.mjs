@@ -3,6 +3,7 @@
 const isProduction = process.env.NODE_ENV === "production";
 
 const nextConfig = {
+  output: "standalone",
   serverExternalPackages: ["better-sqlite3"],
 
   // セキュリティ & パフォーマンスヘッダー
