@@ -47,6 +47,11 @@ export default function sitemap() {
     { url: `${baseUrl}/organizers`, lastModified: new Date("2026-03-15"), changeFrequency: "monthly", priority: 0.4 },
     { url: `${baseUrl}/runner`, lastModified: new Date(), changeFrequency: "weekly", priority: 0.6 },
     { url: `${baseUrl}/contact`, lastModified: new Date("2026-03-15"), changeFrequency: "monthly", priority: 0.3 },
+    // データプラットフォーム
+    { url: `${baseUrl}/platform`, lastModified: new Date(), changeFrequency: "daily", priority: 0.8 },
+    { url: `${baseUrl}/platform/dashboard`, lastModified: new Date(), changeFrequency: "daily", priority: 0.7 },
+    { url: `${baseUrl}/platform/search`, lastModified: new Date(), changeFrequency: "daily", priority: 0.7 },
+    { url: `${baseUrl}/search`, lastModified: new Date(), changeFrequency: "daily", priority: 0.7 },
   ];
 
   // 距離別ページ（固定・marathon用）
