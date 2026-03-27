@@ -15,12 +15,7 @@ import "./hojokin";
 
 import "./nyusatsu";
 import "./minpaku";
-
-// 将来のドメイン追加テンプレート:
-
-// import "./subsidy";
-// import "./procurement";
-// import "./minpaku";
+import "./gyosei-shobun";
 
 export {
   getDomain,
