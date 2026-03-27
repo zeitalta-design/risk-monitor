@@ -38,7 +38,7 @@ docker rm "${CONTAINER_NAME}" 2>/dev/null || true
 echo "[3/4] Starting new container..."
 docker run -d \
   --name "${CONTAINER_NAME}" \
-  -p 3000:3000 \
+  -p 127.0.0.1:3000:3000 \
   -e APP_BASE_URL="${APP_BASE_URL:-https://sportlog.jp}" \
   -e SESSION_SECRET="${SESSION_SECRET:-$(cat /dev/urandom | tr -dc 'a-f0-9' | head -c 64)}" \
   -e NODE_ENV=production \
