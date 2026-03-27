@@ -39,7 +39,7 @@ export function calculateQualityScore(eventId) {
   const event = db.prepare(`
     SELECT e.*, md.venue_name
     FROM events e
-    LEFT JOIN marathon_details md ON e.id = md.event_id
+    LEFT JOIN marathon_details md ON e.id = md.marathon_id
     WHERE e.id = ?
   `).get(eventId);
   if (!event) return null;
@@ -90,7 +90,7 @@ export function getBatchQualityScores({ limit = 50, offset = 0, maxScore = 100, 
   const events = db.prepare(`
     SELECT e.*, md.venue_name
     FROM events e
-    LEFT JOIN marathon_details md ON e.id = md.event_id
+    LEFT JOIN marathon_details md ON e.id = md.marathon_id
     ${where}
     ORDER BY e.id
   `).all(...params);
@@ -164,7 +164,7 @@ export function getQualityScoreDistribution() {
   const allEvents = db.prepare(`
     SELECT e.*, md.venue_name
     FROM events e
-    LEFT JOIN marathon_details md ON e.id = md.event_id
+    LEFT JOIN marathon_details md ON e.id = md.marathon_id
     WHERE e.is_active = 1
   `).all();
 

@@ -161,7 +161,7 @@ export function getImprovementSuggestions(eventId) {
   const event = db.prepare(`
     SELECT e.*, md.venue_name
     FROM events e
-    LEFT JOIN marathon_details md ON e.id = md.event_id
+    LEFT JOIN marathon_details md ON e.id = md.marathon_id
     WHERE e.id = ?
   `).get(eventId);
   if (!event) return [];
