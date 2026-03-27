@@ -15,9 +15,8 @@ import {
  */
 
 export async function GET(request) {
-  try {
-    const guard = await requireAdminApi();
-    if (guard.error) return guard.error; await requireAdmin(); } catch { return NextResponse.json({ error: "Forbidden" }, { status: 403 }); }
+  const guard = await requireAdminApi();
+  if (guard.error) return guard.error;
 
   try {
     const { searchParams } = new URL(request.url);
@@ -37,9 +36,8 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  try {
-    const guard = await requireAdminApi();
-    if (guard.error) return guard.error; await requireAdmin(); } catch { return NextResponse.json({ error: "Forbidden" }, { status: 403 }); }
+  const guard = await requireAdminApi();
+  if (guard.error) return guard.error;
 
   try {
     const body = await request.json();
@@ -55,7 +53,8 @@ export async function POST(request) {
 }
 
 export async function PATCH(request) {
-  try { await requireAdmin(); } catch { return NextResponse.json({ error: "Forbidden" }, { status: 403 }); }
+  const guard = await requireAdminApi();
+  if (guard.error) return guard.error;
 
   try {
     const body = await request.json();

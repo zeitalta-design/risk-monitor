@@ -12,8 +12,6 @@ import { getAdminReviews, updateReviewStatus } from "@/lib/review-service";
 export async function GET(request) {
   const guard = await requireAdminApi();
   if (guard.error) return guard.error;
-  const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
     const { searchParams } = new URL(request.url);
@@ -39,8 +37,8 @@ export async function GET(request) {
 }
 
 export async function PATCH(request) {
-  const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const guard = await requireAdminApi();
+  if (guard.error) return guard.error;
 
   try {
     const { id, status } = await request.json();

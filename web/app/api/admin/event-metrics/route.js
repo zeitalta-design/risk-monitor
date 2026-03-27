@@ -11,8 +11,6 @@ import { getEventValueMetrics, getTopEventsByEngagement } from "@/lib/event-valu
 export async function GET(request) {
   const guard = await requireAdminApi();
   if (guard.error) return guard.error;
-  const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
     const { searchParams } = new URL(request.url);

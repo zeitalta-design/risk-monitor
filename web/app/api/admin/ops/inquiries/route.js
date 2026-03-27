@@ -8,13 +8,8 @@ import { requireAdminApi } from "@/lib/admin-api-guard";
  * PATCH: ステータス・担当者・メモ更新
  */
 export async function GET(request) {
-  try {
-    const guard = await requireAdminApi();
-    if (guard.error) return guard.error;
-    await requireAdmin();
-  } catch {
-    return NextResponse.json({ error: "認証エラー" }, { status: 401 });
-  }
+  const guard = await requireAdminApi();
+  if (guard.error) return guard.error;
 
   try {
     const db = getDb();
@@ -84,11 +79,8 @@ export async function GET(request) {
 }
 
 export async function PATCH(request) {
-  try {
-    await requireAdmin();
-  } catch {
-    return NextResponse.json({ error: "認証エラー" }, { status: 401 });
-  }
+  const guard = await requireAdminApi();
+  if (guard.error) return guard.error;
 
   try {
     const db = getDb();

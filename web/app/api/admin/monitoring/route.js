@@ -10,8 +10,6 @@ import { requireAdminApi } from "@/lib/admin-api-guard";
 export async function GET(request) {
   const guard = await requireAdminApi();
   if (guard.error) return guard.error;
-  const authError = await requireAdmin(request);
-  if (authError) return authError;
 
   try {
     const db = getDb();

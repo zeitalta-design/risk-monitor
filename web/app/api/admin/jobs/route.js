@@ -8,8 +8,6 @@ export async function GET(request) {
   try {
     const guard = await requireAdminApi();
     if (guard.error) return guard.error;
-    const admin = await requireAdmin();
-    if (!admin) return NextResponse.json({ error: "管理者権限が必要です" }, { status: 403 });
     const db = getDb();
     const url = new URL(request.url);
     const limit = Math.min(Number(url.searchParams.get("limit")) || 50, 200);
