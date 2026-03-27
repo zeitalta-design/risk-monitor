@@ -29,6 +29,20 @@ function formatDeadlineDate(dateStr) {
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
+function getDeadlineBadge(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const deadline = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diffDays = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
+  if (diffDays <= 0) return { text: "今日締切", className: "bg-red-100 text-red-700" };
+  if (diffDays <= 3) return { text: `あと${diffDays}日`, className: "bg-orange-100 text-orange-700" };
+  if (diffDays <= 7) return { text: `あと${diffDays}日`, className: "bg-amber-100 text-amber-700" };
+  return null;
+}
+
 export default function DeadlineGroupCard({ event }) {
   const detailPath = getEventDetailPath(event);
   const date = formatEventDate(event.event_date);
@@ -37,6 +51,7 @@ export default function DeadlineGroupCard({ event }) {
   const statusDef = getOfficialStatusDef(event.official_entry_status);
   const checkedAgo = formatCheckedAt(event.official_checked_at);
   const deadlineDate = formatDeadlineDate(event.entry_end_date);
+  const deadlineBadge = getDeadlineBadge(event.entry_end_date);
 
   // confidence に基づくアイコン
   const confidence = event.official_status_confidence || 0;
@@ -56,6 +71,11 @@ export default function DeadlineGroupCard({ event }) {
         <h3 className="flex-1 text-sm font-semibold text-gray-900 line-clamp-1 group-hover:text-blue-700 transition-colors">
           {event.title}
         </h3>
+        {deadlineBadge && (
+          <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${deadlineBadge.className}`}>
+            {deadlineBadge.text}
+          </span>
+        )}
         <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${statusDef.badgeClass}`}>
           {event.official_entry_status_label || statusDef.label}
         </span>

@@ -36,7 +36,10 @@ export async function GET(request) {
       .prepare(`
         SELECT e.id, e.title, e.event_date, e.entry_end_date, e.entry_start_date,
                e.prefecture, e.city, e.entry_status, e.sport_type,
-               e.distance_list, e.popularity_score, e.description,
+               (SELECT GROUP_CONCAT(DISTINCT CAST(er.distance_km AS TEXT))
+                FROM event_races er WHERE er.event_id = e.id AND er.distance_km IS NOT NULL
+               ) as distance_list,
+               e.popularity_score, e.description,
                e.official_entry_status, e.official_entry_status_label,
                e.official_checked_at, e.official_deadline_text,
                e.official_capacity_text, e.official_status_source_url,
@@ -45,7 +48,7 @@ export async function GET(request) {
                e.entry_signals_json,
                md.venue_name
         FROM events e
-        LEFT JOIN marathon_details md ON e.id = md.event_id
+        LEFT JOIN marathon_details md ON md.marathon_id = e.id
         WHERE e.is_active = 1
           AND (e.event_date IS NULL OR e.event_date >= ?)
         ORDER BY e.entry_end_date ASC NULLS LAST, e.popularity_score DESC

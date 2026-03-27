@@ -1,13 +1,13 @@
 import { siteConfig } from "@/lib/site-config";
 
 export const metadata = {
-  title: "横断検索",
+  title: "大会を探す",
   description:
-    "食品リコール・指定管理・産廃・許認可・SaaS・補助金など、全ドメインのデータをキーワードで横断検索できます。",
+    "全国のマラソン・ランニング大会を大会名・開催地・種目・距離・開催月で検索。あなたにぴったりの大会が見つかります。",
   openGraph: {
-    title: `横断検索 | ${siteConfig.siteName}`,
+    title: `大会を探す | ${siteConfig.siteName}`,
     description:
-      "食品リコール・指定管理・産廃・許認可・SaaS・補助金など、全ドメインのデータをキーワードで横断検索できます。",
+      "全国のマラソン・ランニング大会を大会名・開催地・種目・距離・開催月で検索。あなたにぴったりの大会が見つかります。",
   },
   alternates: {
     canonical: `${siteConfig.siteUrl}/search`,

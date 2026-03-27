@@ -60,7 +60,7 @@ const FILTER_SECTIONS = [
   },
 ];
 
-export default function HomeSearchBar({ totalEvents = 0 }) {
+export default function HomeSearchBar({ totalEvents = 0, standalone = false }) {
   const router = useRouter();
   const [keyword, setKeyword] = useState("");
   const [prefecture, setPrefecture] = useState("");
@@ -136,9 +136,12 @@ export default function HomeSearchBar({ totalEvents = 0 }) {
   const activeCount = selectedChips.size + filterChecks.size;
 
   return (
-    <section className="relative -mt-14 sm:-mt-16 z-10 px-4">
-      <div className="max-w-5xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 sm:p-8">
+    <section className={standalone ? "relative z-10" : "relative -mt-14 sm:-mt-16 z-10 px-4"}>
+      <div className={standalone ? "" : "max-w-5xl mx-auto"}>
+        <div className={standalone
+          ? "bg-white rounded-2xl border border-gray-200 p-6 sm:p-8"
+          : "bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 sm:p-8"
+        }>
 
           {/* ヘッダー行: 検索アイコン + タイトル + 件数 */}
           <div className="flex items-center justify-between mb-5">

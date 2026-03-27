@@ -30,10 +30,12 @@ export default function EntryDeadlinesPage() {
   const [groups, setGroups] = useState(null);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     async function load() {
       setLoading(true);
+      setError(false);
       try {
         const res = await fetch("/api/entry-deadlines");
         if (!res.ok) throw new Error("API error");
@@ -44,6 +46,7 @@ export default function EntryDeadlinesPage() {
         console.error("Entry deadlines load error:", err);
         setGroups({});
         setStats({});
+        setError(true);
       } finally {
         setLoading(false);
       }
@@ -85,6 +88,19 @@ export default function EntryDeadlinesPage() {
         </div>
       )}
 
+      {/* エラー表示 */}
+      {error && !loading && (
+        <div className="text-center py-8 bg-red-50 rounded-xl mb-4">
+          <p className="text-sm text-red-600 mb-1">データの読み込みに失敗しました</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="text-xs text-blue-600 hover:underline"
+          >
+            再読み込み
+          </button>
+        </div>
+      )}
+
       {/* グループ一覧 */}
       {!loading && groups && (
         <div className="space-y-4">
@@ -102,9 +118,21 @@ export default function EntryDeadlinesPage() {
           {/* 全グループ空の場合 */}
           {GROUP_ORDER.every((key) => (groups[key] || []).length === 0) && (
             <div className="text-center py-12 bg-gray-50 rounded-xl">
-              <p className="text-sm text-gray-400">
-                表示する大会がありません
+              <p className="text-lg mb-2">📭</p>
+              <p className="text-sm font-medium text-gray-600 mb-1">
+                現在、締切間近の大会はありません
               </p>
+              <p className="text-xs text-gray-400 mb-4">
+                別の人気大会や新着大会もご覧ください
+              </p>
+              <div className="flex justify-center gap-3">
+                <a href="/popular" className="text-xs text-blue-600 hover:underline">
+                  🏆 人気大会を見る
+                </a>
+                <a href="/search" className="text-xs text-blue-600 hover:underline">
+                  🔍 大会を探す
+                </a>
+              </div>
             </div>
           )}
         </div>
