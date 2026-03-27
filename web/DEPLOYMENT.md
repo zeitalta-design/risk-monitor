@@ -54,8 +54,8 @@ OPS_CRON_SECRET=<ランダム文字列>
 | `APP_BASE_URL` | ✅ | パスワードリセットURL生成、OGP、サイトマップ |
 | `NODE_ENV` | ✅ | `production` でセキュリティヘッダー・Secure Cookie 有効化 |
 | `SESSION_SECRET` | ✅ | セッショントークン HMAC 署名（**未設定で本番起動不可**） |
-| `SMTP_HOST` / `SMTP_PORT` | ✅ | パスワードリセット・通知メール送信 |
-| `SMTP_USER` / `SMTP_PASS` | ✅ | SMTP 認証情報 |
+| `SMTP_HOST` / `SMTP_PORT` | 推奨 | パスワードリセット・通知メール送信（未設定時は Ethereal フォールバック） |
+| `SMTP_USER` / `SMTP_PASS` | 推奨 | SMTP 認証情報（SMTP_HOST 設定時のみ必要） |
 | `MAIL_FROM` | 推奨 | 送信元アドレス（未設定時: noreply@spokatsu.com） |
 | `NEXT_PUBLIC_GA_ID` | 任意 | GA4 トラッキング |
 | `OPS_SLACK_WEBHOOK_URL` | 任意 | 運営 Slack 通知 |
@@ -246,6 +246,74 @@ curl https://your-domain.com/api/health
 - `APP_BASE_URL` のプロトコル (`https://`) が正しいか確認
 - Nginx で `X-Forwarded-Proto` ヘッダーを付けているか確認
 - `NODE_ENV=production` で Secure Cookie が有効 → HTTPS 必須
+
+---
+
+## CI/CD: 自動デプロイ（Docker + GitHub Actions + VPS）
+
+現在の本番環境は Docker + Caddy + VPS 構成です。
+
+### デプロイフロー
+
+```
+main に push
+  → GitHub Actions: Docker イメージビルド → GHCR push
+  → GitHub Actions: SSH で VPS に接続 → deploy-vps.sh 実行
+  → VPS: docker pull → コンテナ再起動 → ヘルスチェック
+```
+
+### 必要な GitHub Secrets
+
+| Secret 名 | 値 | 設定場所 |
+|---|---|---|
+| `VPS_HOST` | VPS の IP アドレス | GitHub repo → Settings → Secrets |
+| `VPS_USER` | SSH ユーザー名（例: `ubuntu`） | 同上 |
+| `VPS_SSH_KEY` | VPS への SSH 秘密鍵（PEM 形式） | 同上 |
+
+`GITHUB_TOKEN` は自動で利用可能（GHCR push 用）。
+
+### VPS 側の環境変数
+
+`/opt/app/.env.production` に配置します（`deploy-vps.sh` が自動で読み込み）。
+
+```env
+SESSION_SECRET=<64文字のランダム文字列>
+
+# SMTP（任意: 未設定時は Ethereal フォールバック）
+SMTP_HOST=smtp.mail.me.com
+SMTP_PORT=587
+SMTP_USER=your-smtp-user
+SMTP_PASS=your-smtp-password
+MAIL_FROM=大会ナビ <your-email@example.com>
+
+# 運営通知（任意）
+OPS_ADMIN_EMAIL=admin@example.com
+```
+
+### 手動デプロイ（緊急時）
+
+```bash
+ssh ubuntu@<VPS_HOST>
+cd /opt/app && bash scripts/deploy-vps.sh
+```
+
+### ロールバック
+
+```bash
+ssh ubuntu@<VPS_HOST>
+# 1. 直前のイメージ SHA を確認
+docker images ghcr.io/zeitalta-design/sports-event-app --format "{{.Tag}} {{.CreatedAt}}" | head -5
+
+# 2. 特定の SHA にロールバック
+docker stop navi-app && docker rm navi-app
+docker run -d --name navi-app \
+  -p 127.0.0.1:3000:3000 \
+  --env-file /opt/app/.env.production \
+  -e NODE_ENV=production \
+  -v /opt/app/web/data:/app/web/data \
+  --restart unless-stopped \
+  ghcr.io/zeitalta-design/sports-event-app:<SHA>
+```
 
 ---
 
