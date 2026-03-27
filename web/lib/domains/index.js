@@ -16,6 +16,9 @@ import "./hojokin";
 import "./nyusatsu";
 import "./minpaku";
 import "./kyoninka";
+import "./sanpai";
+import "./shitei";
+import "./food-recall";
 import "./gyosei-shobun";
 
 export {
