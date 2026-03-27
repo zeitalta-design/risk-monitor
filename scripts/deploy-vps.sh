@@ -10,8 +10,9 @@
 #
 # 前提:
 #   - Docker がインストール済み
-#   - GHCR にログイン済み (docker login ghcr.io)
+#   - GHCR package は Public のため認証不要
 #   - /opt/app/web/data にDBファイルがマウントされる
+#   - swap 2GB 設定済み (/swapfile)
 #
 # 環境変数（必要に応じて .env ファイルで管理）:
 #   APP_BASE_URL, SESSION_SECRET, NODE_ENV
