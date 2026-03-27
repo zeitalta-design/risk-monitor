@@ -29,8 +29,12 @@ RUN npm ci
 # ソース全体コピー
 COPY web/ ./
 
+# SQLスキーマをビルド時にアクセス可能にする
+COPY sql/ /app/sql/
+
 # Next.js ビルド（standalone 出力）
 # SSG ページが DB を参照するため、ビルド時に空の data ディレクトリを用意
+# getDb() が呼ばれると sql/001_create_tables.sql から空テーブルを作成する
 RUN mkdir -p ./data
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
