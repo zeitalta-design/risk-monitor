@@ -15,6 +15,7 @@ import "./hojokin";
 
 import "./nyusatsu";
 import "./minpaku";
+import "./kyoninka";
 import "./gyosei-shobun";
 
 export {
