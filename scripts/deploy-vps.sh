@@ -39,8 +39,9 @@ echo "[3/4] Starting new container..."
 docker run -d \
   --name "${CONTAINER_NAME}" \
   -p 127.0.0.1:3000:3000 \
-  -e APP_BASE_URL="${APP_BASE_URL:-https://sportlog.jp}" \
+  -e APP_BASE_URL="${APP_BASE_URL:-https://taikainavi.jp}" \
   -e SESSION_SECRET="${SESSION_SECRET:-$(cat /dev/urandom | tr -dc 'a-f0-9' | head -c 64)}" \
+  -e ALLOW_SIGNUP="${ALLOW_SIGNUP:-false}" \
   -e NODE_ENV=production \
   -v "${DATA_VOLUME}" \
   --restart unless-stopped \

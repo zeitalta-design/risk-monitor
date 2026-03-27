@@ -8,6 +8,9 @@ import { listHojokinSlugsForSitemap } from "@/lib/repositories/hojokin";
 import { listNyusatsuSlugsForSitemap } from "@/lib/repositories/nyusatsu";
 import { listMinpakuSlugsForSitemap } from "@/lib/repositories/minpaku";
 
+// Force dynamic rendering so APP_BASE_URL is read at runtime, not build time
+export const dynamic = "force-dynamic";
+
 export default function sitemap() {
   const baseUrl = siteConfig.siteUrl;
 
