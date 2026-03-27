@@ -2,7 +2,7 @@
  * サイト共通設定（ブランド定義）
  * サービス名やURLをここに集約し、各所から参照する
  *
- * ブランド統一: 「大会ナビ / TAIKAI NAVI」
+ * ブランド: 大会ナビ / TAIKAI NAVI (taikainavi.jp)
  */
 
 export const siteConfig = {
