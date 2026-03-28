@@ -73,7 +73,7 @@ const results = [];
 // Step 1: RUNNET一覧
 if (!opts.skipList) {
   results.push(run(
-    "Step 1/5: RUNNET一覧取り込み",
+    "Step 1/7: RUNNET一覧取り込み",
     `node scripts/scrape-runnet-list.js --pages ${opts.pages}`,
     opts
   ));
@@ -83,28 +83,35 @@ if (!opts.skipList) {
 
 // Step 2: RUNNET詳細
 results.push(run(
-  "Step 2/5: RUNNET詳細補完",
+  "Step 2/7: RUNNET詳細補完",
   `node scripts/scrape-runnet-detail.js --only-missing --limit ${opts.limit}`,
   opts
 ));
 
-// Step 3: MOSHICOM詳細
+// Step 3: MOSHICOM一覧
 results.push(run(
-  "Step 3/5: MOSHICOM詳細補完",
+  "Step 3/7: MOSHICOM一覧取り込み",
+  `node scripts/scrape-moshicom-list.js --pages all`,
+  opts
+));
+
+// Step 4: MOSHICOM詳細
+results.push(run(
+  "Step 4/7: MOSHICOM詳細補完",
   `node scripts/scrape-moshicom-detail.js --only-missing-races --limit ${opts.limit}`,
   opts
 ));
 
-// Step 4: SPORTS ENTRY一覧
+// Step 5: SPORTS ENTRY一覧
 results.push(run(
-  "Step 4/5: SPORTS ENTRY一覧取り込み",
-  `node scripts/scrape-sportsentry-list.js --pages 10`,
+  "Step 5/7: SPORTS ENTRY一覧取り込み",
+  `node scripts/scrape-sportsentry-list.js --pages all`,
   opts
 ));
 
-// Step 5: popularity再計算
+// Step 6: popularity再計算
 results.push(run(
-  "Step 5/5: 暫定popularity_score再計算",
+  "Step 6/7: 暫定popularity_score再計算",
   `node scripts/calc-initial-popularity.js`,
   opts
 ));

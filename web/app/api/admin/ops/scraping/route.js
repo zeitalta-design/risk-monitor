@@ -20,7 +20,7 @@ export async function GET() {
     // 定義済みソース一覧（既存スクレイピングスクリプトに基づく）
     const SOURCES = [
       { name: "RUNNET", slug: "runnet", description: "マラソン大会情報（一覧＋詳細）" },
-      { name: "MOSHICOM", slug: "moshicom", description: "モシコム大会詳細補完（RUNNET経由）" },
+      { name: "MOSHICOM", slug: "moshicom", description: "モシコム大会情報（一覧＋詳細）" },
       { name: "SPORTS ENTRY", slug: "sportsentry", description: "スポーツエントリー大会情報" },
     ];
 
@@ -69,14 +69,9 @@ export async function GET() {
       });
 
       // DB上の大会数（ソース別）
-      // MOSHICOM は source_site ではなく source_url で判定（RUNNET経由で取得されるため）
-      const eventCount = source.slug === "moshicom"
-        ? db.prepare(
-            `SELECT COUNT(*) as count FROM events WHERE is_active = 1 AND source_url LIKE '%moshicom%'`
-          ).get()?.count || 0
-        : db.prepare(
-            `SELECT COUNT(*) as count FROM events WHERE is_active = 1 AND source_site = ?`
-          ).get(source.slug)?.count || 0;
+      const eventCount = db.prepare(
+        `SELECT COUNT(*) as count FROM events WHERE is_active = 1 AND (source_site = ? OR source_url LIKE ?)`
+      ).get(source.slug, `%${source.slug}%`)?.count || 0;
 
       return {
         ...source,
@@ -112,9 +107,9 @@ export async function GET() {
  * body: { source: "runnet" | "sportsentry" | "moshicom" }
  */
 const SCRAPE_COMMANDS = {
-  runnet: { script: "scripts/scrape-runnet-list.js", args: ["--pages", "30"] },
-  sportsentry: { script: "scripts/scrape-sportsentry-list.js", args: ["--pages", "30"] },
-  moshicom: { script: "scripts/scrape-moshicom-detail.js", args: ["--only-missing-races", "--limit", "100"] },
+  runnet: { script: "scripts/scrape-runnet-list.js", args: ["--pages", "all", "--verbose"] },
+  sportsentry: { script: "scripts/scrape-sportsentry-list.js", args: ["--pages", "all", "--verbose"] },
+  moshicom: { script: "scripts/scrape-moshicom-list.js", args: ["--pages", "all", "--verbose"] },
 };
 
 export async function POST(request) {
@@ -151,7 +146,7 @@ export async function POST(request) {
     // 非同期でスクレイパーを実行
     const result = await new Promise((resolve, reject) => {
       const proc = execFile("node", [scriptPath, ...cmd.args], {
-        timeout: 300_000, // 5分
+        timeout: 900_000, // 15分（終端巡回対応）
         maxBuffer: 10 * 1024 * 1024,
         env: { ...process.env },
       }, (error, stdout, stderr) => {

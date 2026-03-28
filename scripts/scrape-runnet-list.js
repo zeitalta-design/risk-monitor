@@ -33,10 +33,12 @@ function parseArgs() {
       case "--end":
         options.endPage = parseInt(args[++i]) || 3;
         break;
-      case "--pages":
-        options.endPage = parseInt(args[++i]) || 3;
+      case "--pages": {
+        const val = args[++i];
+        options.endPage = (val === "all" || val === "0") ? 999 : (parseInt(val) || 3);
         options.startPage = 1;
         break;
+      }
       case "--verbose":
       case "-v":
         options.verbose = true;
