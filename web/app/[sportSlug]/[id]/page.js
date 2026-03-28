@@ -131,7 +131,7 @@ function buildEventJsonLd(data, sport) {
       if (data.entry_status === "open") offer.availability = "https://schema.org/InStock";
       else if (data.entry_status === "closed") offer.availability = "https://schema.org/SoldOut";
       if (data.entry_end_date) offer.validThrough = data.entry_end_date;
-      if (data.entry_start_date) offer.validFrom = data.entry_start_date;
+      if (data.entry_start_date) offer.validFrom = data.entry_start_date.includes("T") ? data.entry_start_date : `${data.entry_start_date}T00:00:00+09:00`;
       jsonLd.offers = offer;
     }
   }

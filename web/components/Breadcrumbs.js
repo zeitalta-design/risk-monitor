@@ -8,7 +8,7 @@ import Link from "next/link";
 export default function Breadcrumbs({ items }) {
   if (!items || items.length === 0) return null;
 
-  // BreadcrumbList JSON-LD: 全 ListItem に position + name、最後以外には item（絶対URL）
+  // BreadcrumbList JSON-LD: 全 ListItem に position + name。最後以外には item（絶対URL）。最後は item 省略（Google仕様準拠）
   const baseUrl = typeof window !== "undefined" ? window.location.origin : (process.env.APP_BASE_URL || "https://taikainavi.jp");
   const jsonLd = {
     "@context": "https://schema.org",
