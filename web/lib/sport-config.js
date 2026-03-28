@@ -86,6 +86,7 @@ export const SPORT_CONFIGS = [
     themeColor: "#dc2626",          // red-600
     description: "スイム・バイク・ラン",
     sportTypeForDb: "triathlon",
+    showDistanceFilter: false,
     meta: {
       title: "トライアスロン大会検索",
       pageHeading: "トライアスロン大会一覧",
@@ -96,7 +97,7 @@ export const SPORT_CONFIGS = [
       emptyText: "該当するトライアスロン大会が見つかりませんでした",
       ctaText: "トライアスロン大会一覧へ →",
       heroText: "全国のトライアスロン大会を探す",
-      subText: "距離・エリアで絞り込み",
+      subText: "エリア・日程で絞り込み",
     },
   },
   {
@@ -111,6 +112,12 @@ export const SPORT_CONFIGS = [
     themeColor: "#ea580c",          // orange-600
     description: "ロード・ヒルクライム・グランフォンド",
     sportTypeForDb: "cycling",
+    distanceFilters: [
+      { key: "", label: "すべて" },
+      { key: "50", label: "〜50km" },
+      { key: "100", label: "〜100km" },
+      { key: "ultra", label: "100km以上" },
+    ],
     meta: {
       title: "サイクリングイベント検索",
       pageHeading: "サイクリングイベント一覧",
@@ -136,10 +143,17 @@ export const SPORT_CONFIGS = [
     themeColor: "#0891b2",          // cyan-600
     description: "ウォーキング・ハイキング",
     sportTypeForDb: "walking",
+    distanceFilters: [
+      { key: "", label: "すべて" },
+      { key: "5", label: "〜5km" },
+      { key: "10", label: "〜10km" },
+      { key: "20", label: "〜20km" },
+      { key: "ultra", label: "20km以上" },
+    ],
     meta: {
       title: "ウォーキングイベント検索",
       pageHeading: "ウォーキングイベント一覧",
-      description: "全国のウォーキング・ハイキングイベントを検索。",
+      description: "気軽に参加できるウォーキング・ハイキングイベントを検索。",
       ogTitle: "ウォーキングイベント検索 | 大会ナビ",
       ogDescription: "全国のウォーキングイベントを検索。",
       searchPlaceholder: "イベント名・コース名",
@@ -161,10 +175,11 @@ export const SPORT_CONFIGS = [
     themeColor: "#4f46e5",          // indigo-600
     description: "オープンウォーター・水泳大会",
     sportTypeForDb: "swimming",
+    showDistanceFilter: false,
     meta: {
       title: "水泳大会検索",
       pageHeading: "水泳大会一覧",
-      description: "全国の水泳・オープンウォーター大会を検索。",
+      description: "全国の水泳・オープンウォータースイムイベントを検索。",
       ogTitle: "水泳大会検索 | 大会ナビ",
       ogDescription: "全国の水泳大会を検索。",
       searchPlaceholder: "大会名・会場名",
@@ -186,10 +201,11 @@ export const SPORT_CONFIGS = [
     themeColor: "#7c3aed",          // violet-600
     description: "ランニング練習会・指導セミナー",
     sportTypeForDb: "workshop",
+    showDistanceFilter: false,
     meta: {
       title: "練習会・講習会検索",
       pageHeading: "練習会・講習会一覧",
-      description: "全国の練習会・講習会・セミナーを検索。",
+      description: "初心者向け・スキルアップの練習会・講習会を検索。",
       ogTitle: "練習会・講習会検索 | 大会ナビ",
       ogDescription: "全国の練習会・講習会を検索。",
       searchPlaceholder: "イベント名・講師名",
@@ -211,10 +227,11 @@ export const SPORT_CONFIGS = [
     themeColor: "#16a34a",
     description: "ゴルフコンペ・ゴルフ大会",
     sportTypeForDb: "golf",
+    showDistanceFilter: false,
     meta: {
-      title: "ゴルフ大会検索",
-      pageHeading: "ゴルフ大会一覧",
-      description: "全国のゴルフ大会を検索。",
+      title: "ゴルフ大会・コンペ検索",
+      pageHeading: "ゴルフ大会・コンペ一覧",
+      description: "全国のゴルフコンペ・大会を検索。",
       ogTitle: "ゴルフ大会検索 | 大会ナビ",
       ogDescription: "全国のゴルフ大会を検索。",
       searchPlaceholder: "大会名・会場名",
@@ -236,10 +253,11 @@ export const SPORT_CONFIGS = [
     themeColor: "#dc2626",
     description: "スカッシュ大会・トーナメント",
     sportTypeForDb: "squash",
+    showDistanceFilter: false,
     meta: {
       title: "スカッシュ大会検索",
-      pageHeading: "スカッシュ大会一覧",
-      description: "全国のスカッシュ大会を検索。",
+      pageHeading: "スカッシュ大会・イベント一覧",
+      description: "全国のスカッシュ大会・イベントを検索。",
       ogTitle: "スカッシュ大会検索 | 大会ナビ",
       ogDescription: "全国のスカッシュ大会を検索。",
       searchPlaceholder: "大会名・会場名",

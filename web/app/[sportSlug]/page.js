@@ -166,18 +166,20 @@ export default function SportListPage() {
               ))}
             </select>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">距離</label>
-            <select
-              value={filters.distance}
-              onChange={(e) => setFilters({ ...filters, distance: e.target.value })}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {distances.map((d) => (
-                <option key={d.key} value={d.key}>{d.label}</option>
-              ))}
-            </select>
-          </div>
+          {sport?.showDistanceFilter !== false && (
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">距離</label>
+              <select
+                value={filters.distance}
+                onChange={(e) => setFilters({ ...filters, distance: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {distances.map((d) => (
+                  <option key={d.key} value={d.key}>{d.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">募集状況</label>
             <select
