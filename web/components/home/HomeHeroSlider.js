@@ -21,8 +21,8 @@ const QUICK_CHIPS = [
 ];
 
 
-// ヒーロー画像: /public/hero/main.jpg（ローカル固定・外部URL非依存）
-const HERO_IMAGE = "/hero/main.jpg";
+// ヒーロー画像: /public/hero/top-hero.jpeg（ローカル固定・外部URL非依存）
+const HERO_IMAGE = "/hero/top-hero.jpeg";
 
 /**
  * 統合ヒーロー: 実写背景 + 検索フォーム + 特集スライダー
@@ -78,7 +78,7 @@ export default function HomeHeroSlider({ totalEvents = 0 }) {
             src={HERO_IMAGE}
             alt=""
             className="w-full h-full object-cover"
-            style={{ objectPosition: "center 40%" }}
+            style={{ objectPosition: "center 45%", filter: "brightness(1.6)" }}
             loading="eager"
             fetchPriority="high"
           />
