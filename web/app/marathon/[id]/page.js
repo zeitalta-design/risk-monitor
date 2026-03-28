@@ -139,88 +139,86 @@ export async function generateMetadata({ params }) {
 
 function buildEventJsonLd(data) {
   const baseUrl = siteConfig.siteUrl;
+
+  // location が構築できない場合は Event schema 自体を出さない
+  const placeName = data.venue_name || [data.prefecture, data.city].filter(Boolean).join("");
+  if (!placeName && !data.prefecture) return null;
+  if (!data.event_date) return null;
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "SportsEvent",
     name: data.title,
     url: `${baseUrl}/marathon/${data.id}`,
+    startDate: data.event_date,
   };
 
-  if (data.event_date) {
-    jsonLd.startDate = data.event_date;
-  }
-
-  // Phase166: 画像をJSON-LDに追加
+  // 画像
   const heroImg = data.heroPhoto?.image_url || data.hero_image_url;
-  if (heroImg) {
-    jsonLd.image = heroImg;
-  }
+  if (heroImg) jsonLd.image = heroImg;
 
+  // 説明
   const desc = data.summary || data.description;
-  if (desc) {
-    jsonLd.description = desc.slice(0, 300);
+  if (desc) jsonLd.description = desc.slice(0, 300);
+
+  // location（必須）
+  const address = { "@type": "PostalAddress", addressCountry: "JP" };
+  if (data.prefecture) address.addressRegion = data.prefecture;
+  if (data.city) address.addressLocality = data.city;
+  if (data.venue_address) address.streetAddress = data.venue_address;
+
+  jsonLd.location = {
+    "@type": "Place",
+    name: placeName || data.prefecture || "会場未定",
+    address,
+  };
+
+  // eventStatus（必須推奨: 常に明示）
+  if (data.entry_status === "cancelled") {
+    jsonLd.eventStatus = "https://schema.org/EventCancelled";
+  } else if (data.entry_status === "postponed") {
+    jsonLd.eventStatus = "https://schema.org/EventPostponed";
+  } else {
+    jsonLd.eventStatus = "https://schema.org/EventScheduled";
   }
 
-  const placeName =
-    data.venue_name || `${data.prefecture || ""}${data.city || ""}`;
-  if (placeName) {
-    jsonLd.location = {
-      "@type": "Place",
-      name: placeName,
-      address: {
-        "@type": "PostalAddress",
-        streetAddress: data.venue_address || undefined,
-        addressRegion: data.prefecture || undefined,
-        addressLocality: data.city || undefined,
-        addressCountry: "JP",
-      },
-    };
-  }
+  // eventAttendanceMode
+  jsonLd.eventAttendanceMode = "https://schema.org/OfflineEventAttendanceMode";
 
+  // organizer（url を含める）
   if (data.organizer) {
-    jsonLd.organizer = {
-      "@type": "Organization",
-      name: data.organizer.name,
-      ...(data.organizer.email && { email: data.organizer.email }),
-      ...(data.organizer.phone && { telephone: data.organizer.phone }),
-    };
+    const org = { "@type": "Organization", name: data.organizer.name };
+    if (data.organizer.url || data.official_url) org.url = data.organizer.url || data.official_url;
+    if (data.organizer.email) org.email = data.organizer.email;
+    if (data.organizer.phone) org.telephone = data.organizer.phone;
+    jsonLd.organizer = org;
   }
 
+  // offers（validFrom を含める）
   if (data.races && data.races.length > 0) {
-    const fees = data.races
-      .map((r) => r.fee_min)
-      .filter((f) => f && f > 0);
+    const fees = data.races.map((r) => r.fee_min).filter((f) => f && f > 0);
     if (fees.length > 0) {
-      jsonLd.offers = {
+      const offer = {
         "@type": "Offer",
         priceCurrency: "JPY",
-        price: Math.min(...fees),
-        availability:
-          data.entry_status === "open"
-            ? "https://schema.org/InStock"
-            : data.entry_status === "closed"
-              ? "https://schema.org/SoldOut"
-              : undefined,
-        validThrough: data.entry_end_date || undefined,
-        url: data.entry_url || data.source_url || undefined,
+        price: String(Math.min(...fees)),
+        url: data.entry_url || data.source_url || `${baseUrl}/marathon/${data.id}`,
       };
+      if (data.entry_status === "open") offer.availability = "https://schema.org/InStock";
+      else if (data.entry_status === "closed") offer.availability = "https://schema.org/SoldOut";
+      if (data.entry_end_date) offer.validThrough = data.entry_end_date;
+      if (data.entry_start_date) offer.validFrom = data.entry_start_date;
+      jsonLd.offers = offer;
     }
   }
 
+  // sameAs
   const sameAs = [];
   if (data.source_url) sameAs.push(data.source_url);
-  if (data.official_url && data.official_url !== data.source_url)
-    sameAs.push(data.official_url);
+  if (data.official_url && data.official_url !== data.source_url) sameAs.push(data.official_url);
   if (sameAs.length > 0) jsonLd.sameAs = sameAs;
 
-  if (data.entry_status === "cancelled") {
-    jsonLd.eventStatus = "https://schema.org/EventCancelled";
-  }
-
-  jsonLd.eventAttendanceMode =
-    "https://schema.org/OfflineEventAttendanceMode";
-
-  // Phase146: 口コミ集約レーティング
+  // 口コミ集約レーティング
   if (data.reviewSummary && data.reviewSummary.total >= 1 && data.reviewSummary.avg_overall) {
     jsonLd.aggregateRating = {
       "@type": "AggregateRating",
@@ -361,11 +359,13 @@ export default async function MarathonDetailPage({ params }) {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      {/* JSON-LD */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(eventJsonLd) }}
-      />
+      {/* JSON-LD: location または startDate が不足する場合は出力しない */}
+      {eventJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(eventJsonLd) }}
+        />
+      )}
 
       {/* パンくず */}
       <Breadcrumbs items={breadcrumbs} />

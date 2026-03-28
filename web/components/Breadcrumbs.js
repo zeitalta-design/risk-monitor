@@ -8,15 +8,22 @@ import Link from "next/link";
 export default function Breadcrumbs({ items }) {
   if (!items || items.length === 0) return null;
 
+  // BreadcrumbList JSON-LD: 全 ListItem に position + name、最後以外には item（絶対URL）
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : (process.env.APP_BASE_URL || "https://taikainavi.jp");
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    itemListElement: items.map((item, i) => ({
-      "@type": "ListItem",
-      position: i + 1,
-      name: item.label,
-      ...(item.href ? { item: item.href.startsWith("http") ? item.href : undefined } : {}),
-    })),
+    itemListElement: items.map((item, i) => {
+      const entry = {
+        "@type": "ListItem",
+        position: i + 1,
+        name: item.label,
+      };
+      if (item.href) {
+        entry.item = item.href.startsWith("http") ? item.href : `${baseUrl}${item.href}`;
+      }
+      return entry;
+    }),
   };
 
   return (
