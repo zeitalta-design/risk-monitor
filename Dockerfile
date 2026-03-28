@@ -26,7 +26,8 @@ RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt
 COPY web/package.json web/package-lock.json ./
 RUN npm ci
 
-# ソース全体コピー
+# ソース全体コピー（キャッシュバスト: ARG が変わると以降のレイヤーが再ビルドされる）
+ARG CACHEBUST=0
 COPY web/ ./
 
 # SQLスキーマをビルド時にアクセス可能にする
