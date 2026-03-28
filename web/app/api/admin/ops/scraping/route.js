@@ -20,7 +20,7 @@ export async function GET() {
     // 定義済みソース一覧（既存スクレイピングスクリプトに基づく）
     const SOURCES = [
       { name: "RUNNET", slug: "runnet", description: "マラソン大会情報（一覧＋詳細）" },
-      { name: "MOSHICOM", slug: "moshicom", description: "モシコム大会情報" },
+      { name: "MOSHICOM", slug: "moshicom", description: "モシコム大会詳細補完（RUNNET経由）" },
       { name: "SPORTS ENTRY", slug: "sportsentry", description: "スポーツエントリー大会情報" },
     ];
 
@@ -69,9 +69,14 @@ export async function GET() {
       });
 
       // DB上の大会数（ソース別）
-      const eventCount = db.prepare(
-        `SELECT COUNT(*) as count FROM events WHERE is_active = 1 AND source_site = ?`
-      ).get(source.slug)?.count || 0;
+      // MOSHICOM は source_site ではなく source_url で判定（RUNNET経由で取得されるため）
+      const eventCount = source.slug === "moshicom"
+        ? db.prepare(
+            `SELECT COUNT(*) as count FROM events WHERE is_active = 1 AND source_url LIKE '%moshicom%'`
+          ).get()?.count || 0
+        : db.prepare(
+            `SELECT COUNT(*) as count FROM events WHERE is_active = 1 AND source_site = ?`
+          ).get(source.slug)?.count || 0;
 
       return {
         ...source,
@@ -107,9 +112,9 @@ export async function GET() {
  * body: { source: "runnet" | "sportsentry" | "moshicom" }
  */
 const SCRAPE_COMMANDS = {
-  runnet: { script: "scripts/scrape-runnet-list.js", args: ["--pages", "5"] },
-  sportsentry: { script: "scripts/scrape-sportsentry-list.js", args: ["--pages", "10"] },
-  moshicom: { script: "scripts/scrape-moshicom-detail.js", args: ["--only-missing-races", "--limit", "30"] },
+  runnet: { script: "scripts/scrape-runnet-list.js", args: ["--pages", "30"] },
+  sportsentry: { script: "scripts/scrape-sportsentry-list.js", args: ["--pages", "30"] },
+  moshicom: { script: "scripts/scrape-moshicom-detail.js", args: ["--only-missing-races", "--limit", "100"] },
 };
 
 export async function POST(request) {
