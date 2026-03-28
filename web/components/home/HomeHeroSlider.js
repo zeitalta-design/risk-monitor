@@ -21,8 +21,8 @@ const QUICK_CHIPS = [
 ];
 
 
-// ヒーロー画像: /public/hero/top-hero.jpeg（ローカル固定・外部URL非依存）
-const HERO_IMAGE = "/hero/top-hero.jpeg";
+// ヒーロー画像: /public/hero/top-hero.jpg（ローカル固定・外部URL非依存）
+const HERO_IMAGE = "/hero/top-hero.jpg";
 
 /**
  * 統合ヒーロー: 実写背景 + 検索フォーム + 特集スライダー
