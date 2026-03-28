@@ -116,43 +116,7 @@ export default function SportListPage() {
   const allPrefectures = REGIONS.flatMap((r) => r.prefectures);
   const distances = sport?.distanceFilters || DEFAULT_DISTANCES;
 
-  // 既知だが未有効化のスポーツ → 準備中ページ
-  if (sport && !sport.enabled) {
-    return (
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">
-          {sport.label}大会
-        </h1>
-        <p className="text-sm text-gray-500 mb-8">
-          {sport.label}大会の情報は現在準備中です
-        </p>
-        <div className="card p-12 text-center">
-          <div className="text-4xl mb-4">{sport.icon || "🏅"}</div>
-          <p className="text-gray-600 font-medium mb-2">
-            {sport.label}大会の掲載を準備しています
-          </p>
-          <p className="text-sm text-gray-400 mb-6">
-            大会情報の収集・整理を進めています。公開までしばらくお待ちください。
-          </p>
-          <div className="flex flex-wrap justify-center gap-3">
-            <a href="/" className="inline-block px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
-              トップページへ
-            </a>
-            <a href="/search" className="inline-block px-5 py-2.5 bg-white text-blue-600 text-sm font-medium rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors">
-              大会を探す
-            </a>
-          </div>
-          <div className="mt-8 pt-6 border-t border-gray-100">
-            <p className="text-xs text-gray-400 mb-3">現在掲載中の競技</p>
-            <div className="flex justify-center gap-3">
-              <a href="/marathon" className="text-sm text-blue-600 hover:text-blue-800 font-medium">🏃 マラソン</a>
-              <a href="/trail" className="text-sm text-blue-600 hover:text-blue-800 font-medium">⛰️ トレイルラン</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // 既知スポーツは enabled に関わらず一覧ページを表示（データがあれば機能する）
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">

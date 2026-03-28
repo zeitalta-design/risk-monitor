@@ -13,12 +13,6 @@ export async function generateMetadata({ params }) {
   const { sportSlug } = await params;
   const sport = getSportBySlug(sportSlug);
   if (!sport) return {};
-  if (!sport.enabled) {
-    return {
-      title: `${sport.label}大会（準備中）`,
-      description: `${sport.label}大会の情報は現在準備中です。`,
-    };
-  }
   return buildSportMetadata(sportSlug);
 }
 
