@@ -173,6 +173,7 @@ docker run -d \
   -v "${DATA_VOLUME}" \
   -v /opt/app/scraper:/app/scraper:ro \
   -v /opt/app/scripts:/app/scripts:ro \
+  -v /opt/app/sql:/app/sql:ro \
   --restart unless-stopped \
   "${IMAGE}"
 
