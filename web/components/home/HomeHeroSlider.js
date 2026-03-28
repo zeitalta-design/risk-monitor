@@ -78,7 +78,7 @@ export default function HomeHeroSlider({ totalEvents = 0 }) {
             src={HERO_IMAGE}
             alt=""
             className="w-full h-full object-cover"
-            style={{ objectPosition: "center 45%", filter: "brightness(1.6)" }}
+            style={{ objectPosition: "center 45%", filter: "brightness(1.25)" }}
             loading="eager"
             fetchPriority="high"
           />
