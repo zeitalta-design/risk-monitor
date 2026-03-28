@@ -14,6 +14,7 @@ import {
   fetchAndParseSportsentry,
 } from "@/lib/sportsentry-fetcher";
 import { inferPrefecture, isOnlineEvent } from "@/lib/prefecture-inference";
+import { inferRaces, isOnlineRace } from "@/lib/race-inference";
 
 /**
  * 失敗理由コード → 日本語メッセージ
@@ -274,8 +275,30 @@ export async function POST(request) {
           .prepare("SELECT COUNT(*) as c FROM event_races WHERE event_id = ?")
           .get(ev.id).c;
 
+        // フォールバック: スクレイパーが races を返さなかった場合、タイトル/説明文から推定
+        let effectiveRaces = races && races.length > 0 ? races : [];
+        if (hasRaces === 0 && effectiveRaces.length === 0) {
+          const titleForRace = eventInfo.title || ev.title || "";
+          const descForRace = eventInfo.description || ev.description || "";
+
+          // オンライン大会は種目推定をスキップ
+          if (isOnlineRace(titleForRace, descForRace)) {
+            // オンラインだが races がないのは正常 → 手動対応不要としてマーク
+            if (!updates.prefecture) {
+              // 既にオンライン判定で解決済みでなければスキップフィールドに追加
+              skippedFields.push("種目（オンライン大会）");
+            }
+          } else {
+            const inferred = inferRaces(titleForRace, descForRace);
+            if (inferred.length > 0) {
+              effectiveRaces = inferred;
+              console.log(`[Patrol Refetch] event_id=${ev.id} races inferred from title: ${inferred.map(r => r.race_name).join(", ")}`);
+            }
+          }
+        }
+
         let racesInserted = 0;
-        if (hasRaces === 0 && races && races.length > 0) {
+        if (hasRaces === 0 && effectiveRaces.length > 0) {
           const insertRace = db.prepare(`
             INSERT INTO event_races (
               event_id, race_name, race_type, distance_km,
@@ -288,7 +311,7 @@ export async function POST(request) {
             )
           `);
 
-          for (const race of races) {
+          for (const race of effectiveRaces) {
             try {
               insertRace.run({
                 event_id: ev.id,
