@@ -85,7 +85,7 @@ export default function HomeHeroSlider({ totalEvents = 0 }) {
           {/* オーバーレイ: 上部やや濃く（見出し可読性）、下部やや薄く（爽やかさ維持） */}
           <div
             className="absolute inset-0"
-            style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.50) 0%, rgba(0,0,0,0.35) 50%, rgba(0,0,0,0.45) 100%)" }}
+            style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.38) 0%, rgba(0,0,0,0.22) 50%, rgba(0,0,0,0.35) 100%)" }}
           />
         </div>
 
@@ -121,7 +121,7 @@ export default function HomeHeroSlider({ totalEvents = 0 }) {
           <div
             data-hero-search-form
             className="bg-white rounded-2xl p-4 sm:p-6 max-w-3xl mx-auto"
-            style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.25), 0 2px 8px rgba(0,0,0,0.1)" }}
+            style={{ boxShadow: "0 12px 48px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08)" }}
           >
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <input
@@ -189,7 +189,7 @@ export default function HomeHeroSlider({ totalEvents = 0 }) {
               <svg className="w-[17px] h-[17px] opacity-90" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
               </svg>
-              大会を探す
+              あなたに合う大会を探す
             </button>
           </div>
 
