@@ -47,7 +47,7 @@ export default async function ThemePage({ params }) {
       trackingSlug={theme}
     >
       <SeoCirculationSection categoryLinks={circulationLinks} />
-      {["open", "deadline", "popular", "beginner"].includes(theme) && (
+      {["open", "deadline", "popular", "beginner", "family"].includes(theme) && (
         <SportSwitcher currentSportSlug="marathon" category="theme" slug={theme} />
       )}
     </SeoEventList>

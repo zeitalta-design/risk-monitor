@@ -162,6 +162,23 @@ export default function SeoEventList({
           <Link href={emptyHref || "/marathon"} className="inline-block mt-4 text-sm text-blue-600 hover:text-blue-800">
             {emptyLabel || "マラソン大会一覧で探す →"}
           </Link>
+          {relatedLinks && relatedLinks.length > 0 && (
+            <div className="mt-6 pt-4 border-t border-gray-100">
+              <p className="text-xs text-gray-400 mb-3">他のテーマで探す</p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {relatedLinks.slice(0, 8).map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="text-xs px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full text-gray-600
+                               hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="space-y-3">

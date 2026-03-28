@@ -128,11 +128,11 @@ export const THEME_SLUGS = {
     filterDescription: "自己ベスト更新を狙える大会を集めました",
   },
   sightseeing: {
-    label: "観光ラン向け大会",
-    shortLabel: "観光ラン",
+    label: "旅ラン・遠征におすすめの大会",
+    shortLabel: "旅ラン・遠征",
     icon: "📸",
-    description: "観光も楽しめるランニング大会を探せます。",
-    filterDescription: "走りながら観光を楽しめる大会を集めました",
+    description: "旅ランや遠征で楽しめるマラソン大会を探せます。観光・温泉・ご当地グルメも。",
+    filterDescription: "旅ランや遠征にぴったりの大会を集めました",
   },
   deadline: {
     label: "締切間近の大会",
@@ -154,6 +154,13 @@ export const THEME_SLUGS = {
     icon: "🔥",
     description: "注目度の高い人気マラソン大会を探せます。",
     filterDescription: "多くのランナーに注目されている大会です",
+  },
+  family: {
+    label: "親子・ファミリー向け大会",
+    shortLabel: "親子・ファミリー",
+    icon: "👨‍👩‍👧‍👦",
+    description: "お子さまと一緒に参加できるファミリー向けのマラソン大会を探せます。",
+    filterDescription: "親子やファミリーで楽しめる大会を集めました",
   },
 };
 

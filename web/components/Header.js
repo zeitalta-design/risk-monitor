@@ -77,7 +77,7 @@ export default function Header() {
           <NavLink href="/entry-deadlines" label="締切間近" active={pathname === "/entry-deadlines"} />
           <NavLink href="/marathon/theme/beginner" label="初心者向け" active={pathname.includes("/theme/beginner")} />
           <NavLink href="/marathon/theme/sightseeing" label="旅ラン・遠征" active={pathname.includes("/theme/sightseeing")} />
-          <NavLink href="/search?q=親子" label="親子・ファミリー" active={pathname === "/search" && false} />
+          <NavLink href="/marathon/theme/family" label="親子・ファミリー" active={pathname.includes("/theme/family")} />
         </nav>
 
         {/* 右: ユーザー導線（PC） */}
@@ -171,7 +171,7 @@ export default function Header() {
           <MobileNavLink href="/entry-deadlines" label="締切間近" onClick={() => setMenuOpen(false)} />
           <MobileNavLink href="/marathon/theme/beginner" label="初心者向け" onClick={() => setMenuOpen(false)} />
           <MobileNavLink href="/marathon/theme/sightseeing" label="旅ラン・遠征" onClick={() => setMenuOpen(false)} />
-          <MobileNavLink href="/search?q=親子" label="親子・ファミリー" onClick={() => setMenuOpen(false)} />
+          <MobileNavLink href="/marathon/theme/family" label="親子・ファミリー" onClick={() => setMenuOpen(false)} />
           <div className="my-2 border-t border-gray-100" />
           <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wider pt-1 pb-0.5">種目で探す</p>
           {sportNavLinks.map((link) => (

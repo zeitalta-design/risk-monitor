@@ -196,8 +196,38 @@ export function getEventsByTheme(themeKey, sportType = "marathon") {
         ${EVENT_SELECT}
         LEFT JOIN marathon_details md ON md.event_id = e.id
         WHERE e.is_active = 1 AND e.sport_type = ?
-          AND (e.description LIKE '%観光%' OR e.description LIKE '%景色%' OR e.description LIKE '%絶景%'
-               OR md.features_json LIKE '%観光%' OR md.features_json LIKE '%景色%' OR md.features_json LIKE '%絶景%')
+          AND (
+            e.description LIKE '%観光%' OR e.description LIKE '%景色%' OR e.description LIKE '%絶景%'
+            OR e.description LIKE '%旅%' OR e.description LIKE '%温泉%'
+            OR e.description LIKE '%ご当地%' OR e.description LIKE '%グルメ%' OR e.description LIKE '%ツアー%'
+            OR e.title LIKE '%観光%' OR e.title LIKE '%旅%' OR e.title LIKE '%温泉%' OR e.title LIKE '%ご当地%'
+            OR md.features_json LIKE '%観光%' OR md.features_json LIKE '%景色%' OR md.features_json LIKE '%絶景%'
+            OR md.features_json LIKE '%旅%' OR md.features_json LIKE '%温泉%'
+            OR md.features_json LIKE '%ご当地%' OR md.features_json LIKE '%グルメ%'
+          )
+        ORDER BY e.event_date ASC
+      `).all(sportType);
+
+    case "family":
+      return db.prepare(`
+        ${EVENT_SELECT}
+        LEFT JOIN marathon_details md ON md.event_id = e.id
+        LEFT JOIN event_races er_fam ON er_fam.event_id = e.id
+        WHERE e.is_active = 1 AND e.sport_type = ?
+          AND (
+            e.description LIKE '%ファミリー%' OR e.description LIKE '%親子%'
+            OR e.description LIKE '%キッズ%' OR e.description LIKE '%こども%'
+            OR e.description LIKE '%子供%' OR e.description LIKE '%家族%'
+            OR e.title LIKE '%ファミリー%' OR e.title LIKE '%親子%'
+            OR e.title LIKE '%キッズ%' OR e.title LIKE '%子供%'
+            OR md.features_json LIKE '%ファミリー%' OR md.features_json LIKE '%親子%'
+            OR md.features_json LIKE '%キッズ%' OR md.features_json LIKE '%こども%'
+            OR md.features_json LIKE '%子供%' OR md.features_json LIKE '%家族%'
+            OR er_fam.race_name LIKE '%ファミリー%' OR er_fam.race_name LIKE '%親子%'
+            OR er_fam.race_name LIKE '%キッズ%' OR er_fam.race_name LIKE '%こども%'
+            OR er_fam.race_name LIKE '%子供%'
+          )
+        GROUP BY e.id
         ORDER BY e.event_date ASC
       `).all(sportType);
 
