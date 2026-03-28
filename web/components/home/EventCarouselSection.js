@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+// v2: carousel with arrow navigation
 
 /**
  * 共通カルーセルセクション — トップページのランキング系セクション用
