@@ -140,7 +140,7 @@ export default function ScrapingPage() {
                   <span className={`w-3 h-3 rounded-full ${hc.dot}`} />
                   <div>
                     <h3 className="font-extrabold text-gray-900">{src.name}</h3>
-                    <p className="text-xs text-gray-500">{src.description}</p>
+                    <p className="text-xs text-gray-500">{src.description}{src.schedule && ` · 自動巡回: ${src.schedule}`}</p>
                   </div>
                 </div>
                 <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${hc.bg} ${hc.text}`}>

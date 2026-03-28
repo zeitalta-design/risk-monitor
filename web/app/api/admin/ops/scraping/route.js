@@ -19,9 +19,9 @@ export async function GET() {
 
     // 定義済みソース一覧（既存スクレイピングスクリプトに基づく）
     const SOURCES = [
-      { name: "RUNNET", slug: "runnet", description: "マラソン大会情報（一覧＋詳細）" },
-      { name: "MOSHICOM", slug: "moshicom", description: "モシコム大会情報（一覧＋詳細）" },
-      { name: "SPORTS ENTRY", slug: "sportsentry", description: "スポーツエントリー大会情報" },
+      { name: "RUNNET", slug: "runnet", description: "マラソン大会情報（一覧＋詳細）", schedule: "3日に1回" },
+      { name: "MOSHICOM", slug: "moshicom", description: "モシコム大会情報（一覧＋詳細）", schedule: "週1回" },
+      { name: "SPORTS ENTRY", slug: "sportsentry", description: "スポーツエントリー大会情報", schedule: "3日に1回" },
     ];
 
     // ソース別の最新ログと集計
