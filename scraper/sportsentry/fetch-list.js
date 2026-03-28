@@ -68,27 +68,48 @@ async function fetchPages(startPage = 1, endPage = 3, options = {}) {
   const { verbose = false, genre = 1 } = options;
   const pages = [];
   let failed = 0;
+  let stoppedReason = "completed";
+  let prevEventIds = null;
 
   for (let p = startPage; p <= endPage; p++) {
     try {
       const result = await fetchPage(p, { genre });
       if (result.status === 200 && result.html.length > 5000) {
+        // 重複ページ検出: 前ページと同じイベントIDなら終端
+        const currentIds = (result.html.match(/\/event\/t\/(\d+)/g) || []).sort().join(",");
+        if (prevEventIds && currentIds === prevEventIds) {
+          if (verbose) console.log(`  Page ${p}: duplicate of previous page, stopping`);
+          stoppedReason = "duplicate_page";
+          break;
+        }
+        prevEventIds = currentIds;
+
         pages.push({ page: p, html: result.html });
         if (verbose) console.log(`  Page ${p} OK (${result.html.length} bytes)`);
       } else {
         if (verbose) console.log(`  Page ${p} SKIP (status=${result.status}, size=${result.html.length})`);
-        // 空ページ = これ以上データなし
-        if (result.html.length < 5000) break;
+        if (result.html.length < 5000) {
+          stoppedReason = "empty_page";
+          break;
+        }
         failed++;
       }
     } catch (err) {
       if (verbose) console.log(`  Page ${p} ERROR: ${err.message}`);
       failed++;
+      if (failed >= 3) {
+        stoppedReason = "too_many_errors";
+        break;
+      }
     }
     if (p < endPage) await sleep(DELAY_MS);
   }
 
-  return { pages, fetched: pages.length, failed };
+  if (stoppedReason === "completed" && pages.length >= endPage - startPage + 1) {
+    stoppedReason = "page_limit_reached";
+  }
+
+  return { pages, fetched: pages.length, failed, stoppedReason };
 }
 
 module.exports = { fetchPage, fetchPages, fetchUrl };

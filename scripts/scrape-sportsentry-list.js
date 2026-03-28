@@ -61,12 +61,12 @@ async function main() {
 
   // [1/3] Fetch
   console.log("\n[1/3] Fetching HTML pages...");
-  const { pages, fetched, failed } = await fetchPages(
+  const { pages, fetched, failed, stoppedReason } = await fetchPages(
     options.startPage,
     options.endPage,
     { verbose: options.verbose, genre: options.genre }
   );
-  console.log(`  Fetched: ${fetched}, Failed: ${failed}`);
+  console.log(`  Fetched: ${fetched}, Failed: ${failed}, Stopped: ${stoppedReason || "completed"}`);
 
   if (fetched === 0) {
     console.log("  No pages fetched. Exiting.");
