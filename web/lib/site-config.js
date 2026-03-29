@@ -1,8 +1,6 @@
 /**
  * サイト共通設定（ブランド定義）
  * サービス名やURLをここに集約し、各所から参照する
- *
- * ブランド: 大会ナビ / TAIKAI NAVI (taikainavi.jp)
  */
 
 export const siteConfig = {
@@ -11,9 +9,9 @@ export const siteConfig = {
   /** サービス名（英語） */
   siteNameEn: "TAIKAI NAVI",
   /** サービス説明 */
-  siteDescription: "全国のスポーツ大会を探せる検索・通知サービス",
+  siteDescription: "行政公開情報・許認可・産廃・入札・リコール・補助金を横断検索できるデータポータル",
   /** キャッチコピー */
-  tagline: "全国のスポーツ大会を探す",
+  tagline: "公開データを、もっと見やすく",
   /** サイトURL */
   siteUrl: process.env.APP_BASE_URL || "http://localhost:3001",
   /** ロゴ画像パス */
@@ -23,5 +21,5 @@ export const siteConfig = {
   /** メール件名プレフィックス */
   emailPrefix: "【大会ナビ】",
   /** メールフッター署名 */
-  emailSignature: "大会ナビ — スポーツ大会検索・通知サービス",
+  emailSignature: "大会ナビ — 公開データポータル",
 };

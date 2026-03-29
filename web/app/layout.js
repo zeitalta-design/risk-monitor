@@ -17,21 +17,21 @@ const notoSansJP = Noto_Sans_JP({
 export const metadata = {
   metadataBase: new URL(siteConfig.siteUrl),
   title: {
-    default: `${siteConfig.siteName} | 全国のスポーツ大会を探す`,
+    default: `${siteConfig.siteName} | ${siteConfig.tagline}`,
     template: `%s | ${siteConfig.siteName}`,
   },
-  description: "大会ナビは、全国のスポーツ大会を検索・比較・通知できるサービスです。まずはマラソン大会検索に対応。",
+  description: siteConfig.siteDescription,
   openGraph: {
     siteName: siteConfig.siteName,
     locale: "ja_JP",
     type: "website",
-    title: `${siteConfig.siteName} | 全国のスポーツ大会を探す`,
-    description: "全国のマラソン大会を検索・比較・通知。締切間近の大会もすぐ見つかる。",
+    title: `${siteConfig.siteName} | ${siteConfig.tagline}`,
+    description: siteConfig.siteDescription,
   },
   twitter: {
     card: "summary_large_image",
-    title: `${siteConfig.siteName} | 全国のスポーツ大会を探す`,
-    description: "全国のマラソン大会を検索・比較・通知。締切間近の大会もすぐ見つかる。",
+    title: `${siteConfig.siteName} | ${siteConfig.tagline}`,
+    description: siteConfig.siteDescription,
   },
   alternates: {
     canonical: siteConfig.siteUrl,
@@ -53,7 +53,7 @@ const jsonLd = {
         "@type": "SearchAction",
         target: {
           "@type": "EntryPoint",
-          urlTemplate: `${siteConfig.siteUrl}/marathon?q={search_term_string}`,
+          urlTemplate: `${siteConfig.siteUrl}/platform/search?q={search_term_string}`,
         },
         "query-input": "required name=search_term_string",
       },
