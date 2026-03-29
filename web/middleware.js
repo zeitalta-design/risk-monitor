@@ -18,7 +18,7 @@ const MAINTENANCE_ENABLED = true;
 // 停止対象パス（完全一致）
 // ──────────────────────────────────────
 const MAINTENANCE_PATHS = new Set([
-  "/",
+  // "/" はドメイン入口として公開再開
   "/marathon",
   "/trail",
   "/cycling",

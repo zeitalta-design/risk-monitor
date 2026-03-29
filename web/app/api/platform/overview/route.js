@@ -14,8 +14,9 @@ export async function GET() {
       { id: "shitei", table: "shitei_items", label: "指定管理公募まとめ", icon: "🏛️", path: "/shitei", type: "公募型", description: "自治体の指定管理者・業務委託公募情報を横断検索" },
       { id: "sanpai", table: "sanpai_items", label: "産廃処分ウォッチ", icon: "🚛", path: "/sanpai", type: "監視型", description: "産業廃棄物処理業者の行政処分情報を全国追跡" },
       { id: "kyoninka", table: "kyoninka_entities", label: "許認可検索", icon: "📋", path: "/kyoninka", type: "検索型", description: "建設業許可・宅建業等の許認可事業者を10県で検索" },
-      { id: "saas", table: "items", label: "SaaS比較ナビ", icon: "💻", path: "/saas", type: "比較型", description: "SaaS製品を8カテゴリ69件で比較・おすすめ" },
+      { id: "gyosei-shobun", table: "gyosei_shobun_items", label: "行政処分DB", icon: "⚖️", path: "/gyosei-shobun", type: "監視型", description: "行政処分・業務停止・免許取消等を全国追跡" },
       { id: "hojokin", table: "hojokin_items", label: "補助金ナビ", icon: "💰", path: "/hojokin", type: "監視型", description: "中小企業向け補助金・助成金情報を検索" },
+      { id: "nyusatsu", table: "nyusatsu_items", label: "入札ナビ", icon: "📑", path: "/nyusatsu", type: "公募型", description: "公共入札・業務委託の案件情報を横断検索" },
       { id: "yutai", table: "yutai_items", label: "株主優待ナビ", icon: "🎁", path: "/yutai", type: "比較型", description: "人気の株主優待銘柄を比較・検索" },
       { id: "minpaku", table: "minpaku_items", label: "民泊ナビ", icon: "🏠", path: "/minpaku", type: "比較型", description: "民泊・バケーションレンタル物件を比較" },
     ];
