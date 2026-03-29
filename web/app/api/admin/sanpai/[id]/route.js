@@ -24,17 +24,26 @@ export async function PUT(request, { params }) {
     const numId = Number(id);
     const body = await request.json();
     if (!body.company_name) return NextResponse.json({ error: "company_name は必須です" }, { status: 400 });
+    // 既存値をベースにマージ（repositoryのUPDATE文が全カラムを要求するため）
+    const before = getSanpaiAdminById(numId);
     const item = {
-      slug: body.slug || "",
+      slug: body.slug ?? before?.slug ?? "",
       company_name: String(body.company_name).trim(),
-      prefecture: body.prefecture || null,
-      license_type: body.license_type || null,
-      license_number: body.license_number || null,
-      risk_level: body.risk_level || "low",
-      status: body.status || "active",
-      business_area: body.business_area || null,
-      notes: body.notes || null,
-      is_published: body.is_published != null ? (body.is_published ? 1 : 0) : 1,
+      corporate_number: body.corporate_number ?? before?.corporate_number ?? null,
+      prefecture: body.prefecture ?? before?.prefecture ?? null,
+      city: body.city ?? before?.city ?? null,
+      license_type: body.license_type ?? before?.license_type ?? null,
+      waste_category: body.waste_category ?? before?.waste_category ?? null,
+      business_area: body.business_area ?? before?.business_area ?? null,
+      status: body.status ?? before?.status ?? "active",
+      risk_level: body.risk_level ?? before?.risk_level ?? "low",
+      penalty_count: body.penalty_count ?? before?.penalty_count ?? 0,
+      latest_penalty_date: body.latest_penalty_date ?? before?.latest_penalty_date ?? null,
+      source_name: body.source_name ?? before?.source_name ?? null,
+      source_url: body.source_url ?? before?.source_url ?? null,
+      detail_url: body.detail_url ?? before?.detail_url ?? null,
+      notes: body.notes ?? before?.notes ?? null,
+      is_published: body.is_published != null ? (body.is_published ? 1 : 0) : (before?.is_published ?? 1),
     };
     updateSanpaiItem(numId, item);
     const { ipAddress, userAgent } = extractRequestInfo(request);

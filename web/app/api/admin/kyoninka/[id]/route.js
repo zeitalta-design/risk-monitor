@@ -24,18 +24,23 @@ export async function PUT(request, { params }) {
     const numId = Number(id);
     const body = await request.json();
     if (!body.entity_name) return NextResponse.json({ error: "entity_name は必須です" }, { status: 400 });
+    const before = getKyoninkaAdminById(numId);
     const item = {
-      slug: body.slug || "",
+      slug: body.slug ?? before?.slug ?? "",
       entity_name: String(body.entity_name).trim(),
-      prefecture: body.prefecture || null,
-      city: body.city || null,
-      address: body.address || null,
-      corporate_number: body.corporate_number || null,
-      primary_license_family: body.primary_license_family || null,
-      entity_status: body.entity_status || "active",
-      source_name: body.source_name || null,
-      notes: body.notes || null,
-      is_published: body.is_published != null ? (body.is_published ? 1 : 0) : 1,
+      normalized_name: body.normalized_name ?? before?.normalized_name ?? "",
+      corporate_number: body.corporate_number ?? before?.corporate_number ?? null,
+      prefecture: body.prefecture ?? before?.prefecture ?? null,
+      city: body.city ?? before?.city ?? null,
+      address: body.address ?? before?.address ?? null,
+      entity_status: body.entity_status ?? before?.entity_status ?? "active",
+      primary_license_family: body.primary_license_family ?? before?.primary_license_family ?? null,
+      registration_count: body.registration_count ?? before?.registration_count ?? 0,
+      latest_update_date: body.latest_update_date ?? before?.latest_update_date ?? null,
+      source_name: body.source_name ?? before?.source_name ?? null,
+      source_url: body.source_url ?? before?.source_url ?? null,
+      notes: body.notes ?? before?.notes ?? null,
+      is_published: body.is_published != null ? (body.is_published ? 1 : 0) : (before?.is_published ?? 1),
     };
     updateKyoninkaEntity(numId, item);
     const { ipAddress, userAgent } = extractRequestInfo(request);

@@ -24,15 +24,24 @@ export async function PUT(request, { params }) {
     const numId = Number(id);
     const body = await request.json();
     if (!body.product_name) return NextResponse.json({ error: "product_name は必須です" }, { status: 400 });
+    const before = getFoodRecallAdminById(numId);
     const item = {
-      slug: body.slug || "", product_name: String(body.product_name).trim(),
-      manufacturer: body.manufacturer || null, category: body.category || null,
-      recall_type: body.recall_type || null, reason: body.reason || null,
-      risk_level: body.risk_level || "low", status: body.status || "ongoing",
-      recall_date: body.recall_date || null, affected_area: body.affected_area || null,
-      consumer_action: body.consumer_action || null, summary: body.summary || null,
-      source_url: body.source_url || null,
-      is_published: body.is_published != null ? (body.is_published ? 1 : 0) : 1,
+      slug: body.slug ?? before?.slug ?? "",
+      product_name: String(body.product_name).trim(),
+      manufacturer: body.manufacturer ?? before?.manufacturer ?? null,
+      category: body.category ?? before?.category ?? null,
+      recall_type: body.recall_type ?? before?.recall_type ?? null,
+      reason: body.reason ?? before?.reason ?? null,
+      risk_level: body.risk_level ?? before?.risk_level ?? "low",
+      affected_area: body.affected_area ?? before?.affected_area ?? null,
+      lot_number: body.lot_number ?? before?.lot_number ?? null,
+      recall_date: body.recall_date ?? before?.recall_date ?? null,
+      status: body.status ?? before?.status ?? "ongoing",
+      consumer_action: body.consumer_action ?? before?.consumer_action ?? null,
+      source_url: body.source_url ?? before?.source_url ?? null,
+      manufacturer_url: body.manufacturer_url ?? before?.manufacturer_url ?? null,
+      summary: body.summary ?? before?.summary ?? null,
+      is_published: body.is_published != null ? (body.is_published ? 1 : 0) : (before?.is_published ?? 1),
     };
     updateFoodRecallItem(numId, item);
     const { ipAddress, userAgent } = extractRequestInfo(request);

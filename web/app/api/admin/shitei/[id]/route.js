@@ -24,16 +24,29 @@ export async function PUT(request, { params }) {
     const numId = Number(id);
     const body = await request.json();
     if (!body.title) return NextResponse.json({ error: "title は必須です" }, { status: 400 });
+    const before = getShiteiAdminById(numId);
     const item = {
-      slug: body.slug || "", title: String(body.title).trim(),
-      municipality_name: body.municipality_name || null, prefecture: body.prefecture || null,
-      facility_category: body.facility_category || null, facility_name: body.facility_name || null,
-      recruitment_status: body.recruitment_status || "unknown",
-      application_deadline: body.application_deadline || null,
-      contract_start_date: body.contract_start_date || null, contract_end_date: body.contract_end_date || null,
-      detail_url: body.detail_url || null, summary: body.summary || null,
-      eligibility: body.eligibility || null,
-      is_published: body.is_published != null ? (body.is_published ? 1 : 0) : 1,
+      slug: body.slug ?? before?.slug ?? "",
+      title: String(body.title).trim(),
+      municipality_name: body.municipality_name ?? before?.municipality_name ?? null,
+      prefecture: body.prefecture ?? before?.prefecture ?? null,
+      facility_category: body.facility_category ?? before?.facility_category ?? null,
+      facility_name: body.facility_name ?? before?.facility_name ?? null,
+      recruitment_status: body.recruitment_status ?? before?.recruitment_status ?? "unknown",
+      application_start_date: body.application_start_date ?? before?.application_start_date ?? null,
+      application_deadline: body.application_deadline ?? before?.application_deadline ?? null,
+      opening_date: body.opening_date ?? before?.opening_date ?? null,
+      contract_start_date: body.contract_start_date ?? before?.contract_start_date ?? null,
+      contract_end_date: body.contract_end_date ?? before?.contract_end_date ?? null,
+      summary: body.summary ?? before?.summary ?? null,
+      eligibility: body.eligibility ?? before?.eligibility ?? null,
+      application_method: body.application_method ?? before?.application_method ?? null,
+      detail_url: body.detail_url ?? before?.detail_url ?? null,
+      source_name: body.source_name ?? before?.source_name ?? null,
+      source_url: body.source_url ?? before?.source_url ?? null,
+      attachment_count: body.attachment_count ?? before?.attachment_count ?? 0,
+      notes: body.notes ?? before?.notes ?? null,
+      is_published: body.is_published != null ? (body.is_published ? 1 : 0) : (before?.is_published ?? 1),
     };
     updateShiteiItem(numId, item);
     const { ipAddress, userAgent } = extractRequestInfo(request);
