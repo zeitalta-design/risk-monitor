@@ -1,12 +1,13 @@
 name: "Ops: Scheduled Takuti"
 
 # ============================================================
-# 宅建業（takuti / real_estate）の月次自動 fetch → enrich
+# 宅建業（takuti / real_estate）の月次自動 fetch → enrich → notify
 #
 # - 毎月2日 03:17 JST に自動実行（既存建設業 cron の月初1日と競合回避）
 # - workflow_dispatch で手動テストも可能
 # - TAKUTI_SCHEDULE_ENABLED=true で自動実行を有効化
 # - fetch 失敗時は enrich に進まない
+# - enrich 成功後にウォッチリスト通知を実行
 # - 実行結果を GITHUB_STEP_SUMMARY に出力
 # - 失敗時は GitHub Issue を自動作成
 # - 既存 ops-manual.yml / 建設業 cron には影響しない
@@ -33,7 +34,7 @@ concurrency:
 
 jobs:
   fetch-and-enrich:
-    name: "Takuti fetch → enrich"
+    name: "Takuti fetch → enrich → notify"
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -53,7 +54,7 @@ jobs:
         run: |
           FETCH_ARGS="${TAKUTI_FETCH_ARGS:---since=2021-01}"
           echo "============================================================"
-          echo "  Ops: Scheduled Takuti — fetch → enrich"
+          echo "  Ops: Scheduled Takuti — fetch → enrich → notify"
           echo "============================================================"
           echo "Trigger:             ${{ github.event_name }}"
           echo "SCHEDULE_ENABLED:    ${{ vars.TAKUTI_SCHEDULE_ENABLED }}"
@@ -199,6 +200,58 @@ jobs:
           echo "enrich_errors=${ERRORS}" >> "$GITHUB_OUTPUT"
 
       # -------------------------------------------------------
+      # 5.5. ウォッチリスト通知（enrich 成功後）
+      # -------------------------------------------------------
+      - name: "Execute: watchlist_notify"
+        id: notify
+        if: steps.enrich.outcome == 'success'
+        continue-on-error: true
+        timeout-minutes: 5
+        env:
+          SSH_HOST: ${{ secrets.VPS_HOST }}
+          SSH_USER: ${{ secrets.VPS_USER }}
+          SSH_PORT: ${{ vars.VPS_PORT }}
+        run: |
+          echo ">>> watchlist_notify <<<"
+
+          NOTIFY_LOG=$(ssh -o ConnectTimeout=10 \
+              -o ServerAliveInterval=30 \
+              -o ServerAliveCountMax=3 \
+              -i ~/.ssh/id_ed25519 \
+              -p "${SSH_PORT:-22}" \
+              "${SSH_USER}@${SSH_HOST}" \
+              "cd /opt/app && bash scripts/ops/run-task.sh watchlist_notify" 2>&1) || {
+            echo "$NOTIFY_LOG"
+            echo "notify_status=failed" >> "$GITHUB_OUTPUT"
+            # continue-on-error なので exit 1 しても workflow は止まらない
+            exit 1
+          }
+
+          echo "$NOTIFY_LOG"
+          echo "notify_status=success" >> "$GITHUB_OUTPUT"
+
+          # NOTIFY_RESULT JSON 行を抽出
+          RESULT_LINE=$(echo "$NOTIFY_LOG" | grep '^NOTIFY_RESULT=' | tail -1 || true)
+          if [ -n "$RESULT_LINE" ]; then
+            RESULT_JSON="${RESULT_LINE#NOTIFY_RESULT=}"
+            echo "notify_result=${RESULT_JSON}" >> "$GITHUB_OUTPUT"
+
+            USERS=$(echo "$RESULT_JSON" | jq -r '.usersNotified // 0' 2>/dev/null || echo "0")
+            WATCHES=$(echo "$RESULT_JSON" | jq -r '.watchesNotified // 0' 2>/dev/null || echo "0")
+            SENT=$(echo "$RESULT_JSON" | jq -r '.emailsSent // 0' 2>/dev/null || echo "0")
+            FAILED=$(echo "$RESULT_JSON" | jq -r '.emailsFailed // 0' 2>/dev/null || echo "0")
+            echo "notify_users=${USERS}" >> "$GITHUB_OUTPUT"
+            echo "notify_watches=${WATCHES}" >> "$GITHUB_OUTPUT"
+            echo "notify_sent=${SENT}" >> "$GITHUB_OUTPUT"
+            echo "notify_failed=${FAILED}" >> "$GITHUB_OUTPUT"
+          else
+            echo "notify_users=?" >> "$GITHUB_OUTPUT"
+            echo "notify_watches=?" >> "$GITHUB_OUTPUT"
+            echo "notify_sent=?" >> "$GITHUB_OUTPUT"
+            echo "notify_failed=?" >> "$GITHUB_OUTPUT"
+          fi
+
+      # -------------------------------------------------------
       # 6. 実行後の件数取得と異常チェック
       # -------------------------------------------------------
       - name: "Post-check: DB件数確認"
@@ -248,20 +301,31 @@ jobs:
         env:
           FETCH_STATUS: ${{ steps.fetch.outcome }}
           ENRICH_STATUS: ${{ steps.enrich.outcome }}
+          NOTIFY_STATUS: ${{ steps.notify.outcome }}
           FETCH_CREATED: ${{ steps.fetch.outputs.fetch_created }}
           FETCH_UPDATED: ${{ steps.fetch.outputs.fetch_updated }}
           FETCH_SKIPPED: ${{ steps.fetch.outputs.fetch_skipped }}
           ENRICH_ENRICHED: ${{ steps.enrich.outputs.enrich_enriched }}
           ENRICH_ERRORS: ${{ steps.enrich.outputs.enrich_errors }}
+          NOTIFY_USERS: ${{ steps.notify.outputs.notify_users }}
+          NOTIFY_WATCHES: ${{ steps.notify.outputs.notify_watches }}
+          NOTIFY_SENT: ${{ steps.notify.outputs.notify_sent }}
+          NOTIFY_FAILED: ${{ steps.notify.outputs.notify_failed }}
           PRE_COUNTS: ${{ steps.pre_counts.outputs.pre_counts }}
           POST_COUNTS: ${{ steps.post_counts.outputs.post_counts }}
           COUNT_WARNING: ${{ steps.post_counts.outputs.count_warning }}
         run: |
-          # ステータスアイコン
+          # ステータス判定
           if [ "$FETCH_STATUS" = "success" ] && [ "$ENRICH_STATUS" = "success" ]; then
             OVERALL="success"
           else
             OVERALL="failure"
+          fi
+
+          # notify は補助扱い: 失敗しても overall は変えないが、warning を出す
+          NOTIFY_WARN=""
+          if [ "$NOTIFY_STATUS" = "failure" ]; then
+            NOTIFY_WARN=" ⚠️"
           fi
 
           PRE_TOTAL=$(echo "$PRE_COUNTS" | jq -r '.total // "?"' 2>/dev/null || echo "?")
@@ -289,6 +353,16 @@ jobs:
             echo "| enriched | ${ENRICH_ENRICHED:-?} |"
             echo "| errors | ${ENRICH_ERRORS:-?} |"
             echo ""
+            echo "### watchlist_notify${NOTIFY_WARN}"
+            echo ""
+            echo "| 項目 | 値 |"
+            echo "|------|----|"
+            echo "| Status | \`${NOTIFY_STATUS:-skipped}\` |"
+            echo "| 対象ユーザー | ${NOTIFY_USERS:-0} |"
+            echo "| 対象ウォッチ | ${NOTIFY_WATCHES:-0} |"
+            echo "| 送信成功 | ${NOTIFY_SENT:-0} |"
+            echo "| 送信失敗 | ${NOTIFY_FAILED:-0} |"
+            echo ""
             echo "### DB 件数比較"
             echo ""
             echo "| 指標 | 実行前 | 実行後 |"
@@ -300,6 +374,11 @@ jobs:
             if [ "$COUNT_WARNING" = "true" ]; then
               echo ""
               echo "> **Warning**: 件数が減少しています（${PRE_TOTAL} → ${POST_TOTAL}）"
+            fi
+
+            if [ "$NOTIFY_STATUS" = "failure" ]; then
+              echo ""
+              echo "> **Warning**: ウォッチリスト通知に失敗しました（データ更新自体は成功）"
             fi
 
             echo ""
@@ -316,6 +395,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           FETCH_STATUS: ${{ steps.fetch.outcome }}
           ENRICH_STATUS: ${{ steps.enrich.outcome }}
+          NOTIFY_STATUS: ${{ steps.notify.outcome }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           RUN_ID: ${{ github.run_id }}
         run: |
@@ -329,13 +409,15 @@ jobs:
             "| Run | [#${RUN_ID}](${RUN_URL}) |" \
             "| fetch | \`${FETCH_STATUS}\` |" \
             "| enrich | \`${ENRICH_STATUS}\` |" \
+            "| notify | \`${NOTIFY_STATUS:-skipped}\` |" \
             "| Time (UTC) | ${NOW} |" \
             "" \
             "### 対応手順" \
             "1. 上記 Run リンクからログを確認" \
             "2. SSH 接続 / Docker / DB の状態を \`ops-manual.yml\` の \`status\` で確認" \
             "3. 必要に応じて手動で \`fetch_takuti_prod\` / \`enrich_takuti_prod\` を再実行" \
-            "4. 詳細は \`docs/ops-github-actions-setup.md\` の障害対応セクションを参照")
+            "4. 通知のみ失敗の場合: \`bash scripts/ops/run-task.sh watchlist_notify\` を手動実行" \
+            "5. 詳細は \`docs/ops-github-actions-setup.md\` の障害対応セクションを参照")
 
           # 同タイトルの open issue があれば作成しない
           EXISTING=$(gh issue list --state open --search "in:title [Scheduled Takuti]" --limit 1 --json number --jq '.[0].number // empty' 2>/dev/null || true)

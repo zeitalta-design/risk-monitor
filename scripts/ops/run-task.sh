@@ -51,6 +51,8 @@ if [ -z "$ACTION" ]; then
   echo "  fetch_takuti_prod            - 宅建業 fetch (本実行)"
   echo "  enrich_takuti_dry_run        - 宅建業 enrich (dry-run)"
   echo "  enrich_takuti_prod           - 宅建業 enrich (本実行)"
+  echo "  watchlist_notify_dry_run     - ウォッチ通知 (dry-run)"
+  echo "  watchlist_notify             - ウォッチ通知 (本送信)"
   exit 1
 fi
 
@@ -227,6 +229,22 @@ case "$ACTION" in
     docker exec "$CONTAINER" node /app/web/scripts/enrich-gyosei-shobun-details.js \
       --only-thin --industry=real_estate $EXTRA_ARGS
     post_production
+    ;;
+
+  # ----------------------------------------------------------
+  # ウォッチリスト通知
+  # ----------------------------------------------------------
+  watchlist_notify_dry_run)
+    check_container
+    echo ">>> ウォッチリスト通知 (dry-run) <<<"
+    docker exec "$CONTAINER" node /app/scripts/run-watchlist-notify.js --dry-run
+    ;;
+
+  watchlist_notify)
+    check_container
+    acquire_lock
+    echo ">>> ウォッチリスト通知 (本送信) <<<"
+    docker exec "$CONTAINER" node /app/scripts/run-watchlist-notify.js
     ;;
 
   # ----------------------------------------------------------
