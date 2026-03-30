@@ -28,6 +28,8 @@ const INDUSTRY_LABELS = {
 export default function WatchlistPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [notifying, setNotifying] = useState(false);
+  const [notifyResult, setNotifyResult] = useState(null);
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -76,7 +78,27 @@ export default function WatchlistPage() {
     }
   }
 
+  async function handleNotify(dryRun) {
+    setNotifying(true);
+    setNotifyResult(null);
+    try {
+      const res = await fetch("/api/admin/watchlist/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dryRun }),
+      });
+      const data = await res.json();
+      setNotifyResult(data);
+      if (!dryRun) fetchItems();
+    } catch (err) {
+      setNotifyResult({ success: false, error: err.message });
+    } finally {
+      setNotifying(false);
+    }
+  }
+
   const newCount = items.filter((i) => i.has_new).length;
+  const pendingNotifyCount = items.filter((i) => i.has_pending_notification).length;
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6">
@@ -90,14 +112,59 @@ export default function WatchlistPage() {
             {newCount > 0 && (
               <span className="ml-2 text-red-600 font-bold">（{newCount}件 新着あり）</span>
             )}
+            {pendingNotifyCount > 0 && (
+              <span className="ml-2 text-blue-600">（{pendingNotifyCount}件 未通知）</span>
+            )}
           </p>
         </div>
-        {newCount > 0 && (
-          <button onClick={handleMarkAllSeen} className="text-xs text-gray-500 hover:text-blue-600 border rounded-lg px-3 py-1.5">
-            すべて確認済みにする
+        <div className="flex gap-2">
+          {newCount > 0 && (
+            <button onClick={handleMarkAllSeen} className="text-xs text-gray-500 hover:text-blue-600 border rounded-lg px-3 py-1.5">
+              すべて確認済みにする
+            </button>
+          )}
+          <button
+            onClick={() => handleNotify(true)}
+            disabled={notifying}
+            className="text-xs text-gray-500 hover:text-blue-600 border rounded-lg px-3 py-1.5 disabled:opacity-50"
+          >
+            {notifying ? "確認中..." : "通知チェック（dry run）"}
           </button>
-        )}
+          {pendingNotifyCount > 0 && (
+            <button
+              onClick={() => {
+                if (!confirm(`${pendingNotifyCount}件の未通知ウォッチについてメール通知を送信しますか？`)) return;
+                handleNotify(false);
+              }}
+              disabled={notifying}
+              className="text-xs text-white bg-blue-600 hover:bg-blue-700 rounded-lg px-3 py-1.5 disabled:opacity-50"
+            >
+              {notifying ? "送信中..." : "通知送信"}
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* 通知結果 */}
+      {notifyResult && (
+        <div className={`mb-4 p-3 rounded-lg text-sm ${notifyResult.success ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"}`}>
+          {notifyResult.dryRun ? (
+            <p>
+              <strong>[dry run]</strong> 通知対象: {notifyResult.usersNotified || 0}ユーザー / {notifyResult.watchesNotified || 0}ウォッチ
+              {notifyResult.details?.map((d, i) => (
+                <span key={i} className="block ml-4 text-xs text-gray-600">
+                  → {d.email}: {d.watchCount}件 ({d.subject})
+                </span>
+              ))}
+            </p>
+          ) : notifyResult.success ? (
+            <p>送信完了: {notifyResult.emailsSent}通送信</p>
+          ) : (
+            <p>エラー: {notifyResult.error || `${notifyResult.emailsFailed}件失敗`}</p>
+          )}
+          <button onClick={() => setNotifyResult(null)} className="text-xs underline mt-1">閉じる</button>
+        </div>
+      )}
 
       {loading ? (
         <div className="card p-8 animate-pulse"><div className="h-32 bg-gray-100 rounded" /></div>
@@ -125,6 +192,7 @@ export default function WatchlistPage() {
                 <th className="p-3 text-left text-xs font-bold text-gray-500">最新処分日</th>
                 <th className="p-3 text-left text-xs font-bold text-gray-500">最新処分種別</th>
                 <th className="p-3 text-left text-xs font-bold text-gray-500">状態</th>
+                <th className="p-3 text-left text-xs font-bold text-gray-500">通知</th>
                 <th className="p-3 text-left text-xs font-bold text-gray-500">操作</th>
               </tr>
             </thead>
@@ -164,6 +232,17 @@ export default function WatchlistPage() {
                       </button>
                     ) : (
                       <span className="text-xs text-gray-400">確認済み</span>
+                    )}
+                  </td>
+                  <td className="p-3">
+                    {item.has_pending_notification ? (
+                      <span className="inline-block text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700">
+                        未通知
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400" title={item.last_notified_action_date ? `最終通知: ${item.last_notified_action_date.substring(0, 10)}` : ""}>
+                        {item.last_notified_action_date ? "通知済み" : "—"}
+                      </span>
                     )}
                   </td>
                   <td className="p-3">

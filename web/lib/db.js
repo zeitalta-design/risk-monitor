@@ -1269,6 +1269,7 @@ export function getDb() {
         industry TEXT NOT NULL DEFAULT '',
         note TEXT,
         last_seen_action_date TEXT,
+        last_notified_action_date TEXT,
         created_at TEXT NOT NULL DEFAULT (datetime('now')),
         updated_at TEXT NOT NULL DEFAULT (datetime('now')),
         UNIQUE(user_id, organization_name, industry)
@@ -1276,6 +1277,8 @@ export function getDb() {
     `);
     _db.exec(`CREATE INDEX IF NOT EXISTS idx_watched_orgs_user ON watched_organizations(user_id)`);
     _db.exec(`CREATE INDEX IF NOT EXISTS idx_watched_orgs_name ON watched_organizations(organization_name)`);
+    // 既存テーブルへのカラム追加（冪等）
+    try { _db.exec("ALTER TABLE watched_organizations ADD COLUMN last_notified_action_date TEXT"); } catch {}
   }
   return _db;
 }

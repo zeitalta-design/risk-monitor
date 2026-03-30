@@ -13,8 +13,10 @@ export function addWatch(userId, organizationName, industry = "") {
   const db = getDb();
   try {
     db.prepare(`
-      INSERT INTO watched_organizations (user_id, organization_name, industry, last_seen_action_date)
+      INSERT INTO watched_organizations (user_id, organization_name, industry, last_seen_action_date, last_notified_action_date)
       VALUES (@user_id, @organization_name, @industry,
+        (SELECT MAX(action_date) FROM administrative_actions
+         WHERE organization_name_raw = @organization_name AND industry = @industry),
         (SELECT MAX(action_date) FROM administrative_actions
          WHERE organization_name_raw = @organization_name AND industry = @industry)
       )
@@ -79,6 +81,7 @@ export function listWatches(userId) {
       w.industry,
       w.note,
       w.last_seen_action_date,
+      w.last_notified_action_date,
       w.created_at,
       w.updated_at,
       COUNT(a.id) AS action_count,
@@ -99,7 +102,12 @@ export function listWatches(userId) {
         WHEN MAX(a.action_date) > w.last_seen_action_date THEN 1
         WHEN w.last_seen_action_date IS NULL AND COUNT(a.id) > 0 THEN 1
         ELSE 0
-      END AS has_new
+      END AS has_new,
+      CASE
+        WHEN MAX(a.action_date) > w.last_notified_action_date THEN 1
+        WHEN w.last_notified_action_date IS NULL AND COUNT(a.id) > 0 THEN 1
+        ELSE 0
+      END AS has_pending_notification
     FROM watched_organizations w
     LEFT JOIN administrative_actions a
       ON a.organization_name_raw = w.organization_name AND a.industry = w.industry
