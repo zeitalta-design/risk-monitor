@@ -73,14 +73,23 @@ docker exec "$CONTAINER" node -e "
   // --- events (大会) ---
   console.log('');
   console.log('=== events (大会) ===');
-  const evTotal = db.prepare('SELECT COUNT(*) as c FROM events').get();
-  console.log('  total: ' + evTotal.c);
-  const evBySource = db.prepare(\`
-    SELECT source_name, COUNT(*) as cnt FROM events GROUP BY source_name ORDER BY cnt DESC
-  \`).all();
-  evBySource.forEach(r => {
-    console.log('    ' + (r.source_name || '?').padEnd(20) + ' ' + r.cnt);
-  });
+  try {
+    const evTotal = db.prepare('SELECT COUNT(*) as c FROM events').get();
+    console.log('  total: ' + evTotal.c);
+    // カラム存在チェックしてからソース別集計
+    const cols = db.prepare(\"PRAGMA table_info(events)\").all().map(c => c.name);
+    if (cols.includes('source_name')) {
+      const evBySource = db.prepare('SELECT source_name, COUNT(*) as cnt FROM events GROUP BY source_name ORDER BY cnt DESC').all();
+      evBySource.forEach(r => console.log('    ' + (r.source_name || '?').padEnd(20) + ' ' + r.cnt));
+    } else if (cols.includes('source')) {
+      const evBySource = db.prepare('SELECT source, COUNT(*) as cnt FROM events GROUP BY source ORDER BY cnt DESC').all();
+      evBySource.forEach(r => console.log('    ' + (r.source || '?').padEnd(20) + ' ' + r.cnt));
+    } else {
+      console.log('  (source column not found, skipping breakdown)');
+    }
+  } catch (e) {
+    console.log('  (events table query failed: ' + e.message + ')');
+  }
 
   db.close();
   console.log('');
