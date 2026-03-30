@@ -316,22 +316,26 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           FETCH_STATUS: ${{ steps.fetch.outcome }}
           ENRICH_STATUS: ${{ steps.enrich.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RUN_ID: ${{ github.run_id }}
         run: |
           TITLE="[Scheduled Takuti] 月次実行失敗 $(date -u '+%Y-%m-%d')"
-          BODY="## Scheduled Takuti 月次実行失敗
-
-| 項目 | 値 |
-|------|----|
-| Run | [#${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |
-| fetch | \`${FETCH_STATUS}\` |
-| enrich | \`${ENRICH_STATUS}\` |
-| Time (UTC) | $(date -u '+%Y-%m-%d %H:%M:%S') |
-
-### 対応手順
-1. 上記 Run リンクからログを確認
-2. SSH 接続 / Docker / DB の状態を \`ops-manual.yml\` の \`status\` で確認
-3. 必要に応じて手動で \`fetch_takuti_prod\` / \`enrich_takuti_prod\` を再実行
-4. 詳細は \`docs/ops-github-actions-setup.md\` の障害対応セクションを参照"
+          NOW=$(date -u '+%Y-%m-%d %H:%M:%S')
+          BODY=$(printf '%s\n' \
+            "## Scheduled Takuti 月次実行失敗" \
+            "" \
+            "| 項目 | 値 |" \
+            "|------|----|" \
+            "| Run | [#${RUN_ID}](${RUN_URL}) |" \
+            "| fetch | \`${FETCH_STATUS}\` |" \
+            "| enrich | \`${ENRICH_STATUS}\` |" \
+            "| Time (UTC) | ${NOW} |" \
+            "" \
+            "### 対応手順" \
+            "1. 上記 Run リンクからログを確認" \
+            "2. SSH 接続 / Docker / DB の状態を \`ops-manual.yml\` の \`status\` で確認" \
+            "3. 必要に応じて手動で \`fetch_takuti_prod\` / \`enrich_takuti_prod\` を再実行" \
+            "4. 詳細は \`docs/ops-github-actions-setup.md\` の障害対応セクションを参照")
 
           # 同タイトルの open issue があれば作成しない
           EXISTING=$(gh issue list --state open --search "in:title [Scheduled Takuti]" --limit 1 --json number --jq '.[0].number // empty' 2>/dev/null || true)
