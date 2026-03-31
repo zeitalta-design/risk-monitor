@@ -61,16 +61,14 @@ export default function Header() {
       {/* メインヘッダー */}
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         {/* 左: ロゴ */}
-        <Link href="/" className="flex items-center shrink-0 group">
-          <Image
-            src="/banner_logo.png"
-            alt="大会ナビ"
-            width={160}
-            height={54}
-            style={{ height: "40px", width: "auto" }}
-            className="group-hover:opacity-90 transition-opacity"
-            priority
-          />
+        <Link href="/" className="flex items-center shrink-0 group gap-2">
+          <span className="text-2xl" aria-hidden="true">🧭</span>
+          <span className="font-extrabold text-lg tracking-tight group-hover:opacity-80 transition-opacity" style={{ color: "#1A3F6B" }}>
+            大海ナビ
+          </span>
+          <span className="hidden sm:inline text-[10px] font-medium text-gray-400 ml-0.5 mt-0.5">
+            TAIKAI NAVI
+          </span>
         </Link>
 
         {/* 中央: ドメインナビ（PC） */}
@@ -100,8 +98,8 @@ export default function Header() {
             </>
           )}
           {isAdmin && (
-            <Link href="/admin/ops" className="text-orange-600 hover:text-orange-700 transition-colors font-bold text-xs border border-orange-300 rounded px-2.5 py-1">
-              運営管理
+            <Link href="/admin/ops" className="text-gray-400 hover:text-gray-600 transition-colors font-medium text-[11px] border border-gray-200 rounded px-2 py-0.5">
+              管理
             </Link>
           )}
           <div className="flex items-center gap-2 ml-1 pl-3 border-l border-gray-200">
@@ -165,7 +163,7 @@ export default function Header() {
               <MobileNavLink href="/notifications" label="通知一覧" onClick={() => setMenuOpen(false)} />
               <MobileNavLink href="/notification-settings" label="通知設定" onClick={() => setMenuOpen(false)} />
               {isAdmin && (
-                <MobileNavLink href="/admin/ops" label="運営管理" onClick={() => setMenuOpen(false)} className="text-orange-600" />
+                <MobileNavLink href="/admin/ops" label="管理" onClick={() => setMenuOpen(false)} className="text-gray-400" />
               )}
               <div className="pt-2 border-t border-gray-100 flex items-center justify-between">
                 <span className="text-xs text-gray-400">{user.name || user.email}</span>

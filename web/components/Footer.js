@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 
 export default function Footer() {
   return (
@@ -7,15 +6,10 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* 上段: ロゴ + ナビリンク */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <Image
-              src="/banner_logo.png"
-              alt="大会ナビ"
-              width={120}
-              height={28}
-              style={{ height: "28px", width: "auto" }}
-            />
-            <span className="text-xs text-gray-400">スポーツ大会検索</span>
+          <div className="flex items-center gap-2">
+            <span className="text-lg" aria-hidden="true">🧭</span>
+            <span className="font-bold text-sm" style={{ color: "#1A3F6B" }}>大海ナビ</span>
+            <span className="text-xs text-gray-400 ml-1">公開データ / 業務DBカタログ</span>
           </div>
           <nav className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-gray-500">
             <Link href="/terms" className="hover:text-gray-800 transition-colors">利用規約</Link>
@@ -30,7 +24,7 @@ export default function Footer() {
 
         {/* 下段: コピーライト */}
         <div className="mt-6 pt-4 border-t border-gray-100">
-          <p className="text-[11px] text-gray-400">&copy; 2026 大会ナビ (TAIKAI NAVI)</p>
+          <p className="text-[11px] text-gray-400">&copy; 2026 大海ナビ (TAIKAI NAVI)</p>
         </div>
       </div>
     </footer>

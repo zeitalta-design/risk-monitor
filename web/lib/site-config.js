@@ -5,21 +5,21 @@
 
 export const siteConfig = {
   /** サービス名（日本語） */
-  siteName: "大会ナビ",
+  siteName: "大海ナビ",
   /** サービス名（英語） */
   siteNameEn: "TAIKAI NAVI",
   /** サービス説明 */
-  siteDescription: "行政公開情報・許認可・産廃・入札・リコール・補助金を横断検索できるデータポータル",
+  siteDescription: "公開データ / 業務DBカタログ — インターネットという大海原から、業務で使える情報を見つけやすく整理しています",
   /** キャッチコピー */
-  tagline: "公開データを、もっと見やすく",
+  tagline: "公開データ / 業務DBカタログ",
   /** サイトURL */
   siteUrl: process.env.APP_BASE_URL || "http://localhost:3001",
   /** ロゴ画像パス */
   logoImage: "/banner_logo.png",
   /** メール送信者名 */
-  mailFrom: process.env.MAIL_FROM || "大会ナビ <noreply@taikainavi.jp>",
+  mailFrom: process.env.MAIL_FROM || "大海ナビ <noreply@taikainavi.jp>",
   /** メール件名プレフィックス */
-  emailPrefix: "【大会ナビ】",
+  emailPrefix: "【大海ナビ】",
   /** メールフッター署名 */
-  emailSignature: "大会ナビ — 公開データポータル",
+  emailSignature: "大海ナビ — 公開データ / 業務DBカタログ",
 };
