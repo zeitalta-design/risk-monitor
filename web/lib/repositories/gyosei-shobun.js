@@ -197,6 +197,41 @@ export function getAdministrativeActionStats({
   return { totalCount, countsByYear, countsByOrganization, countsByIndustry, countsByActionType, countsByPrefecture };
 }
 
+/**
+ * 関連事案を取得（同一事業者 > 同一業種+同一種別 > 同一業種 > 同一都道府県 の優先度）
+ */
+export function getRelatedAdministrativeActions(currentItem, limit = 5) {
+  const db = getDb();
+  return db
+    .prepare(`
+      SELECT *, (
+        CASE WHEN organization_name_raw = @org THEN 100 ELSE 0 END
+        + CASE WHEN industry = @industry AND industry != '' THEN 20 ELSE 0 END
+        + CASE WHEN action_type = @action_type AND action_type != '' THEN 10 ELSE 0 END
+        + CASE WHEN prefecture = @prefecture AND prefecture != '' THEN 5 ELSE 0 END
+      ) AS relevance_score
+      FROM administrative_actions
+      WHERE is_published = 1
+        AND id != @id
+        AND (
+          organization_name_raw = @org
+          OR industry = @industry
+          OR action_type = @action_type
+          OR prefecture = @prefecture
+        )
+      ORDER BY relevance_score DESC, action_date DESC NULLS LAST
+      LIMIT @limit
+    `)
+    .all({
+      id: currentItem.id,
+      org: currentItem.organization_name_raw || "",
+      industry: currentItem.industry || "",
+      action_type: currentItem.action_type || "",
+      prefecture: currentItem.prefecture || "",
+      limit,
+    });
+}
+
 export function getAdministrativeActionBySlug(slug) {
   const db = getDb();
   return db.prepare("SELECT * FROM administrative_actions WHERE slug = ? AND is_published = 1").get(slug);

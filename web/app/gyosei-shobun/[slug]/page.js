@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAdministrativeActionBySlug } from "@/lib/repositories/gyosei-shobun";
+import { getAdministrativeActionBySlug, getRelatedAdministrativeActions } from "@/lib/repositories/gyosei-shobun";
 import { gyoseiShobunConfig } from "@/lib/gyosei-shobun-config";
 import { siteConfig } from "@/lib/site-config";
 
@@ -47,6 +47,7 @@ export default async function GyoseiShobunDetailPage({ params }) {
   const industryInfo = gyoseiShobunConfig.industries.find((i) => i.slug === item.industry);
   const authorityLevel = gyoseiShobunConfig.authorityLevels.find((l) => l.value === item.authority_level);
   const tc = ACTION_TYPE_COLORS[item.action_type] || ACTION_TYPE_COLORS.other;
+  const relatedItems = getRelatedAdministrativeActions(item, 5);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -201,6 +202,46 @@ export default async function GyoseiShobunDetailPage({ params }) {
           <p className="text-xs text-gray-400 text-right mb-6">
             最終更新: {item.updated_at.substring(0, 10)}
           </p>
+        )}
+
+        {/* ──── 関連事案 ──── */}
+        {relatedItems.length > 0 && (
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6 shadow-sm">
+            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">関連する行政処分</h2>
+            <div className="space-y-2.5">
+              {relatedItems.map((ri) => {
+                const riAction = gyoseiShobunConfig.actionTypes.find((t) => t.slug === ri.action_type);
+                const riIndustry = gyoseiShobunConfig.industries.find((i) => i.slug === ri.industry);
+                const riColor = ACTION_TYPE_COLORS[ri.action_type] || ACTION_TYPE_COLORS.other;
+                return (
+                  <Link
+                    key={ri.id}
+                    href={`/gyosei-shobun/${ri.slug}`}
+                    className="flex items-start gap-2.5 p-3 rounded-xl border border-gray-100 hover:border-gray-300 hover:shadow-sm transition-all"
+                  >
+                    <span className="text-lg shrink-0 mt-0.5">{riAction?.icon || "📄"}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                        <span className="text-sm font-bold text-gray-900 truncate">{ri.organization_name_raw}</span>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded border ${riColor.bg} ${riColor.text} ${riColor.border}`}>
+                          {riAction?.label || ri.action_type}
+                        </span>
+                        {riIndustry && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">
+                            {riIndustry.label}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-[11px] text-gray-400">
+                        {ri.action_date && <span>{ri.action_date}</span>}
+                        {ri.prefecture && <span>{ri.prefecture}</span>}
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
         )}
 
         {/* ──── 導線 ──── */}
