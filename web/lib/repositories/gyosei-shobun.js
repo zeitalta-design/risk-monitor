@@ -199,35 +199,56 @@ export function getAdministrativeActionStats({
 
 /**
  * 前後事案を取得（action_date DESC, id DESC の並びで隣接1件ずつ）
+ * filters が渡された場合、その条件に一致する集合内で前後判定する
  */
-export function getAdjacentAdministrativeActions(currentItem) {
+export function getAdjacentAdministrativeActions(currentItem, {
+  keyword = "",
+  action_type = "",
+  prefecture = "",
+  industry = "",
+  year = "",
+  organization = "",
+} = {}) {
   const db = getDb();
   const date = currentItem.action_date || "";
   const id = currentItem.id;
 
-  // 前の事案（並び順で1つ上 = より新しい or 同日でidが大きい）
+  const where = ["is_published = 1"];
+  const params = { date, id };
+
+  if (keyword) {
+    where.push("(organization_name_raw LIKE @kw OR summary LIKE @kw OR detail LIKE @kw OR authority_name LIKE @kw)");
+    params.kw = `%${keyword}%`;
+  }
+  if (action_type) { where.push("action_type = @action_type"); params.action_type = action_type; }
+  if (prefecture) { where.push("prefecture = @prefecture"); params.prefecture = prefecture; }
+  if (industry) { where.push("industry = @industry"); params.industry = industry; }
+  if (year) { where.push("SUBSTR(action_date, 1, 4) = @year"); params.year = year; }
+  if (organization) { where.push("organization_name_raw = @organization"); params.organization = organization; }
+
+  const filterClause = where.join(" AND ");
+
   const prev = db
     .prepare(`
       SELECT id, slug, organization_name_raw, action_type, action_date, industry, prefecture
       FROM administrative_actions
-      WHERE is_published = 1
+      WHERE ${filterClause}
         AND (action_date > @date OR (action_date = @date AND id > @id))
       ORDER BY action_date ASC, id ASC
       LIMIT 1
     `)
-    .get({ date, id });
+    .get(params);
 
-  // 次の事案（並び順で1つ下 = より古い or 同日でidが小さい）
   const next = db
     .prepare(`
       SELECT id, slug, organization_name_raw, action_type, action_date, industry, prefecture
       FROM administrative_actions
-      WHERE is_published = 1
+      WHERE ${filterClause}
         AND (action_date < @date OR (action_date = @date AND id < @id))
       ORDER BY action_date DESC, id DESC
       LIMIT 1
     `)
-    .get({ date, id });
+    .get(params);
 
   return { prev: prev || null, next: next || null };
 }

@@ -38,17 +38,35 @@ const ACTION_TYPE_COLORS = {
 
 // ─── ページ本体 ─────────────────────
 
-export default async function GyoseiShobunDetailPage({ params }) {
+const FILTER_KEYS = ["keyword", "action_type", "industry", "prefecture", "year", "organization"];
+
+function buildFilterQuery(sp) {
+  const f = {};
+  for (const k of FILTER_KEYS) { const v = sp[k] || sp?.get?.(k) || ""; if (v) f[k] = v; }
+  return f;
+}
+
+function appendFilterQuery(basePath, filters) {
+  const params = new URLSearchParams();
+  for (const k of FILTER_KEYS) { if (filters[k]) params.set(k, filters[k]); }
+  const qs = params.toString();
+  return qs ? `${basePath}?${qs}` : basePath;
+}
+
+export default async function GyoseiShobunDetailPage({ params, searchParams }) {
   const { slug } = await params;
+  const sp = await searchParams;
   const item = getAdministrativeActionBySlug(slug);
   if (!item) notFound();
 
+  const filters = buildFilterQuery(sp);
   const actionType = gyoseiShobunConfig.actionTypes.find((t) => t.slug === item.action_type);
   const industryInfo = gyoseiShobunConfig.industries.find((i) => i.slug === item.industry);
   const authorityLevel = gyoseiShobunConfig.authorityLevels.find((l) => l.value === item.authority_level);
   const tc = ACTION_TYPE_COLORS[item.action_type] || ACTION_TYPE_COLORS.other;
   const relatedItems = getRelatedAdministrativeActions(item, 5);
-  const { prev, next } = getAdjacentAdministrativeActions(item);
+  const { prev, next } = getAdjacentAdministrativeActions(item, filters);
+  const hasFilterQuery = Object.keys(filters).length > 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -278,12 +296,12 @@ export default async function GyoseiShobunDetailPage({ params }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
             {prev ? (
               <Link
-                href={`/gyosei-shobun/${prev.slug}`}
+                href={appendFilterQuery(`/gyosei-shobun/${prev.slug}`, filters)}
                 className="flex items-start gap-2.5 p-4 bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all"
               >
                 <span className="text-gray-300 text-lg shrink-0 mt-0.5">←</span>
                 <div className="min-w-0">
-                  <span className="text-[11px] text-gray-400 block mb-1">前の事案</span>
+                  <span className="text-[11px] text-gray-400 block mb-1">前の事案{hasFilterQuery ? "（絞り込み内）" : ""}</span>
                   <span className="text-sm font-bold text-gray-900 block truncate">{prev.organization_name_raw}</span>
                   <div className="flex items-center gap-2 text-[11px] text-gray-400 mt-0.5">
                     {prev.action_date && <span>{prev.action_date}</span>}
@@ -296,11 +314,11 @@ export default async function GyoseiShobunDetailPage({ params }) {
             )}
             {next ? (
               <Link
-                href={`/gyosei-shobun/${next.slug}`}
+                href={appendFilterQuery(`/gyosei-shobun/${next.slug}`, filters)}
                 className="flex items-start gap-2.5 p-4 bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all sm:text-right"
               >
                 <div className="flex-1 min-w-0">
-                  <span className="text-[11px] text-gray-400 block mb-1">次の事案</span>
+                  <span className="text-[11px] text-gray-400 block mb-1">次の事案{hasFilterQuery ? "（絞り込み内）" : ""}</span>
                   <span className="text-sm font-bold text-gray-900 block truncate">{next.organization_name_raw}</span>
                   <div className="flex items-center gap-2 text-[11px] text-gray-400 mt-0.5 sm:justify-end">
                     {next.action_date && <span>{next.action_date}</span>}
@@ -318,7 +336,7 @@ export default async function GyoseiShobunDetailPage({ params }) {
         {/* ──── 導線 ──── */}
         <div className="flex justify-center py-4">
           <Link
-            href="/gyosei-shobun"
+            href={appendFilterQuery("/gyosei-shobun", filters)}
             className="inline-flex items-center gap-2 px-6 py-3 border border-gray-200 text-gray-600 rounded-xl hover:bg-white hover:border-gray-300 hover:shadow-sm transition-all text-sm font-medium"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
