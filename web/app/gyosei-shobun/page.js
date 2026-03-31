@@ -174,6 +174,11 @@ export default function GyoseiShobunListPage() {
           </div>
         </div>
 
+        {/* 適用条件チップ */}
+        {hasFilters && (
+          <ActiveFilterChips filters={filters} onRemove={updateFilter} />
+        )}
+
         {/* 統計ダッシュボード */}
         {!loading && stats && (
           <StatsDashboard stats={stats} hasFilters={hasFilters} filters={filters} onFilterChange={updateFilter} />
@@ -558,5 +563,60 @@ function PaginationButton({ onClick, disabled, children, ...props }) {
     >
       {children}
     </button>
+  );
+}
+
+// ─── 適用条件チップ ─────────────────────
+
+const FILTER_CHIP_DEFS = [
+  { key: "keyword", label: "キーワード" },
+  { key: "action_type", label: "処分種別", resolve: (v) => gyoseiShobunConfig.actionTypes.find((t) => t.slug === v)?.label || v },
+  { key: "industry", label: "業種", resolve: (v) => gyoseiShobunConfig.industries.find((i) => i.slug === v)?.label || v },
+  { key: "prefecture", label: "都道府県" },
+  { key: "year", label: "年度" },
+  { key: "organization", label: "事業者" },
+];
+
+function ActiveFilterChips({ filters, onRemove }) {
+  const chips = FILTER_CHIP_DEFS.filter((d) => filters[d.key]).map((d) => ({
+    key: d.key,
+    label: d.label,
+    displayValue: d.resolve ? d.resolve(filters[d.key]) : filters[d.key],
+  }));
+
+  if (chips.length === 0) return null;
+
+  const clearAll = () => {
+    FILTER_CHIP_DEFS.forEach((d) => onRemove(d.key, ""));
+  };
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap mb-4">
+      <span className="text-[11px] text-gray-400 shrink-0">適用中:</span>
+      {chips.map((chip) => (
+        <span
+          key={chip.key}
+          className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-2.5 py-1 max-w-[240px]"
+        >
+          <span className="text-blue-400 font-medium shrink-0">{chip.label}:</span>
+          <span className="truncate" title={chip.displayValue}>{chip.displayValue}</span>
+          <button
+            onClick={() => onRemove(chip.key, "")}
+            className="ml-0.5 shrink-0 w-4 h-4 flex items-center justify-center rounded-full text-blue-400 hover:bg-blue-200 hover:text-blue-700 transition-colors"
+            aria-label={`${chip.label}の条件を解除`}
+          >
+            ×
+          </button>
+        </span>
+      ))}
+      {chips.length > 1 && (
+        <button
+          onClick={clearAll}
+          className="text-[11px] text-gray-400 hover:text-gray-600 underline underline-offset-2 transition-colors"
+        >
+          すべて解除
+        </button>
+      )}
+    </div>
   );
 }
