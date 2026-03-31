@@ -198,6 +198,41 @@ export function getAdministrativeActionStats({
 }
 
 /**
+ * 前後事案を取得（action_date DESC, id DESC の並びで隣接1件ずつ）
+ */
+export function getAdjacentAdministrativeActions(currentItem) {
+  const db = getDb();
+  const date = currentItem.action_date || "";
+  const id = currentItem.id;
+
+  // 前の事案（並び順で1つ上 = より新しい or 同日でidが大きい）
+  const prev = db
+    .prepare(`
+      SELECT id, slug, organization_name_raw, action_type, action_date, industry, prefecture
+      FROM administrative_actions
+      WHERE is_published = 1
+        AND (action_date > @date OR (action_date = @date AND id > @id))
+      ORDER BY action_date ASC, id ASC
+      LIMIT 1
+    `)
+    .get({ date, id });
+
+  // 次の事案（並び順で1つ下 = より古い or 同日でidが小さい）
+  const next = db
+    .prepare(`
+      SELECT id, slug, organization_name_raw, action_type, action_date, industry, prefecture
+      FROM administrative_actions
+      WHERE is_published = 1
+        AND (action_date < @date OR (action_date = @date AND id < @id))
+      ORDER BY action_date DESC, id DESC
+      LIMIT 1
+    `)
+    .get({ date, id });
+
+  return { prev: prev || null, next: next || null };
+}
+
+/**
  * 関連事案を取得（同一事業者 > 同一業種+同一種別 > 同一業種 > 同一都道府県 の優先度）
  */
 export function getRelatedAdministrativeActions(currentItem, limit = 5) {

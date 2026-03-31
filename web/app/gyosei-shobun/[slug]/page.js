@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAdministrativeActionBySlug, getRelatedAdministrativeActions } from "@/lib/repositories/gyosei-shobun";
+import { getAdministrativeActionBySlug, getRelatedAdministrativeActions, getAdjacentAdministrativeActions } from "@/lib/repositories/gyosei-shobun";
 import { gyoseiShobunConfig } from "@/lib/gyosei-shobun-config";
 import { siteConfig } from "@/lib/site-config";
 
@@ -48,6 +48,7 @@ export default async function GyoseiShobunDetailPage({ params }) {
   const authorityLevel = gyoseiShobunConfig.authorityLevels.find((l) => l.value === item.authority_level);
   const tc = ACTION_TYPE_COLORS[item.action_type] || ACTION_TYPE_COLORS.other;
   const relatedItems = getRelatedAdministrativeActions(item, 5);
+  const { prev, next } = getAdjacentAdministrativeActions(item);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -269,6 +270,48 @@ export default async function GyoseiShobunDetailPage({ params }) {
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* ──── 前後事案 ──── */}
+        {(prev || next) && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+            {prev ? (
+              <Link
+                href={`/gyosei-shobun/${prev.slug}`}
+                className="flex items-start gap-2.5 p-4 bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all"
+              >
+                <span className="text-gray-300 text-lg shrink-0 mt-0.5">←</span>
+                <div className="min-w-0">
+                  <span className="text-[11px] text-gray-400 block mb-1">前の事案</span>
+                  <span className="text-sm font-bold text-gray-900 block truncate">{prev.organization_name_raw}</span>
+                  <div className="flex items-center gap-2 text-[11px] text-gray-400 mt-0.5">
+                    {prev.action_date && <span>{prev.action_date}</span>}
+                    <span>{gyoseiShobunConfig.actionTypes.find((t) => t.slug === prev.action_type)?.label || prev.action_type}</span>
+                  </div>
+                </div>
+              </Link>
+            ) : (
+              <div />
+            )}
+            {next ? (
+              <Link
+                href={`/gyosei-shobun/${next.slug}`}
+                className="flex items-start gap-2.5 p-4 bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all sm:text-right"
+              >
+                <div className="flex-1 min-w-0">
+                  <span className="text-[11px] text-gray-400 block mb-1">次の事案</span>
+                  <span className="text-sm font-bold text-gray-900 block truncate">{next.organization_name_raw}</span>
+                  <div className="flex items-center gap-2 text-[11px] text-gray-400 mt-0.5 sm:justify-end">
+                    {next.action_date && <span>{next.action_date}</span>}
+                    <span>{gyoseiShobunConfig.actionTypes.find((t) => t.slug === next.action_type)?.label || next.action_type}</span>
+                  </div>
+                </div>
+                <span className="text-gray-300 text-lg shrink-0 mt-0.5">→</span>
+              </Link>
+            ) : (
+              <div />
+            )}
           </div>
         )}
 
