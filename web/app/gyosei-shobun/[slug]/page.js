@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { getAdministrativeActionBySlug, getRelatedAdministrativeActions, getAdjacentAdministrativeActions } from "@/lib/repositories/gyosei-shobun";
 import { gyoseiShobunConfig } from "@/lib/gyosei-shobun-config";
 import { siteConfig } from "@/lib/site-config";
+import { calcRiskScore } from "@/lib/risk-score";
+import RiskBadge from "@/components/RiskBadge";
 
 // ─── 動的 metadata ─────────────────────
 
@@ -65,6 +67,7 @@ export default async function GyoseiShobunDetailPage({ params, searchParams }) {
   const authorityLevel = gyoseiShobunConfig.authorityLevels.find((l) => l.value === item.authority_level);
   const tc = ACTION_TYPE_COLORS[item.action_type] || ACTION_TYPE_COLORS.other;
   const relatedItems = getRelatedAdministrativeActions(item, 5);
+  const riskData = calcRiskScore(item.organization_name_raw, item.industry || "");
   const { prev, next } = getAdjacentAdministrativeActions(item, filters);
   const hasFilterQuery = Object.keys(filters).length > 0;
 
@@ -103,6 +106,7 @@ export default async function GyoseiShobunDetailPage({ params, searchParams }) {
                       {industryInfo.icon} {industryInfo.label}
                     </span>
                   )}
+                  <RiskBadge score={riskData.score} level={riskData.level} label={riskData.label} showScore size="lg" />
                 </div>
               </div>
             </div>
@@ -130,6 +134,66 @@ export default async function GyoseiShobunDetailPage({ params, searchParams }) {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* ──── リスクサマリー + ウォッチ ──── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          {/* リスクサマリー */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">リスクサマリー</h2>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500">危険度スコア</span>
+                <span className="font-bold text-gray-900">{riskData.score} pt</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500">総処分件数</span>
+                <span className="font-bold text-gray-900">{riskData.totalCount ?? 0} 件</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500">過去3年以内</span>
+                <span className={`font-bold ${(riskData.recentThreeYearsCount ?? 0) >= 2 ? "text-orange-600" : "text-gray-900"}`}>
+                  {riskData.recentThreeYearsCount ?? 0} 件
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500">直近180日以内</span>
+                <span className={`font-bold ${(riskData.recent180Count ?? 0) > 0 ? "text-red-600" : "text-gray-400"}`}>
+                  {(riskData.recent180Count ?? 0) > 0 ? `${riskData.recent180Count} 件` : "なし"}
+                </span>
+              </div>
+              {riskData.latestActionDate && (
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-500">最新処分日</span>
+                  <span className="font-medium text-gray-700">{riskData.latestActionDate}</span>
+                </div>
+              )}
+            </div>
+            <p className="text-[11px] text-gray-400 mt-3 border-t border-gray-100 pt-2">
+              過去の行政処分記録をもとに算出しています。取引前の参考にご活用ください。
+            </p>
+          </div>
+
+          {/* ウォッチ登録案内 */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm flex flex-col justify-between">
+            <div>
+              <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">監視登録</h2>
+              <p className="text-sm text-gray-600 leading-relaxed mb-4">
+                この事業者に新しい行政処分が追加された際に通知を受け取れます。
+                取引先・競合として継続監視したい場合にご利用ください。
+              </p>
+            </div>
+            <Link
+              href={`/risk-watch?add=${encodeURIComponent(item.organization_name_raw)}&industry=${encodeURIComponent(item.industry || "")}`}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              ウォッチ登録する
+            </Link>
+            <p className="text-[11px] text-gray-400 mt-2 text-center">無料で最大3件まで登録可能</p>
           </div>
         </div>
 
