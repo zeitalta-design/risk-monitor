@@ -31,6 +31,10 @@ export default function RiskAlertsPage() {
     setLoading(true);
     try {
       const res = await fetch("/api/risk-alerts");
+      if (res.status === 401) {
+        window.location.href = "/login?next=/risk-alerts";
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         setItems(data.items || []);

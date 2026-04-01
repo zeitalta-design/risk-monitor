@@ -37,6 +37,10 @@ export default function RiskWatchPage() {
     setLoading(true);
     try {
       const res = await fetch("/api/watchlist");
+      if (res.status === 401) {
+        window.location.href = "/login?next=/risk-watch";
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         setItems(data.items || []);
@@ -84,12 +88,16 @@ export default function RiskWatchPage() {
 
   const handleRemove = async (item) => {
     if (!confirm(`「${item.organization_name}」のウォッチを解除しますか？`)) return;
-    await fetch("/api/watchlist", {
+    const res = await fetch("/api/watchlist", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: item.id }),
     });
-    setItems((prev) => prev.filter((i) => i.id !== item.id));
+    if (res.status === 401) {
+      window.location.href = "/login?next=/risk-watch";
+      return;
+    }
+    if (res.ok) setItems((prev) => prev.filter((i) => i.id !== item.id));
   };
 
   const sortedItems = [...items].sort((a, b) => {

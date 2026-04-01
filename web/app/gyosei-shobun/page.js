@@ -83,18 +83,26 @@ export default function GyoseiShobunListPage() {
     const isWatched = watchedKeys.has(key);
     try {
       if (isWatched) {
-        await fetch("/api/watchlist", {
+        const res = await fetch("/api/watchlist", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ organization_name: item.organization_name_raw, industry: item.industry || "" }),
         });
-        setWatchedKeys((prev) => { const s = new Set(prev); s.delete(key); return s; });
+        if (res.status === 401) {
+          window.location.href = "/login?next=/gyosei-shobun";
+          return;
+        }
+        if (res.ok) setWatchedKeys((prev) => { const s = new Set(prev); s.delete(key); return s; });
       } else {
         const res = await fetch("/api/watchlist", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ organization_name: item.organization_name_raw, industry: item.industry || "" }),
         });
+        if (res.status === 401) {
+          window.location.href = "/login?next=/gyosei-shobun";
+          return;
+        }
         if (res.status === 403) {
           alert("ウォッチ登録は最大3件までです。");
         } else if (res.ok) {
