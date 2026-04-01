@@ -161,7 +161,7 @@ function RiskWatchPage() {
             <span className="text-gray-400">並び替え:</span>
             {[
               { value: "newest", label: "新着順" },
-              { value: "risk",   label: "危険度順" },
+              { value: "risk",   label: "確認優先度順" },
               { value: "registered", label: "登録日順" },
             ].map((s) => (
               <button

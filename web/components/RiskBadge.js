@@ -14,7 +14,7 @@ export default function RiskBadge({ score, level, label, showScore = false, size
 
   return (
     <span className={`inline-flex items-center gap-1 rounded border ${cls} ${sizeClass}`}>
-      <span>危険度: {label}</span>
+      <span>確認優先度: {label}</span>
       {showScore && <span className="opacity-60">({score})</span>}
     </span>
   );

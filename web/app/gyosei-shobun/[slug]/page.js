@@ -141,10 +141,10 @@ export default async function GyoseiShobunDetailPage({ params, searchParams }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
           {/* リスクサマリー */}
           <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
-            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">リスクサマリー</h2>
+            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">行政処分ベースの確認優先度</h2>
             <div className="space-y-2 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-gray-500">危険度スコア</span>
+                <span className="text-gray-500">確認優先度スコア</span>
                 <span className="font-bold text-gray-900">{riskData.score} pt</span>
               </div>
               <div className="flex items-center justify-between">
@@ -171,7 +171,7 @@ export default async function GyoseiShobunDetailPage({ params, searchParams }) {
               )}
             </div>
             <p className="text-[11px] text-gray-400 mt-3 border-t border-gray-100 pt-2">
-              過去の行政処分記録をもとに算出しています。取引前の参考にご活用ください。
+              本表示は、公開された行政処分情報の件数・類型・時期をもとに自動算出した参考情報です。当社が事業者の違法性、信用力、または取引可否を断定するものではありません。
             </p>
           </div>
 

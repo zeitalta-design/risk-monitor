@@ -314,7 +314,6 @@ function GyoseiShobunListPage() {
             {items.map((item) => {
               const tc = ACTION_TYPE_COLORS[item.action_type] || ACTION_TYPE_COLORS.other;
               const actionLabel = gyoseiShobunConfig.actionTypes.find((t) => t.slug === item.action_type)?.label || item.action_type;
-              const actionIcon = gyoseiShobunConfig.actionTypes.find((t) => t.slug === item.action_type)?.icon || "📄";
               const industryLabel = gyoseiShobunConfig.industries.find((i) => i.slug === item.industry)?.label || "";
 
               const watchKey = `${item.organization_name_raw}::${item.industry || ""}`;
@@ -327,9 +326,8 @@ function GyoseiShobunListPage() {
                   href={`/gyosei-shobun/${item.slug}`}
                   className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 block hover:shadow-md hover:border-gray-300 transition-all"
                 >
-                  {/* 上段: 事業者名 + 処分種別バッジ + ウォッチ・危険度 */}
-                  <div className="flex items-start gap-2.5 mb-2">
-                    <span className="text-xl flex-shrink-0 mt-0.5">{actionIcon}</span>
+                  {/* 上段: 事業者名 + 処分種別バッジ + ウォッチ・確認優先度 */}
+                  <div className="flex items-start mb-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <h3 className="text-base font-bold text-gray-900 leading-snug break-words">{item.organization_name_raw}</h3>
@@ -361,7 +359,7 @@ function GyoseiShobunListPage() {
                     </div>
                   </div>
                   {/* 中段: 処分日・行政庁・都道府県 */}
-                  <div className="flex items-center gap-x-4 gap-y-1 flex-wrap text-xs mb-2 ml-8">
+                  <div className="flex items-center gap-x-4 gap-y-1 flex-wrap text-xs mb-2">
                     {item.action_date && (
                       <span className="text-gray-700 font-medium">{item.action_date}</span>
                     )}
@@ -374,7 +372,7 @@ function GyoseiShobunListPage() {
                   </div>
                   {/* 下段: 概要 */}
                   {item.summary && (
-                    <p className="text-[13px] text-gray-500 leading-relaxed line-clamp-2 ml-8">{item.summary}</p>
+                    <p className="text-[13px] text-gray-500 leading-relaxed line-clamp-2">{item.summary}</p>
                   )}
                 </Link>
               );
