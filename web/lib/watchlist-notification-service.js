@@ -192,7 +192,7 @@ function insertRiskAlertsForWatch(userId, watchId, organizationName, industry, l
   const db = getDb();
 
   const dateFilter = lastNotifiedDate
-    ? `AND a.action_date > '${lastNotifiedDate.replace(/'/g, "''")}'`
+    ? `AND action_date >= '${lastNotifiedDate.replace(/'/g, "''")}'`
     : "";
 
   const newActions = db.prepare(`
