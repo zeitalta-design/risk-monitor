@@ -1503,6 +1503,14 @@ const SANPAI_CENTRAL_SOURCES = [
   prefSource({ pref: "富山県", sector: "sanpai", id: "toyama_sanpai", name: "富山県 廃棄物処理業者に対する行政処分", url: "https://www.pref.toyama.jp/1505/kensei/koho/mimi/shizen/haikibutsu/kj00012398.html", discoveryStatus: "confirmed", notes: "富山県生活環境文化部廃棄物対策課管轄。廃棄物処理業者への行政処分情報を公表。" }),
   prefSource({ pref: "石川県", sector: "sanpai", id: "ishikawa_sanpai", name: "石川県 廃棄物処理法に基づく行政処分", url: "https://www.pref.ishikawa.lg.jp/haiki/sangyouhaiki/shobun.html", discoveryStatus: "confirmed", notes: "石川県環境部廃棄物対策課管轄。廃棄物処理法に基づく行政処分情報（許可取消・業務停止等）を公表。" }),
   prefSource({ pref: "福井県", sector: "sanpai", id: "fukui_sanpai", name: "福井県 廃棄物処理業者への行政処分", url: "https://www.pref.fukui.lg.jp/doc/haiki/sanpai/gyoseishobun.html", discoveryStatus: "confirmed", notes: "福井県環境政策課循環型社会推進室管轄。廃棄物処理業者への行政処分情報を公表。" }),
+  prefSource({ pref: "和歌山県", sector: "sanpai", id: "wakayama_sanpai", name: "和歌山県 廃棄物処理法に基づく行政処分", url: "https://www.pref.wakayama.lg.jp/prefg/032100/sangyouhaikibutsu/gyoseishobun.html", discoveryStatus: "confirmed", notes: "和歌山県環境生活部廃棄物対策課管轄。廃棄物処理法に基づく行政処分（許可取消・業務停止等）を公表。" }),
+  prefSource({ pref: "岡山県", sector: "sanpai", id: "okayama_sanpai", name: "岡山県 廃棄物処理業者に対する行政処分", url: "https://www.pref.okayama.jp/page/detail-22374.html", discoveryStatus: "confirmed", notes: "岡山県環境文化部資源循環局廃棄物対策課管轄。廃棄物処理業者への行政処分情報を公表。" }),
+  prefSource({ pref: "山口県", sector: "sanpai", id: "yamaguchi_sanpai", name: "山口県 廃棄物処理業者への行政処分", url: "https://www.pref.yamaguchi.lg.jp/soshiki/29/4748.html", discoveryStatus: "confirmed", notes: "山口県環境生活部廃棄物・リサイクル対策課管轄。廃棄物処理法に基づく行政処分情報を公表。" }),
+  prefSource({ pref: "鳥取県", sector: "sanpai", id: "tottori_sanpai", name: "鳥取県 廃棄物処理業者への行政処分", url: "https://www.pref.tottori.lg.jp/dd.aspx?menuid=60760", discoveryStatus: "candidate", expectedCoverage: "hybrid", notes: "鳥取県生活環境部循環型社会推進課管轄。廃棄物処理業者への行政処分情報。個別公表形式のためcandidate。" }),
+  prefSource({ pref: "島根県", sector: "sanpai", id: "shimane_sanpai", name: "島根県 廃棄物処理法に基づく行政処分", url: "https://www.pref.shimane.lg.jp/environment/recycle/haiki/sanpai/gyousei_shobun.html", discoveryStatus: "confirmed", notes: "島根県環境生活部廃棄物対策課管轄。廃棄物処理法に基づく行政処分情報（許可取消・業務停止等）を公表。" }),
+  prefSource({ pref: "徳島県", sector: "sanpai", id: "tokushima_sanpai", name: "徳島県 廃棄物処理業者に対する行政処分", url: "https://www.pref.tokushima.lg.jp/ippannokata/kurashi/shizen/5027002/", discoveryStatus: "confirmed", notes: "徳島県環境整備課管轄。廃棄物処理業者への行政処分情報を公表。" }),
+  prefSource({ pref: "香川県", sector: "sanpai", id: "kagawa_sanpai", name: "香川県 廃棄物処理法に基づく行政処分", url: "https://www.pref.kagawa.lg.jp/kankyoeisei/haiki/gyouseishobun.html", discoveryStatus: "confirmed", notes: "香川県環境森林部廃棄物対策課管轄。廃棄物処理法に基づく行政処分（許可取消・業務停止等）を公表。" }),
+  prefSource({ pref: "愛媛県", sector: "sanpai", id: "ehime_sanpai", name: "愛媛県 廃棄物処理業者に対する行政処分", url: "https://www.pref.ehime.jp/h15500/sanpai/shobun.html", discoveryStatus: "confirmed", notes: "愛媛県環境部廃棄物リサイクル推進課管轄。廃棄物処理業者への行政処分情報を公表。" }),
 ];
 
 // ─── 統合台帳 ─────────────────────
