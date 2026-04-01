@@ -17,6 +17,7 @@ export const SECTORS = {
   takken: { label: "宅地建物取引業", short: "宅建" },
   kensetsu: { label: "建設業", short: "建設" },
   architect_office: { label: "建築士事務所", short: "建築士" },
+  sanpai: { label: "産業廃棄物処理業", short: "産廃" },
 };
 
 // ─── ソース種別ラベル ─────────────────────
@@ -326,6 +327,68 @@ const ARCHITECT_OFFICE_SOURCES = [
   },
 ];
 
+// ─── 産廃DB中央ソース ─────────────────────
+
+const SANPAI_CENTRAL_SOURCES = [
+  {
+    id: "env_sanpai_portal",
+    sector: "sanpai",
+    authorityLevel: "national",
+    authorityName: "環境省",
+    prefecture: null,
+    sourceName: "環境省 産業廃棄物処理業者情報案内",
+    url: "https://www.env.go.jp/recycle/waste/",
+    sourceType: "official_list",
+    coverageScope: "full",
+    discoveryStatus: "candidate",
+    expectedCoverage: "mlit_primary",
+    complements: "産廃処理業の許可・規制の根拠。都道府県への許可権限委任。直接の処分一覧はなし。",
+    publicationWindow: "unknown",
+    updateFrequency: "as_needed",
+    acquisitionMethod: "html",
+    active: true,
+    notes: "廃棄物処理法に基づく情報案内。直接スクレイプ対象ではなく制度的根拠として登録。",
+  },
+  {
+    id: "sanpainet_gyosha",
+    sector: "sanpai",
+    authorityLevel: "national",
+    authorityName: "公益財団法人日本産業廃棄物処理振興センター",
+    prefecture: null,
+    sourceName: "産廃情報ネット 全国処理業者情報",
+    url: "https://www.sanpainet.or.jp/",
+    sourceType: "aggregated_search",
+    coverageScope: "full",
+    discoveryStatus: "candidate",
+    expectedCoverage: "mlit_primary",
+    complements: "全国の産廃処理業許可業者を横断検索。都道府県許可番号・業種・有効期限を収録。",
+    publicationWindow: "current",
+    updateFrequency: "monthly",
+    acquisitionMethod: "html",
+    active: true,
+    notes: "許可情報の中央集約ソース。取消処分情報も掲載あり。要アクセス確認。",
+  },
+  {
+    id: "sanpainet_torikeshi",
+    sector: "sanpai",
+    authorityLevel: "national",
+    authorityName: "公益財団法人日本産業廃棄物処理振興センター",
+    prefecture: null,
+    sourceName: "産廃情報ネット 取消処分情報",
+    url: "https://www.sanpainet.or.jp/",
+    sourceType: "official_list",
+    coverageScope: "full",
+    discoveryStatus: "candidate",
+    expectedCoverage: "mlit_primary",
+    complements: "全国の産廃処理業許可取消処分を集約。都道府県別取消情報の補完として機能。",
+    publicationWindow: "5 years",
+    updateFrequency: "monthly",
+    acquisitionMethod: "html",
+    active: true,
+    notes: "取消処分DBのMVP中核ソース。個別URLは調査中のためトップドメインで暫定登録。",
+  },
+];
+
 // ─── 統合台帳 ─────────────────────
 
 export const SOURCE_REGISTRY = [
@@ -333,6 +396,7 @@ export const SOURCE_REGISTRY = [
   ...PREFECTURE_TAKKEN_SOURCES,
   ...PREFECTURE_KENSETSU_SOURCES,
   ...ARCHITECT_OFFICE_SOURCES,
+  ...SANPAI_CENTRAL_SOURCES,
 ];
 
 // ─── ヘルパー ─────────────────────
