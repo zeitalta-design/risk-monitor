@@ -271,11 +271,31 @@ export default function RiskWatchPage() {
           </div>
         )}
 
-        {/* 無料制限案内 */}
+        {/* 無料制限 → アップグレード導線 */}
         {!loading && items.length >= FREE_WATCH_LIMIT && (
-          <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-100 text-sm text-blue-700">
-            <span className="font-medium">無料プランでは最大{FREE_WATCH_LIMIT}件まで登録可能です。</span>
-            <span className="text-blue-500 ml-1">件数制限の拡張は今後のアップデートで対応予定です。</span>
+          <div className="mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 p-5">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <p className="text-sm font-semibold text-blue-800 mb-1">
+                  無料プランの上限（{FREE_WATCH_LIMIT}件）に達しています
+                </p>
+                <ul className="text-xs text-blue-600 space-y-1 mt-2">
+                  <li>✓ ウォッチ件数の無制限登録</li>
+                  <li>✓ 新着処分の毎日メール通知</li>
+                  <li>✓ 業種・地域フィルタ監視</li>
+                  <li>✓ CSV出力・週次レポート</li>
+                </ul>
+              </div>
+              <div className="flex flex-col items-end gap-2">
+                <a
+                  href="mailto:info@taikainavi.jp?subject=リスク監視プラン（有料）のお問い合わせ"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors"
+                >
+                  プランについて問い合わせる →
+                </a>
+                <span className="text-[10px] text-blue-400">現在ベータ提供中。ご要望をお聞かせください。</span>
+              </div>
+            </div>
           </div>
         )}
 

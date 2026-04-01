@@ -193,7 +193,7 @@ export default async function GyoseiShobunDetailPage({ params, searchParams }) {
               </svg>
               ウォッチ登録する
             </Link>
-            <p className="text-[11px] text-gray-400 mt-2 text-center">無料で最大3件まで登録可能</p>
+            <p className="text-[11px] text-gray-400 mt-2 text-center">無料プランで最大3件まで登録可能 · 件数無制限は有料プランへ</p>
           </div>
         </div>
 
