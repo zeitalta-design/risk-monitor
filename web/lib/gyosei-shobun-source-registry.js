@@ -515,6 +515,7 @@ const ARCHITECT_OFFICE_SOURCES = [
     active: true,
     notes: "告示ページ確認済み。処分一覧の常設ページは未確認のためcandidate。",
   },
+  prefSource({ pref: "青森県", sector: "architect_office", id: "aomori_architect_office", name: "青森県 建築士事務所の監督処分", url: null, sourceType: "manual_review", discoveryStatus: "manual_review", expectedCoverage: "mlit_primary", notes: "将来再確認。専用処分一覧ページ未発見。一級建築士個人処分はMLITネガティブ情報で補完。" }),
   {
     id: "shiga_architect_office",
     sector: "architect_office",
