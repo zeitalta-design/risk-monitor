@@ -201,11 +201,28 @@ export default function GyoseiShobunListPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-5xl mx-auto px-4 py-8">
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">行政処分DB</h1>
           <p className="text-sm text-gray-500">
             建設業・運送業・廃棄物処理業など、各業種の行政処分情報を横断検索
           </p>
+        </div>
+
+        {/* リスク監視バナー */}
+        <div className="flex items-center justify-between gap-3 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-6">
+          <div className="flex items-center gap-2.5">
+            <span className="text-blue-500 text-lg">👁</span>
+            <div>
+              <p className="text-sm font-medium text-blue-800">取引先をウォッチ登録すると、新しい行政処分が出た際に通知を受け取れます</p>
+              <p className="text-xs text-blue-500 mt-0.5">各処分カードの「＋ウォッチ」から登録 · 無料で最大3件まで</p>
+            </div>
+          </div>
+          <Link
+            href="/risk-watch"
+            className="flex-shrink-0 text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+          >
+            監視一覧 →
+          </Link>
         </div>
 
         {/* フィルタ */}
