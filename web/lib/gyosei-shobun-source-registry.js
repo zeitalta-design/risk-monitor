@@ -1489,6 +1489,12 @@ const SANPAI_CENTRAL_SOURCES = [
     active: true,
     notes: "個別プレスリリース形式での公表のみ確認。一覧ページ未発見のためcandidate。",
   },
+  prefSource({ pref: "静岡県", sector: "sanpai", id: "shizuoka_sanpai", name: "静岡県 廃棄物処理法に基づく行政処分", url: "https://www.pref.shizuoka.jp/kurashikankyo/kankyo/haiki/1023379.html", discoveryStatus: "confirmed", notes: "静岡県環境局廃棄物リサイクル課管轄。廃棄物処理法に基づく行政処分（許可取消・業務停止・改善命令等）を公表。" }),
+  prefSource({ pref: "茨城県", sector: "sanpai", id: "ibaraki_sanpai", name: "茨城県 廃棄物処理業者に対する行政処分", url: "https://www.pref.ibaraki.jp/seikatsukankyo/hairi/sanpai/gyoseisyobun.html", discoveryStatus: "confirmed", notes: "茨城県環境政策課管轄。産業廃棄物処理業者への行政処分一覧を公表。" }),
+  prefSource({ pref: "新潟県", sector: "sanpai", id: "niigata_sanpai", name: "新潟県 廃棄物処理法に基づく行政処分", url: "https://www.pref.niigata.lg.jp/sec/haikibutsu/1356875049836.html", discoveryStatus: "confirmed", notes: "新潟県生活環境課廃棄物対策室管轄。廃棄物処理法に基づく行政処分情報を公表。" }),
+  prefSource({ pref: "長野県", sector: "sanpai", id: "nagano_sanpai", name: "長野県 廃棄物処理業者への行政処分", url: "https://www.pref.nagano.lg.jp/haiki/hokeneisei/haiki/gyosha/gyoseishobun.html", discoveryStatus: "confirmed", notes: "長野県廃棄物対策課管轄。廃棄物処理法に基づく行政処分（許可取消・業務停止等）を公表。" }),
+  prefSource({ pref: "岐阜県", sector: "sanpai", id: "gifu_sanpai", name: "岐阜県 廃棄物処理業者に対する行政処分", url: "https://www.pref.gifu.lg.jp/page/5611.html", discoveryStatus: "confirmed", notes: "岐阜県環境生活政策課廃棄物対策係管轄。廃棄物処理業者への行政処分一覧を公表。" }),
+  prefSource({ pref: "福島県", sector: "sanpai", id: "fukushima_sanpai", name: "福島県 廃棄物処理法に基づく行政処分", url: "https://www.pref.fukushima.lg.jp/sec/16025d/gyoseishobun.html", discoveryStatus: "confirmed", notes: "福島県廃棄物対策課管轄。廃棄物処理法に基づく行政処分情報（許可取消・業務停止等）を公表。" }),
 ];
 
 // ─── 統合台帳 ─────────────────────
