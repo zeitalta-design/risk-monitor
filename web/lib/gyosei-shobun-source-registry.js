@@ -16,6 +16,7 @@ export const ALL_PREFECTURES = REGIONS.flatMap((r) => r.prefectures);
 export const SECTORS = {
   takken: { label: "宅地建物取引業", short: "宅建" },
   kensetsu: { label: "建設業", short: "建設" },
+  architect_office: { label: "建築士事務所", short: "建築士" },
 };
 
 // ─── ソース種別ラベル ─────────────────────
@@ -263,12 +264,75 @@ const PREFECTURE_KENSETSU_SOURCES = [
   prefSource({ pref: "沖縄県", sector: "kensetsu", id: "okinawa_kensetsu", name: "沖縄県 建設業者監督処分", url: "https://www.pref.okinawa.jp/machizukuri/kenchiku/1023167/1013358/1028170.html", discoveryStatus: "confirmed", notes: "処分基準+処分一覧PDF（R4年度）。5年間公表。MLIT誘導もあり。", expectedCoverage: "hybrid" }),
 ];
 
+// ─── 建築士事務所ソース ─────────────────────
+
+const ARCHITECT_OFFICE_SOURCES = [
+  {
+    id: "mlit_nega_inf_ikkyuu",
+    sector: "architect_office",
+    authorityLevel: "national",
+    authorityName: "国土交通省",
+    prefecture: null,
+    sourceName: "ネガティブ情報等検索サイト（一級建築士）",
+    url: "https://www.mlit.go.jp/nega-inf/cgi-bin/search.cgi?jigyoubunya=ikkyuu",
+    sourceType: "aggregated_search",
+    coverageScope: "full",
+    discoveryStatus: "confirmed",
+    expectedCoverage: "mlit_primary",
+    complements: "一級建築士個人の懲戒処分（免許取消・業務停止・戒告）。建築士事務所処分はMLIT非掲載のため都道府県補完必須。",
+    publicationWindow: "5 years",
+    updateFrequency: "monthly",
+    acquisitionMethod: "html",
+    active: true,
+    notes: "建築士法第10条。事務所処分ではなく建築士個人処分。CGI形式。",
+  },
+  {
+    id: "tokyo_architect_office",
+    sector: "architect_office",
+    authorityLevel: "prefecture",
+    authorityName: "東京都",
+    prefecture: "東京都",
+    sourceName: "東京都 建築士事務所の処分",
+    url: "https://www.toshiseibi.metro.tokyo.lg.jp/kenchiku_kaihatsu/kenchiku_shidou/kenchikusi/jim_syobun",
+    sourceType: "official_list",
+    coverageScope: "partial",
+    discoveryStatus: "confirmed",
+    expectedCoverage: "pref_primary",
+    complements: "東京都知事登録の建築士事務所に対する監督処分（登録取消・閉鎖命令・戒告）。建築士法第26条。",
+    publicationWindow: "5 years",
+    updateFrequency: "as_needed",
+    acquisitionMethod: "html",
+    active: true,
+    notes: "都市整備局管轄。",
+  },
+  {
+    id: "hyogo_architect_office",
+    sector: "architect_office",
+    authorityLevel: "prefecture",
+    authorityName: "兵庫県",
+    prefecture: "兵庫県",
+    sourceName: "兵庫県 建築士事務所の監督処分一覧",
+    url: "https://web.pref.hyogo.lg.jp/ks29/wd30_000000047.html",
+    sourceType: "pdf_notice",
+    coverageScope: "partial",
+    discoveryStatus: "confirmed",
+    expectedCoverage: "pref_primary",
+    complements: "兵庫県知事登録の建築士事務所に対する監督処分（登録取消・閉鎖命令・戒告）。PDF公告形式。",
+    publicationWindow: "5 years",
+    updateFrequency: "as_needed",
+    acquisitionMethod: "pdf",
+    active: true,
+    notes: "建築士法第26条第4項準用。PDF一覧確認済み。",
+  },
+];
+
 // ─── 統合台帳 ─────────────────────
 
 export const SOURCE_REGISTRY = [
   ...MLIT_SOURCES,
   ...PREFECTURE_TAKKEN_SOURCES,
   ...PREFECTURE_KENSETSU_SOURCES,
+  ...ARCHITECT_OFFICE_SOURCES,
 ];
 
 // ─── ヘルパー ─────────────────────
