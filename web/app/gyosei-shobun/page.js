@@ -296,9 +296,11 @@ function GyoseiShobunListPage() {
 
         {/* 件数表示 */}
         {!loading && (
-          <p className="text-sm text-gray-500 mb-4">
-            {total}件中 {startItem}-{endItem}件を表示
-          </p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm text-gray-500">
+              <span className="font-semibold text-gray-700">{total.toLocaleString()}件</span> 中 {startItem}–{endItem}件を表示
+            </p>
+          </div>
         )}
 
         {/* ローディング */}
@@ -308,9 +310,9 @@ function GyoseiShobunListPage() {
           </div>
         )}
 
-        {/* 一覧 */}
+        {/* 一覧 — テーブルライクリスト */}
         {!loading && items.length > 0 && (
-          <div className="space-y-3">
+          <div className="border border-gray-200 rounded-xl overflow-hidden bg-white divide-y divide-gray-100">
             {items.map((item) => {
               const tc = ACTION_TYPE_COLORS[item.action_type] || ACTION_TYPE_COLORS.other;
               const actionLabel = gyoseiShobunConfig.actionTypes.find((t) => t.slug === item.action_type)?.label || item.action_type;
@@ -321,60 +323,67 @@ function GyoseiShobunListPage() {
               const riskData = riskScores[watchKey];
 
               return (
-                <Link
-                  key={item.id}
-                  href={`/gyosei-shobun/${item.slug}`}
-                  className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 block hover:shadow-md hover:border-gray-300 transition-all"
-                >
-                  {/* 上段: 事業者名 + 処分種別バッジ + ウォッチ・確認優先度 */}
-                  <div className="flex items-start mb-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="text-base font-bold text-gray-900 leading-snug break-words">{item.organization_name_raw}</h3>
-                        <button
-                          onClick={(e) => toggleWatch(e, item)}
-                          className={`flex-shrink-0 text-xs px-2 py-1 rounded border transition-colors ${
-                            isWatched
-                              ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
-                              : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50 hover:text-gray-700"
-                          }`}
-                          title={isWatched ? "ウォッチ解除" : "ウォッチ登録"}
-                        >
-                          {isWatched ? "👁 監視中" : "+ ウォッチ"}
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                        <span className={`text-[11px] px-2 py-0.5 rounded border font-medium ${tc.bg} ${tc.text} ${tc.border}`}>
-                          {actionLabel}
-                        </span>
-                        {industryLabel && (
-                          <span className="text-[11px] px-2 py-0.5 rounded bg-gray-100 text-gray-500">
-                            {industryLabel}
-                          </span>
-                        )}
-                        {riskData && (
-                          <RiskBadge score={riskData.score} level={riskData.level} label={riskData.label} />
-                        )}
-                      </div>
+                <div key={item.id} className="group relative hover:bg-gray-50 transition-colors">
+                  <Link
+                    href={`/gyosei-shobun/${item.slug}`}
+                    className="block px-4 py-3.5 pr-24"
+                  >
+                    {/* 1行目: 処分バッジ + 社名 + 確認優先度 */}
+                    <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                      <span className={`inline-flex items-center text-[11px] px-2 py-0.5 rounded border font-semibold whitespace-nowrap ${tc.bg} ${tc.text} ${tc.border}`}>
+                        {actionLabel}
+                      </span>
+                      <span className="text-[15px] font-bold text-gray-900 leading-snug">
+                        {item.organization_name_raw}
+                      </span>
+                      {riskData && (
+                        <RiskBadge score={riskData.score} level={riskData.level} label={riskData.label} />
+                      )}
                     </div>
-                  </div>
-                  {/* 中段: 処分日・行政庁・都道府県 */}
-                  <div className="flex items-center gap-x-4 gap-y-1 flex-wrap text-xs mb-2">
-                    {item.action_date && (
-                      <span className="text-gray-700 font-medium">{item.action_date}</span>
+                    {/* 2行目: メタ情報（業種 | 日付 | 行政庁 | 都道府県） */}
+                    <div className="flex items-center gap-0 text-xs text-gray-500 flex-wrap">
+                      {industryLabel && (
+                        <>
+                          <span className="font-medium text-gray-600">{industryLabel}</span>
+                          <span className="mx-2 text-gray-300">|</span>
+                        </>
+                      )}
+                      {item.action_date && (
+                        <>
+                          <span className="font-medium text-gray-700 tabular-nums">{item.action_date}</span>
+                          <span className="mx-2 text-gray-300">|</span>
+                        </>
+                      )}
+                      {item.authority_name && (
+                        <>
+                          <span className="text-gray-500 truncate max-w-[180px]">{item.authority_name}</span>
+                          <span className="mx-2 text-gray-300">|</span>
+                        </>
+                      )}
+                      {item.prefecture && (
+                        <span className="text-gray-500">{item.prefecture}{item.city ? ` ${item.city}` : ""}</span>
+                      )}
+                    </div>
+                    {/* 3行目: 概要（1行） */}
+                    {item.summary && (
+                      <p className="text-[12px] text-gray-400 leading-relaxed line-clamp-1 mt-1.5">
+                        {item.summary}
+                      </p>
                     )}
-                    {item.authority_name && (
-                      <span className="text-gray-500">{item.authority_name}</span>
-                    )}
-                    {item.prefecture && (
-                      <span className="text-gray-400">{item.prefecture}{item.city ? ` ${item.city}` : ""}</span>
-                    )}
-                  </div>
-                  {/* 下段: 概要 */}
-                  {item.summary && (
-                    <p className="text-[13px] text-gray-500 leading-relaxed line-clamp-2">{item.summary}</p>
-                  )}
-                </Link>
+                  </Link>
+                  {/* ウォッチボタン: 右端に絶対配置 */}
+                  <button
+                    onClick={(e) => toggleWatch(e, item)}
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs px-2.5 py-1.5 rounded-lg border transition-colors whitespace-nowrap ${
+                      isWatched
+                        ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                        : "bg-white text-gray-400 border-gray-200 hover:border-blue-200 hover:text-blue-600 hover:bg-blue-50"
+                    }`}
+                    title={isWatched ? "ウォッチ解除" : "ウォッチ登録"}
+                  >
+                    {isWatched ? "👁" : "+ 監視"}
+                  </button>
+                </div>
               );
             })}
           </div>
