@@ -101,12 +101,12 @@ export default function CategoryPageHeader({ categoryId }) {
 
   return (
     <div
-      className="rounded-2xl mb-6 px-5 py-4 flex items-start gap-4"
+      className="rounded-2xl mb-6 px-4 sm:px-5 py-3.5 sm:py-4 flex items-start gap-3 sm:gap-4"
       style={{ background: `linear-gradient(135deg, ${meta.accent}18 0%, ${meta.lightBg} 100%)`, borderLeft: `4px solid ${meta.accent}` }}
     >
       {/* アイコン */}
       <div
-        className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center mt-0.5"
+        className="flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center mt-0.5"
         style={{ backgroundColor: meta.lightBg, color: meta.accent }}
       >
         {icon}

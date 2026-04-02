@@ -127,6 +127,16 @@ export function getDb() {
       try { _db.exec(sql); } catch { /* duplicate column → ignore */ }
     }
 
+    // データクレンジング: タイトルに「テスト」「test」を含む未公開相当レコードを非公開化
+    try {
+      _db.exec(`
+        UPDATE hojokin_items
+        SET is_published = 0, updated_at = datetime('now')
+        WHERE (title LIKE '%テスト%' OR title LIKE '%test%')
+          AND is_published = 1
+      `);
+    } catch { /* table may not exist yet — ignore */ }
+
     // Phase205: event_tags テーブル
     _db.exec(`
       CREATE TABLE IF NOT EXISTS event_tags (
