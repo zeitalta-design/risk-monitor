@@ -312,7 +312,7 @@ function GyoseiShobunListPage() {
 
         {/* 一覧 — テーブルライクリスト */}
         {!loading && items.length > 0 && (
-          <div className="border border-gray-200 rounded-xl overflow-hidden bg-white divide-y divide-gray-100">
+          <div className="border border-gray-200 rounded-xl overflow-hidden bg-white divide-y divide-gray-200">
             {items.map((item) => {
               const tc = ACTION_TYPE_COLORS[item.action_type] || ACTION_TYPE_COLORS.other;
               const actionLabel = gyoseiShobunConfig.actionTypes.find((t) => t.slug === item.action_type)?.label || item.action_type;
@@ -323,13 +323,15 @@ function GyoseiShobunListPage() {
               const riskData = riskScores[watchKey];
 
               return (
-                <div key={item.id} className="group relative hover:bg-gray-50 transition-colors">
+                <div key={item.id} className="group relative hover:bg-blue-50/30 transition-colors">
+                  {/* ─── モバイル: ウォッチボタンをインライン（下段）に配置 ─── */}
+                  {/* ─── デスクトップ: 右端 absolute 配置を維持 ─── */}
                   <Link
                     href={`/gyosei-shobun/${item.slug}`}
-                    className="block px-4 py-3.5 pr-24"
+                    className="block px-4 py-3 sm:pr-24"
                   >
                     {/* 1行目: 処分バッジ + 社名 + 確認優先度 */}
-                    <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
                       <span className={`inline-flex items-center text-[11px] px-2 py-0.5 rounded border font-semibold whitespace-nowrap ${tc.bg} ${tc.text} ${tc.border}`}>
                         {actionLabel}
                       </span>
@@ -356,7 +358,7 @@ function GyoseiShobunListPage() {
                       )}
                       {item.authority_name && (
                         <>
-                          <span className="text-gray-500 truncate max-w-[180px]">{item.authority_name}</span>
+                          <span className="text-gray-500 truncate max-w-[160px] sm:max-w-[220px]">{item.authority_name}</span>
                           <span className="mx-2 text-gray-300">|</span>
                         </>
                       )}
@@ -364,17 +366,30 @@ function GyoseiShobunListPage() {
                         <span className="text-gray-500">{item.prefecture}{item.city ? ` ${item.city}` : ""}</span>
                       )}
                     </div>
-                    {/* 3行目: 概要（1行） */}
+                    {/* 3行目: 概要 — モバイル非表示 / デスクトップ1行 */}
                     {item.summary && (
-                      <p className="text-[12px] text-gray-400 leading-relaxed line-clamp-1 mt-1.5">
+                      <p className="hidden sm:block text-[12px] text-gray-400 leading-relaxed line-clamp-1 mt-1">
                         {item.summary}
                       </p>
                     )}
+                    {/* モバイル専用ウォッチボタン（sm以上では非表示） */}
+                    <div className="sm:hidden mt-2">
+                      <button
+                        onClick={(e) => toggleWatch(e, item)}
+                        className={`text-xs px-3 py-1 rounded-lg border transition-colors ${
+                          isWatched
+                            ? "bg-blue-50 text-blue-700 border-blue-200"
+                            : "bg-white text-gray-400 border-gray-200"
+                        }`}
+                      >
+                        {isWatched ? "👁 監視中" : "+ ウォッチ"}
+                      </button>
+                    </div>
                   </Link>
-                  {/* ウォッチボタン: 右端に絶対配置 */}
+                  {/* デスクトップ専用ウォッチボタン（右端 absolute、モバイルでは非表示） */}
                   <button
                     onClick={(e) => toggleWatch(e, item)}
-                    className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs px-2.5 py-1.5 rounded-lg border transition-colors whitespace-nowrap ${
+                    className={`hidden sm:block absolute right-3 top-1/2 -translate-y-1/2 text-xs px-2.5 py-1.5 rounded-lg border transition-colors whitespace-nowrap ${
                       isWatched
                         ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
                         : "bg-white text-gray-400 border-gray-200 hover:border-blue-200 hover:text-blue-600 hover:bg-blue-50"
