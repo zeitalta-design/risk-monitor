@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "お気に入り",
   robots: { index: false, follow: false },

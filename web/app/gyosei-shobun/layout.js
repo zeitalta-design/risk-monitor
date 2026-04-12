@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import { siteConfig } from "@/lib/site-config";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "行政処分DB — 企業の行政処分情報を横断検索",
   description:
