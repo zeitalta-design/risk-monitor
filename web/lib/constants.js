@@ -1,5 +1,5 @@
-export const SITE_NAME = "大会ナビ";
-export const SITE_DESCRIPTION = "スポーツ大会検索・通知サービス";
+export const SITE_NAME = "Risk Monitor";
+export const SITE_DESCRIPTION = "企業リスク監視プラットフォーム";
 
 /**
  * スポーツ種別マスター

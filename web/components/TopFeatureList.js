@@ -35,7 +35,7 @@ export default function TopFeatureList() {
     <section className="bg-gray-50 py-14">
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-10">
-          <h2 className="text-lg font-bold" style={{ color: "#1a1a1a" }}>大会ナビでできること</h2>
+          <h2 className="text-lg font-bold" style={{ color: "#1a1a1a" }}>Risk Monitorでできること</h2>
           <p className="text-xs font-medium mt-1" style={{ color: "#1a1a1a" }}>探す → 保存する → 通知を受け取る</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">

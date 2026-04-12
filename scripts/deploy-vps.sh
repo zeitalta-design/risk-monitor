@@ -159,7 +159,7 @@ if [ -n "${SMTP_HOST:-}" ]; then
   [ -n "${SMTP_USER:-}" ]   && ENV_ARGS+=(-e SMTP_USER="${SMTP_USER}")
   [ -n "${SMTP_PASS:-}" ]   && ENV_ARGS+=(-e SMTP_PASS="${SMTP_PASS}")
   [ -n "${SMTP_SECURE:-}" ] && ENV_ARGS+=(-e SMTP_SECURE="${SMTP_SECURE}")
-  ENV_ARGS+=(-e MAIL_FROM="${MAIL_FROM:-大会ナビ <noreply@taikainavi.jp>}")
+  ENV_ARGS+=(-e MAIL_FROM="${MAIL_FROM:-Risk Monitor <noreply@taikainavi.jp>}")
   echo "  [smtp] configured: ${SMTP_HOST}"
 else
   echo "  [smtp] not configured — Ethereal fallback"

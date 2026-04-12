@@ -61,7 +61,7 @@ OPS_CRON_SECRET=<ランダム文字列>
 | `SMTP_PORT` | 任意 | SMTP ポート番号 | デフォルト `587` |
 | `SMTP_USER` | 任意 | SMTP 認証ユーザー | SMTP_HOST 設定時のみ必要 |
 | `SMTP_PASS` | 任意 | SMTP 認証パスワード | SMTP_HOST 設定時のみ必要 |
-| `MAIL_FROM` | 任意 | 送信元アドレス | デフォルト `大会ナビ <noreply@taikainavi.jp>` |
+| `MAIL_FROM` | 任意 | 送信元アドレス | デフォルト `Risk Monitor <noreply@taikainavi.jp>` |
 | `ALLOW_SIGNUP` | 任意 | 新規登録の許可/禁止 | デフォルト `false` |
 | `OPS_ADMIN_EMAIL` | 任意 | 運営通知先メール | 未設定時は通知なし |
 | `NEXT_PUBLIC_GA_ID` | 任意 | GA4 トラッキング | 未設定時は GA 無効 |
@@ -316,7 +316,7 @@ SMTP_HOST=smtp.mail.me.com
 SMTP_PORT=587
 SMTP_USER=your-smtp-user
 SMTP_PASS=your-smtp-password
-MAIL_FROM=大会ナビ <your-email@example.com>
+MAIL_FROM=Risk Monitor <your-email@example.com>
 
 # 運営通知（任意）
 OPS_ADMIN_EMAIL=admin@example.com

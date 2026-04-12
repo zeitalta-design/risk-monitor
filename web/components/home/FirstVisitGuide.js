@@ -68,7 +68,7 @@ export default function FirstVisitGuide() {
           ✕
         </button>
         <h2 className="text-base font-bold text-gray-900 mb-1">
-          大会ナビへようこそ
+          Risk Monitorへようこそ
         </h2>
         <p className="text-sm text-gray-600 mb-4">
           全国のスポーツ大会を探せるサービスです。まずはこちらからどうぞ。

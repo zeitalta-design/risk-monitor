@@ -3,7 +3,7 @@
  * Phase127: 新スポーツ追加ガイド
  * ============================================================
  *
- * 大会ナビに新しいスポーツを追加する際の完全手順書。
+ * Risk Monitorに新しいスポーツを追加する際の完全手順書。
  * 現在対応: marathon（マラソン）, trail（トレイルラン）
  * 今後追加予定: triathlon, cycling, walking, swimming, workshop
  *
@@ -40,7 +40,7 @@
  *     title: "サイクリングイベント検索",
  *     pageHeading: "サイクリングイベント一覧",
  *     description: "全国のサイクリングイベント・自転車レースを検索。",
- *     ogTitle: "サイクリングイベント検索 | 大会ナビ",
+ *     ogTitle: "サイクリングイベント検索 | Risk Monitor",
  *     ogDescription: "全国の自転車イベントを検索。",
  *     searchPlaceholder: "イベント名・コース名",
  *     emptyText: "該当するサイクリングイベントが見つかりませんでした",

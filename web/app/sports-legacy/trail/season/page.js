@@ -6,7 +6,7 @@ export const metadata = {
   title: "季節別トレイルラン大会",
   description: "春・夏・秋・冬の季節ごとにトレイルラン大会を探せます。シーズンに合った大会を見つけましょう。",
   openGraph: {
-    title: "季節別トレイルラン大会 | 大会ナビ",
+    title: "季節別トレイルラン大会 | Risk Monitor",
     description: "春夏秋冬の季節別にトレイルラン大会を探せます。",
     type: "website",
   },

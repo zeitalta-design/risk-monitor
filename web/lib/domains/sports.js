@@ -92,7 +92,7 @@ registerDomain({
   },
 
   seo: {
-    titleTemplate: "{title} | 大会ナビ",
+    titleTemplate: "{title} | Risk Monitor",
     descriptionTemplate: "{title}の詳細情報。開催日、エントリー状況、コース情報など。",
     jsonLdType: "SportsEvent",
   },

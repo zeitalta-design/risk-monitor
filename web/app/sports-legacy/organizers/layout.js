@@ -1,7 +1,7 @@
 export const metadata = {
-  title: "大会運営者の方へ | 大会ナビ",
+  title: "大会運営者の方へ | Risk Monitor",
   description:
-    "大会ナビは全国のスポーツ大会情報を集約し、ランナーに届けるポータルサイトです。大会運営者の方に向けた掲載メリットと情報更新のご案内。",
+    "Risk Monitorは全国のスポーツ大会情報を集約し、ランナーに届けるポータルサイトです。大会運営者の方に向けた掲載メリットと情報更新のご案内。",
   robots: { index: true, follow: true },
 };
 

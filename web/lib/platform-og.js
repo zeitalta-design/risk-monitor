@@ -71,7 +71,7 @@ export function createPlatformOgImage({ title, subtitle, icon, alt }) {
               letterSpacing: "0.08em",
             }}
           >
-            大会ナビ データプラットフォーム
+            Risk Monitor
           </div>
         </div>
       </div>

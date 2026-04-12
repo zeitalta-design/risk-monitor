@@ -6,7 +6,7 @@ export const metadata = {
   title: "季節別マラソン大会",
   description: "春・夏・秋・冬の季節ごとにマラソン大会を探せます。シーズンに合った大会を見つけましょう。",
   openGraph: {
-    title: "季節別マラソン大会 | 大会ナビ",
+    title: "季節別マラソン大会 | Risk Monitor",
     description: "春夏秋冬の季節別にマラソン大会を探せます。",
     type: "website",
   },

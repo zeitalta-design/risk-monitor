@@ -3,9 +3,9 @@ import Link from "next/link";
 import { COPY } from "@/lib/membership-copy";
 
 export const metadata = {
-  title: "会員メリット | 大会ナビ",
+  title: "会員メリット | Risk Monitor",
   description:
-    "大会ナビに無料会員登録すると、大会の保存・比較・通知・おすすめ・締切追跡・マイ大会管理が使えます。",
+    "Risk Monitorに無料会員登録すると、大会の保存・比較・通知・おすすめ・締切追跡・マイ大会管理が使えます。",
 };
 
 const BENEFITS = [
@@ -96,7 +96,7 @@ export default function BenefitsPage() {
       {/* ヒーロー */}
       <div className="text-center mt-6 mb-10">
         <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-3">
-          大会ナビでできること
+          Risk Monitorでできること
         </h1>
         <p className="text-gray-600 text-sm lg:text-base max-w-2xl mx-auto leading-relaxed">
           無料会員登録で、大会探しから当日準備まですべてを一元管理。

@@ -3,7 +3,7 @@ import { readFileSync } from "fs";
 import { join } from "path";
 
 export const runtime = "nodejs";
-export const alt = "大会ナビ — 全国のスポーツ大会を探す";
+export const alt = "Risk Monitor — 企業リスク監視プラットフォーム";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -50,7 +50,7 @@ export default function Image() {
               letterSpacing: "0.05em",
             }}
           >
-            大会ナビ
+            Risk Monitor
           </div>
         )}
 
@@ -63,7 +63,7 @@ export default function Image() {
             marginTop: 8,
           }}
         >
-          全国のスポーツ大会を探す・比較する・通知を受け取る
+          行政処分・入札・補助金 — 企業リスクを横断検索
         </div>
 
         {/* URL */}

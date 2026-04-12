@@ -4,10 +4,10 @@
  */
 
 export const siteConfig = {
-  /** サービス名（日本語） */
-  siteName: "大海ナビ",
+  /** サービス名 */
+  siteName: "Risk Monitor",
   /** サービス名（英語） */
-  siteNameEn: "TAIKAI NAVI",
+  siteNameEn: "Risk Monitor",
   /** サービス説明 */
   siteDescription: "企業リスク監視プラットフォーム — 行政処分・入札情報・補助金など、業務で使える公開データを横断検索",
   /** キャッチコピー */
@@ -17,9 +17,9 @@ export const siteConfig = {
   /** ロゴ画像パス */
   logoImage: "/banner_logo.png",
   /** メール送信者名 */
-  mailFrom: process.env.MAIL_FROM || "大海ナビ <noreply@taikainavi.jp>",
+  mailFrom: process.env.MAIL_FROM || "Risk Monitor <noreply@taikainavi.jp>",
   /** メール件名プレフィックス */
-  emailPrefix: "【大海ナビ】",
+  emailPrefix: "【Risk Monitor】",
   /** メールフッター署名 */
-  emailSignature: "大海ナビ — 公開データ / 業務DBカタログ",
+  emailSignature: "Risk Monitor — 企業リスク監視プラットフォーム",
 };

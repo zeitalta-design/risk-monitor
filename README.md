@@ -89,7 +89,7 @@ SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_USER=user@example.com
 SMTP_PASS=password
-MAIL_FROM=大海ナビ <noreply@taikainavi.jp>
+MAIL_FROM=Risk Monitor <noreply@taikainavi.jp>
 
 # Cron認証（本番用）
 CRON_SECRET=ランダムな文字列

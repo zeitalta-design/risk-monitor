@@ -23,31 +23,31 @@ function ensureEmailJobsSchema(db) {
  */
 const EMAIL_TEMPLATES = {
   deadline_today: {
-    subject: (n, ev) => `【大会ナビ】本日締切: ${ev?.title || n.title}`,
+    subject: (n, ev) => `【Risk Monitor】本日締切: ${ev?.title || n.title}`,
     body: (n, ev) => buildDeadlineBody(n, ev, "本日がエントリー締切です。"),
   },
   deadline_3d: {
-    subject: (n, ev) => `【大会ナビ】締切間近: ${ev?.title || n.title}`,
+    subject: (n, ev) => `【Risk Monitor】締切間近: ${ev?.title || n.title}`,
     body: (n, ev) => buildDeadlineBody(n, ev, "エントリー締切まであと3日です。"),
   },
   deadline_7d: {
-    subject: (n, ev) => `【大会ナビ】締切間近: ${ev?.title || n.title}`,
+    subject: (n, ev) => `【Risk Monitor】締切間近: ${ev?.title || n.title}`,
     body: (n, ev) => buildDeadlineBody(n, ev, "エントリー締切まであと7日です。"),
   },
   saved_search_match: {
-    subject: (n) => `【大会ナビ】保存条件に一致する大会が見つかりました`,
+    subject: (n) => `【Risk Monitor】保存条件に一致する大会が見つかりました`,
     body: (n, ev) => buildSavedSearchBody(n, ev),
   },
   favorite_deadline_today: {
-    subject: (n, ev) => `【大会ナビ】お気に入り大会が本日締切: ${ev?.title || n.title}`,
+    subject: (n, ev) => `【Risk Monitor】お気に入り大会が本日締切: ${ev?.title || n.title}`,
     body: (n, ev) => buildFavoriteDeadlineBody(n, ev, "本日がエントリー締切です。お見逃しなく！"),
   },
   favorite_deadline_3d: {
-    subject: (n, ev) => `【大会ナビ】お気に入り大会が締切間近: ${ev?.title || n.title}`,
+    subject: (n, ev) => `【Risk Monitor】お気に入り大会が締切間近: ${ev?.title || n.title}`,
     body: (n, ev) => buildFavoriteDeadlineBody(n, ev, "エントリー締切まであと3日です。"),
   },
   favorite_deadline_7d: {
-    subject: (n, ev) => `【大会ナビ】お気に入り大会が締切間近: ${ev?.title || n.title}`,
+    subject: (n, ev) => `【Risk Monitor】お気に入り大会が締切間近: ${ev?.title || n.title}`,
     body: (n, ev) => buildFavoriteDeadlineBody(n, ev, "エントリー締切まであと7日です。"),
   },
 };
@@ -65,7 +65,7 @@ function buildDeadlineBody(n, ev, message) {
     lines.push(`詳細ページ: ${APP_BASE_URL}/marathon/${ev.id}`);
     if (ev.source_url) lines.push(`外部リンク: ${ev.source_url}`);
   }
-  lines.push("", "---", "大会ナビ — スポーツ大会検索・通知サービス", APP_BASE_URL);
+  lines.push("", "---", "Risk Monitor — スポーツ大会検索・通知サービス", APP_BASE_URL);
   return lines.join("\n");
 }
 
@@ -86,7 +86,7 @@ function buildSavedSearchBody(n, ev) {
     lines.push(`詳細ページ: ${APP_BASE_URL}/marathon/${ev.id}`);
     if (ev.source_url) lines.push(`外部リンク: ${ev.source_url}`);
   }
-  lines.push("", "---", "大会ナビ — スポーツ大会検索・通知サービス", APP_BASE_URL);
+  lines.push("", "---", "Risk Monitor — スポーツ大会検索・通知サービス", APP_BASE_URL);
   return lines.join("\n");
 }
 
@@ -105,7 +105,7 @@ function buildFavoriteDeadlineBody(n, ev, message) {
     lines.push(`詳細ページ: ${APP_BASE_URL}/marathon/${ev.id}`);
     if (ev.source_url) lines.push(`外部リンク: ${ev.source_url}`);
   }
-  lines.push("", "---", "大会ナビ — スポーツ大会検索・通知サービス", APP_BASE_URL);
+  lines.push("", "---", "Risk Monitor — スポーツ大会検索・通知サービス", APP_BASE_URL);
   return lines.join("\n");
 }
 

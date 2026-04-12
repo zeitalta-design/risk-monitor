@@ -7,7 +7,7 @@ const Database = webRequire("better-sqlite3");
 const DB_PATH = path.join(__dirname, "..", "web", "data", "risk-monitor.db");
 const SCHEMA_PATH = path.join(__dirname, "..", "sql", "001_create_tables.sql");
 
-console.log("=== 大会ナビ DB Initialization ===");
+console.log("=== Risk Monitor DB Initialization ===");
 console.log("DB Path:", DB_PATH);
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });

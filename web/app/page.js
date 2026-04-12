@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 /**
- * トップページ — 大海ナビ
+ * トップページ — Risk Monitor
  * Grok版デザイン準拠: 公開データ・業務DB・コンプライアンス支援
  */
 

@@ -48,7 +48,7 @@ export default function TrustSignals() {
     <section className="bg-gray-50 py-10 sm:py-12">
       <div className="max-w-6xl mx-auto px-4">
         <h2 className="text-center text-lg font-bold mb-8" style={{ color: "#1a1a1a" }}>
-          大会ナビが選ばれる理由
+          Risk Monitorが選ばれる理由
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
           {SIGNALS.map((s) => (

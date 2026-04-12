@@ -19,7 +19,7 @@ export async function generateMetadata({ params }) {
     title: `${name}のトレイルラン大会`,
     description: `${name}で開催されるトレイルランニング大会を探せます。開催日、距離、コース情報を比較して大会を見つけられます。`,
     openGraph: {
-      title: `${name}のトレイルラン大会 | 大会ナビ`,
+      title: `${name}のトレイルラン大会 | Risk Monitor`,
       description: `${name}で開催されるトレイルラン大会一覧。日程・距離で比較できます。`,
       type: "website",
     },

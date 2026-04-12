@@ -225,31 +225,31 @@ const APP_BASE_URL = process.env.APP_BASE_URL || "http://localhost:3001";
 
 const EMAIL_TEMPLATES = {
   deadline_today: {
-    subject: (n, ev) => `【大会ナビ】本日締切: ${ev?.title || n.title}`,
+    subject: (n, ev) => `【Risk Monitor】本日締切: ${ev?.title || n.title}`,
     body: (n, ev) => buildEmailDeadlineBody(n, ev, "本日がエントリー締切です。"),
   },
   deadline_3d: {
-    subject: (n, ev) => `【大会ナビ】締切間近: ${ev?.title || n.title}`,
+    subject: (n, ev) => `【Risk Monitor】締切間近: ${ev?.title || n.title}`,
     body: (n, ev) => buildEmailDeadlineBody(n, ev, "エントリー締切まであと3日です。"),
   },
   deadline_7d: {
-    subject: (n, ev) => `【大会ナビ】締切間近: ${ev?.title || n.title}`,
+    subject: (n, ev) => `【Risk Monitor】締切間近: ${ev?.title || n.title}`,
     body: (n, ev) => buildEmailDeadlineBody(n, ev, "エントリー締切まであと7日です。"),
   },
   saved_search_match: {
-    subject: () => `【大会ナビ】保存条件に一致する大会が見つかりました`,
+    subject: () => `【Risk Monitor】保存条件に一致する大会が見つかりました`,
     body: (n, ev) => buildEmailSearchBody(n, ev),
   },
   favorite_deadline_today: {
-    subject: (n, ev) => `【大会ナビ】お気に入り大会が本日締切: ${ev?.title || n.title}`,
+    subject: (n, ev) => `【Risk Monitor】お気に入り大会が本日締切: ${ev?.title || n.title}`,
     body: (n, ev) => buildEmailFavoriteBody(n, ev, "本日がエントリー締切です。お見逃しなく！"),
   },
   favorite_deadline_3d: {
-    subject: (n, ev) => `【大会ナビ】お気に入り大会が締切間近: ${ev?.title || n.title}`,
+    subject: (n, ev) => `【Risk Monitor】お気に入り大会が締切間近: ${ev?.title || n.title}`,
     body: (n, ev) => buildEmailFavoriteBody(n, ev, "エントリー締切まであと3日です。"),
   },
   favorite_deadline_7d: {
-    subject: (n, ev) => `【大会ナビ】お気に入り大会が締切間近: ${ev?.title || n.title}`,
+    subject: (n, ev) => `【Risk Monitor】お気に入り大会が締切間近: ${ev?.title || n.title}`,
     body: (n, ev) => buildEmailFavoriteBody(n, ev, "エントリー締切まであと7日です。"),
   },
 };
@@ -260,7 +260,7 @@ function buildEmailDeadlineBody(n, ev, message) {
   if (ev?.event_date) lines.push(`開催日: ${ev.event_date}`);
   lines.push("");
   if (ev) { lines.push(`詳細ページ: ${APP_BASE_URL}/marathon/${ev.id}`); if (ev.source_url) lines.push(`外部リンク: ${ev.source_url}`); }
-  lines.push("", "---", "大会ナビ — スポーツ大会検索・通知サービス", APP_BASE_URL);
+  lines.push("", "---", "Risk Monitor — スポーツ大会検索・通知サービス", APP_BASE_URL);
   return lines.join("\n");
 }
 
@@ -271,7 +271,7 @@ function buildEmailSearchBody(n, ev) {
   if (n.body) lines.push(`一致理由: ${n.body}`);
   lines.push("");
   if (ev) { lines.push(`詳細ページ: ${APP_BASE_URL}/marathon/${ev.id}`); if (ev.source_url) lines.push(`外部リンク: ${ev.source_url}`); }
-  lines.push("", "---", "大会ナビ — スポーツ大会検索・通知サービス", APP_BASE_URL);
+  lines.push("", "---", "Risk Monitor — スポーツ大会検索・通知サービス", APP_BASE_URL);
   return lines.join("\n");
 }
 
@@ -281,7 +281,7 @@ function buildEmailFavoriteBody(n, ev, message) {
   if (ev?.event_date) lines.push(`開催日: ${ev.event_date}`);
   lines.push("");
   if (ev) { lines.push(`詳細ページ: ${APP_BASE_URL}/marathon/${ev.id}`); if (ev.source_url) lines.push(`外部リンク: ${ev.source_url}`); }
-  lines.push("", "---", "大会ナビ — スポーツ大会検索・通知サービス", APP_BASE_URL);
+  lines.push("", "---", "Risk Monitor — スポーツ大会検索・通知サービス", APP_BASE_URL);
   return lines.join("\n");
 }
 
@@ -501,7 +501,7 @@ async function sendEmails() {
       console.log(`  Ethereal: ${testAccount.user}`);
     }
 
-    const from = process.env.MAIL_FROM || "大会ナビ <noreply@taikainavi.com>";
+    const from = process.env.MAIL_FROM || "Risk Monitor <noreply@taikainavi.com>";
     let sentCount = 0;
     let failedCount = 0;
 

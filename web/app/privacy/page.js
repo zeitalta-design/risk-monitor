@@ -3,7 +3,7 @@ import Link from "next/link";
 export const metadata = {
   title: "プライバシーポリシー",
   description:
-    "大会ナビ（スポーツ大会検索・比較・通知サービス）のプライバシーポリシーです。取得する情報・利用目的・安全管理について定めています。",
+    "Risk Monitor（リスク監視・公開データ横断検索サービス）のプライバシーポリシーです。取得する情報・利用目的・安全管理について定めています。",
 };
 
 export default function PrivacyPage() {
@@ -18,7 +18,7 @@ export default function PrivacyPage() {
         {/* ── 前文 ── */}
         <section>
           <p className="text-sm text-gray-600 leading-relaxed">
-            大会ナビ運営者（以下「運営者」）は、Webサービス「大会ナビ」（以下「本サービス」）を
+            Risk Monitor運営者（以下「運営者」）は、Webサービス「Risk Monitor」（以下「本サービス」）を
             ご利用いただくユーザーの個人情報およびプライバシーの保護を重要な責務と考えています。
             本プライバシーポリシー（以下「本ポリシー」）は、本サービスにおける情報の取得・利用・管理・提供について定めるものです。
           </p>
@@ -489,7 +489,7 @@ export default function PrivacyPage() {
             その他プライバシーに関するご相談は、以下までご連絡ください。
           </p>
           <div className="mt-3 p-4 bg-gray-50 rounded-lg text-sm">
-            <p className="font-semibold text-gray-700">大会ナビ 運営者</p>
+            <p className="font-semibold text-gray-700">Risk Monitor 運営者</p>
             <p className="text-gray-600 mt-1">
               <Link
                 href="/contact"

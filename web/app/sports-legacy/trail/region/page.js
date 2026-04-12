@@ -6,7 +6,7 @@ export const metadata = {
   title: "地方別トレイルラン大会",
   description: "北海道から九州・沖縄まで、地方別にトレイルラン大会を探せます。お住まいの地域の大会をチェックしましょう。",
   openGraph: {
-    title: "地方別トレイルラン大会 | 大会ナビ",
+    title: "地方別トレイルラン大会 | Risk Monitor",
     description: "全国8地方のトレイルラン大会を地域ごとに探せます。",
     type: "website",
   },

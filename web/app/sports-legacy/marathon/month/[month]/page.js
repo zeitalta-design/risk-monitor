@@ -13,7 +13,7 @@ export async function generateMetadata({ params }) {
     title: `${label}開催のマラソン大会`,
     description: getMonthDescription(month),
     openGraph: {
-      title: `${label}開催のマラソン大会 | 大会ナビ`,
+      title: `${label}開催のマラソン大会 | Risk Monitor`,
       description: getMonthDescription(month),
       type: "website",
     },

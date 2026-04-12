@@ -30,7 +30,7 @@ CURRENT_CRON=$(crontab -l 2>/dev/null | grep -v "${CRON_MARKER}" | grep -v "scra
 NEW_CRON="${CURRENT_CRON}
 
 # ============================================ ${CRON_MARKER}
-# 大会ナビ スクレイピング定期巡回               ${CRON_MARKER}
+# Risk Monitor スクレイピング定期巡回               ${CRON_MARKER}
 # ============================================ ${CRON_MARKER}
 #                                               ${CRON_MARKER}
 # RUNNET: 3日に1回 (1,4,7,10,13,16,19,22,25,28日 午前5時) ${CRON_MARKER}

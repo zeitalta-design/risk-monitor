@@ -14,7 +14,7 @@ export async function generateMetadata({ params }) {
     title: `${name}のマラソン大会`,
     description: `${name}で開催されるマラソン大会を探せます。開催日、締切、距離を比較して大会を見つけられます。`,
     openGraph: {
-      title: `${name}のマラソン大会 | 大会ナビ`,
+      title: `${name}のマラソン大会 | Risk Monitor`,
       description: `${name}で開催されるマラソン大会一覧。日程・距離・締切で比較できます。`,
       type: "website",
     },

@@ -37,7 +37,7 @@ export default function GlobalError({ error, reset }) {
             </p>
           )}
           <p style={{ fontSize: "0.75rem", color: "#d1d5db", marginTop: "2.5rem" }}>
-            大海ナビ — taikainavi.jp
+            Risk Monitor
           </p>
         </div>
       </body>

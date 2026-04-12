@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "ページが見つかりません | 大海ナビ",
+  title: "ページが見つかりません | Risk Monitor",
   robots: { index: false, follow: true },
 };
 

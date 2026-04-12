@@ -50,7 +50,7 @@ export default function HowToUseSection() {
   return (
     <section className="max-w-6xl mx-auto px-4 py-10">
       <div className="text-center mb-6">
-        <h2 className="text-lg font-bold text-gray-900">大会ナビの使い方</h2>
+        <h2 className="text-lg font-bold text-gray-900">Risk Monitorの使い方</h2>
         <p className="text-sm text-gray-500 mt-1">4つのステップで大会選びがかんたんに</p>
       </div>
 

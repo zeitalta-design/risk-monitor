@@ -4,7 +4,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 /**
  * Phase128: 大会運営向けランディングページ
  *
- * /organizers — 大会運営者に大会ナビの掲載メリットと価値を伝える
+ * /organizers — 大会運営者にRisk Monitorの掲載メリットと価値を伝える
  * B2B的な落ち着いたトーン。Server Component（静的コンテンツ）。
  */
 
@@ -12,7 +12,7 @@ const BENEFITS = [
   {
     title: "全国のランナーに届く",
     description:
-      "大会ナビには全国のランナーが大会を探しに訪れます。掲載情報が充実するほど、検索結果や関連大会として表示される機会が増えます。",
+      "Risk Monitorには全国のランナーが大会を探しに訪れます。掲載情報が充実するほど、検索結果や関連大会として表示される機会が増えます。",
   },
   {
     title: "大会の反響が見える",
@@ -22,7 +22,7 @@ const BENEFITS = [
   {
     title: "情報の正確性が信頼を生む",
     description:
-      "正確な開催情報は、ランナーの安心感と信頼につながります。大会ナビでは情報の鮮度と正確性を重視し、運営者の方からの更新を歓迎しています。",
+      "正確な開催情報は、ランナーの安心感と信頼につながります。Risk Monitorでは情報の鮮度と正確性を重視し、運営者の方からの更新を歓迎しています。",
   },
   {
     title: "募集状況がリアルタイムに反映",
@@ -85,7 +85,7 @@ export default function OrganizersPage() {
           大会運営者・主催者の方へ
         </h1>
         <p className="text-sm text-gray-600 leading-relaxed max-w-2xl">
-          大会ナビは、全国のマラソン・トレイルランニング大会の情報を集約し、
+          Risk Monitorは、全国のマラソン・トレイルランニング大会の情報を集約し、
           ランナーが最適な大会を見つけるための検索ポータルです。
           ランナーに正確な情報を届けるために、大会運営者の方のご協力をお待ちしています。
         </p>
@@ -118,7 +118,7 @@ export default function OrganizersPage() {
         </h2>
         <div className="bg-gray-50 rounded-xl p-6 space-y-4">
           <p className="text-sm text-gray-600 leading-relaxed">
-            大会ナビでは、複数の情報ソースを定期的に照合し、掲載データの正確性を維持しています。
+            Risk Monitorでは、複数の情報ソースを定期的に照合し、掲載データの正確性を維持しています。
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
@@ -145,7 +145,7 @@ export default function OrganizersPage() {
           ランナーへの表示内容
         </h2>
         <p className="text-sm text-gray-500 mb-4">
-          大会ナビでは、以下のような形でランナーに大会情報を届けています。
+          Risk Monitorでは、以下のような形でランナーに大会情報を届けています。
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {FEATURES_FOR_RUNNERS.map((feature) => (

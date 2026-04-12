@@ -1,8 +1,8 @@
 export default function manifest() {
   return {
-    name: "大会ナビ",
-    short_name: "大会ナビ",
-    description: "公開データ / 業務DBカタログ — 行政処分・入札情報・補助金など業務で使える情報を横断検索",
+    name: "Risk Monitor",
+    short_name: "Risk Monitor",
+    description: "企業リスク監視プラットフォーム — 行政処分・入札情報・補助金など業務で使える公開データを横断検索",
     start_url: "/",
     display: "standalone",
     background_color: "#ffffff",

@@ -11,9 +11,9 @@ import { PLAN_FEATURES } from "@/lib/tier-config";
  */
 
 export const metadata = {
-  title: "料金プラン | 大会ナビ",
+  title: "料金プラン | Risk Monitor",
   description:
-    "大会ナビの無料プランとプレミアムプランの機能比較。大会の保存・比較・通知など、無料で始められます。",
+    "Risk Monitorの無料プランとプレミアムプランの機能比較。大会の保存・比較・通知など、無料で始められます。",
 };
 
 export default function PricingPage() {

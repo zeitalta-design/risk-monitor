@@ -2,7 +2,7 @@
  * Phase101: 大会メモ管理
  *
  * localStorageベースで大会ごとのメモを管理する。
- * エントリー後も大会ナビを使い続ける理由を作る。
+ * エントリー後もRisk Monitorを使い続ける理由を作る。
  */
 
 const STORAGE_KEY = "taikai_event_memos";

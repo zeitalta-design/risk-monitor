@@ -28,7 +28,7 @@ export default function ResultsPrivacyNote({ variant = "public" }) {
           {variant === "public" ? (
             <>
               <p>
-                大会ナビでは、大会結果のプライバシー保護を最優先としています。
+                Risk Monitorでは、大会結果のプライバシー保護を最優先としています。
               </p>
               <ul className="space-y-1.5 pl-4">
                 <li className="list-disc">

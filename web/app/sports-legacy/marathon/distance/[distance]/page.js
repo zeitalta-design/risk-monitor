@@ -13,7 +13,7 @@ export async function generateMetadata({ params }) {
     title: `${info.label}大会`,
     description: info.description,
     openGraph: {
-      title: `${info.label}大会 | 大会ナビ`,
+      title: `${info.label}大会 | Risk Monitor`,
       description: info.description,
       type: "website",
     },

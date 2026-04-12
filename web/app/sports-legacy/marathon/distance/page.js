@@ -6,7 +6,7 @@ export const metadata = {
   title: "距離別マラソン大会",
   description: "フルマラソン、ハーフマラソン、10km、5kmなど距離別にマラソン大会を探せます。",
   openGraph: {
-    title: "距離別マラソン大会 | 大会ナビ",
+    title: "距離別マラソン大会 | Risk Monitor",
     description: "距離で絞ってマラソン大会を探せます。フル、ハーフ、10km、5km、ウルトラ対応。",
     type: "website",
   },

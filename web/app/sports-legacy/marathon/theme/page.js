@@ -6,7 +6,7 @@ export const metadata = {
   title: "テーマ別マラソン大会",
   description: "初心者向け・記録狙い・観光ラン・締切間近など、目的に合ったマラソン大会を探せます。",
   openGraph: {
-    title: "テーマ別マラソン大会 | 大会ナビ",
+    title: "テーマ別マラソン大会 | Risk Monitor",
     description: "目的やテーマ別にマラソン大会を探せます。",
     type: "website",
   },

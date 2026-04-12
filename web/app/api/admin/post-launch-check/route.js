@@ -151,7 +151,7 @@ export async function GET() {
   results.checks.push({
     name: "サイト名",
     category: "SEO",
-    status: siteConfig.siteName === "大会ナビ" ? "pass" : "warn",
+    status: siteConfig.siteName === "Risk Monitor" ? "pass" : "warn",
     detail: siteConfig.siteName,
   });
 

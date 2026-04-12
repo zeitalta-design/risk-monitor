@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
  * トップページ用: カレンダー管理の価値訴求セクション
  *
  * 既存トップの世界観に溶け込みつつ、
- * 「大会ナビは検索だけでなく、未来と過去を管理できる」ことを
+ * 「Risk Monitorは検索だけでなく、未来と過去を管理できる」ことを
  * ミニカレンダーUIで視覚的に伝える。
  */
 
@@ -241,7 +241,7 @@ export default function CalendarValueSection() {
 
       {/* 下部コピー — 控えめな価値訴求 */}
       <p className="text-center text-xs text-gray-400 mt-6">
-        大会を探して、予定を立てて、記録を残す。大会ナビならすべてがひとつに。
+        大会を探して、予定を立てて、記録を残す。Risk Monitorならすべてがひとつに。
       </p>
     </section>
   );

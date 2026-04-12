@@ -11,7 +11,7 @@ import AdminNav from "@/components/AdminNav";
  */
 
 const MANUAL_CHECKS = [
-  { id: "brand", label: "ブランド名「大会ナビ」が全ページで統一されている", category: "ブランド" },
+  { id: "brand", label: "ブランド名「Risk Monitor」が全ページで統一されている", category: "ブランド" },
   { id: "favicon", label: "ファビコン・OGP画像が設定されている", category: "ブランド" },
   { id: "terms", label: "利用規約・プライバシーポリシーが最新版", category: "法務" },
   { id: "contact", label: "お問い合わせフォームが正常に送信できる", category: "法務" },

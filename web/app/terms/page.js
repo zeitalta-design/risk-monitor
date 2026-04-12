@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export const metadata = {
   title: "利用規約",
-  description: "大会ナビ（スポーツ大会検索・比較・通知サービス）の利用規約です。",
+  description: "Risk Monitor（リスク監視・公開データ横断検索サービス）の利用規約です。",
 };
 
 export default function TermsPage() {
@@ -15,7 +15,7 @@ export default function TermsPage() {
         {/* ── 前文 ── */}
         <section>
           <p className="text-sm text-gray-600 leading-relaxed">
-            この利用規約（以下「本規約」）は、大会ナビ運営者（以下「運営者」）が提供するWebサービス「大会ナビ」（以下「本サービス」）の利用条件を定めるものです。
+            この利用規約（以下「本規約」）は、Risk Monitor運営者（以下「運営者」）が提供するWebサービス「Risk Monitor」（以下「本サービス」）の利用条件を定めるものです。
             本サービスを利用される方（以下「ユーザー」）は、本規約に同意のうえご利用ください。
           </p>
         </section>

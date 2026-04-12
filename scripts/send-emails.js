@@ -113,7 +113,7 @@ async function main() {
     console.log(`  Ethereal Web:  https://ethereal.email`);
   }
 
-  const from = process.env.MAIL_FROM || "大会ナビ <noreply@taikainavi.com>";
+  const from = process.env.MAIL_FROM || "Risk Monitor <noreply@taikainavi.com>";
   console.log(`From: ${from}`);
   console.log(`Transport: ${transporterType}`);
 
