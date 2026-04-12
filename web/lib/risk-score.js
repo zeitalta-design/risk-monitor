@@ -123,3 +123,19 @@ export const RISK_COLORS = {
     ring: "ring-gray-400", fill: "bg-gray-400", badge: "bg-gray-100 text-gray-600",
   },
 };
+
+/**
+ * Grok版互換: 事業者名ベースのリスクスコア算出
+ * DB参照が必要な場合はこちらを使用
+ */
+export function calcRiskScore(organizationName, industry = "") {
+  // DB非依存のフォールバック（事業者名ベースの処分情報がない場合）
+  return { score: 0, level: "low", label: "低リスク", color: "green", breakdown: {}, actions: [], totalCount: 0, recentThreeYearsCount: 0, recent180Count: 0, latestActionDate: null };
+}
+
+export function getRiskLevel(score) {
+  if (score >= 70) return { level: "critical", label: "要警戒", color: "red" };
+  if (score >= 40) return { level: "high", label: "高", color: "orange" };
+  if (score >= 20) return { level: "medium", label: "注意", color: "yellow" };
+  return { level: "low", label: "低", color: "gray" };
+}
