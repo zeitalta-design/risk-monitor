@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import DomainListPage from "@/components/core/DomainListPage";
+import CategoryPageHeader from "@/components/CategoryPageHeader";
 import DomainFavoriteButton from "@/components/core/DomainFavoriteButton";
 import "@/lib/domains";
 import { getDomain } from "@/lib/core/domain-registry";
@@ -108,6 +109,7 @@ export default function KyoninkaListPage() {
 
   return (
     <DomainListPage
+      headerSlot={<CategoryPageHeader categoryId="kyoninka" />}
       title="許認可検索"
       subtitle={loading ? "読み込み中..." : `${total}件の事業者`}
       items={items}

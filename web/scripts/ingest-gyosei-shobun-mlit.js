@@ -218,20 +218,24 @@ function normalizeIndustry(raw) {
   return "other";
 }
 
-function generateSlug(item) {
+/**
+ * ASCII-only slug を生成する。
+ * 形式: YYYYMMDD-action_type-NNN (NNN は衝突回避のシーケンス番号)
+ * 既存の日本語 slug との後方互換性は page.js 側の fallback で担保。
+ */
+function generateSlug(item, db) {
   const datePart = (item.action_date || "unknown").replace(/-/g, "");
-  const orgPart = (item.organization_name_raw || "unknown")
-    .replace(/株式会社|有限会社|（株）|\(株\)|合同会社/g, "")
-    .trim()
-    .substring(0, 12);
-  const typePart = normalizeActionType(item.action_type);
-  const authPart = (item.authority_name || "").replace(/国土交通省\s*/, "").substring(0, 6);
-  return `${datePart}-${typePart}-${orgPart}-${authPart}`
-    .replace(/\s+/g, "-")
-    .replace(/[^\w\u3000-\u9FFF-]/g, "")
-    .replace(/-+/g, "-")
-    .replace(/-$/, "")
-    .substring(0, 80);
+  const typePart = (normalizeActionType ? normalizeActionType(item.action_type) : item.action_type) || "other";
+  const base = `${datePart}-${typePart}`;
+  // 衝突回避: base → base-2 → base-3 ...
+  if (!db) return base; // fallback (db未渡し時)
+  let candidate = base;
+  let seq = 2;
+  while (db.prepare("SELECT id FROM administrative_actions WHERE slug = ?").get(candidate)) {
+    candidate = `${base}-${seq}`;
+    seq++;
+  }
+  return candidate;
 }
 
 function normalizeName(rawName) {
@@ -332,7 +336,7 @@ async function main() {
   const orgStats = { found_by_corp: 0, found_by_name: 0, created: 0 };
 
   for (const item of CURATED_DATA) {
-    const slug = generateSlug(item);
+    const slug = generateSlug(item, db);
     const actionType = normalizeActionType(item.action_type);
     const industry = normalizeIndustry(item.industry);
 

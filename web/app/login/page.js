@@ -34,8 +34,13 @@ function LoginSkeleton() {
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect") || "/";
+  // ?next= (risk-watch系) / ?redirect= (既存) 両方対応
+  const nextParam = searchParams.get("next");
+  const redirectParam = searchParams.get("redirect");
+  const redirectTo = nextParam || redirectParam || "/";
   const denied = searchParams.get("denied") === "1";
+  // ウォッチ系ページからのリダイレクト判定
+  const isWatchContext = nextParam && (nextParam.startsWith("/risk") || nextParam.startsWith("/gyosei"));
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -122,9 +127,17 @@ function LoginForm() {
         <h1 className="text-xl font-extrabold text-gray-900 text-center mb-1">
           ログイン
         </h1>
-        <p className="text-xs text-gray-500 text-center mb-6">
-          アカウント情報を入力してください
-        </p>
+        {isWatchContext ? (
+          <p className="text-xs text-center mb-6 px-2">
+            <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-lg px-3 py-1.5 text-[11px] font-medium">
+              👁 ウォッチ登録・リスク監視にはログインが必要です
+            </span>
+          </p>
+        ) : (
+          <p className="text-xs text-gray-500 text-center mb-6">
+            アカウント情報を入力してください
+          </p>
+        )}
 
         <form
           onSubmit={handleSubmit}

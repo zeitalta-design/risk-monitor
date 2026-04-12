@@ -19,6 +19,52 @@ import {
 
 const kyoninkaDomain = getDomain("kyoninka");
 
+// ─── キー情報バー ─────────────────────
+
+function KyoninkaInfoBanner({ item, registrations }) {
+  const sb = getEntityStatusBadge(item.entity_status);
+  const activeCount = (registrations || []).filter(isRegistrationValid).length;
+  const hasDisciplinary = (registrations || []).some((r) => r.disciplinary_flag === 1);
+  const accent = hasDisciplinary ? "#DC2626" : sb.color?.includes("green") ? "#16A34A" : sb.color?.includes("red") ? "#DC2626" : "#2563EB";
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden mb-6 shadow-sm">
+      <div className="h-1.5" style={{ backgroundColor: accent }} />
+      <div className="p-5">
+        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          {(item.prefecture || item.city) && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-400 text-xs">所在地</span>
+              <span className="font-bold text-gray-900">{[item.prefecture, item.city].filter(Boolean).join(" ")}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-1.5">
+            <span className="text-gray-400 text-xs">事業者状態</span>
+            <span className="font-bold text-gray-900">{sb.label}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-gray-400 text-xs">許認可総数</span>
+            <span className="font-bold text-gray-900">{registrations?.length || 0}件 / 有効{activeCount}件</span>
+          </div>
+          {hasDisciplinary && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded font-bold">⚠ 行政処分あり</span>
+            </div>
+          )}
+          {item.source_url && (
+            <div className="ml-auto">
+              <a href={item.source_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
+                原文ソース
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── 許認可一覧テーブル ─────────────────────
 
 function RegistrationList({ registrations }) {
@@ -232,6 +278,9 @@ export default function KyoninkaDetailPage() {
       }
       footerSlot={<div className="flex gap-3 mt-2"><Link href="/kyoninka" className="btn-secondary text-sm">← 一覧に戻る</Link></div>}
     >
+      {/* キー情報バー */}
+      <KyoninkaInfoBanner item={item} registrations={registrations} />
+
       {/* 許認可サマリー */}
       <RegistrationSummary item={item} registrations={registrations} />
 

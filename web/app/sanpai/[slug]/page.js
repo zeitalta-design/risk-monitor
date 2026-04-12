@@ -153,6 +153,57 @@ function RiskSummary({ item, penalties }) {
   );
 }
 
+// ─── キー情報バー ─────────────────────
+
+function SanpaiInfoBanner({ item, penalties }) {
+  const risk = getRiskLevel(item.risk_level);
+  const sb = getStatusBadge(item.status);
+  const penaltyCount = penalties?.length || 0;
+  // risk.value: "critical"→red, "high"→amber, "medium"→blue, "low"→green
+  const accent = risk.value === "critical" ? "#DC2626" : risk.value === "high" ? "#D97706" : risk.value === "medium" ? "#2563EB" : "#16A34A";
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden mb-6 shadow-sm">
+      <div className="h-1.5" style={{ backgroundColor: accent }} />
+      <div className="p-5">
+        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          <div className="flex items-center gap-1.5">
+            <span className="text-gray-400 text-xs">リスク</span>
+            <span className={`font-bold ${risk.value === "critical" ? "text-red-600" : risk.value === "high" ? "text-amber-600" : risk.value === "medium" ? "text-blue-600" : "text-gray-700"}`}>{risk.label}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-gray-400 text-xs">ステータス</span>
+            <span className="font-medium text-gray-800">{sb.label}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-gray-400 text-xs">処分件数</span>
+            <span className={`font-bold ${penaltyCount > 0 ? "text-amber-700" : "text-gray-700"}`}>{penaltyCount}件</span>
+          </div>
+          {item.latest_penalty_date && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-400 text-xs">直近処分日</span>
+              <span className="font-medium text-gray-800">{item.latest_penalty_date}</span>
+            </div>
+          )}
+          {item.prefecture && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-400 text-xs">所在地</span>
+              <span className="font-medium text-gray-700">{[item.prefecture, item.city].filter(Boolean).join(" ")}</span>
+            </div>
+          )}
+          {(item.source_url || item.detail_url) && (
+            <div className="ml-auto">
+              <a href={item.source_url || item.detail_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
+                原文ソース
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── メインページ ─────────────────────
 
 export default function SanpaiDetailPage() {
@@ -217,6 +268,9 @@ export default function SanpaiDetailPage() {
       }
       footerSlot={<div className="flex gap-3 mt-2"><Link href="/sanpai" className="btn-secondary text-sm">← 一覧に戻る</Link></div>}
     >
+      {/* キー情報バー */}
+      <SanpaiInfoBanner item={item} penalties={penalties} />
+
       {/* リスク概要 */}
       <RiskSummary item={item} penalties={penalties} />
 

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import DomainListPage from "@/components/core/DomainListPage";
+import CategoryPageHeader from "@/components/CategoryPageHeader";
 import DomainCompareBar from "@/components/core/DomainCompareBar";
 import DomainCompareButton from "@/components/core/DomainCompareButton";
 import DomainFavoriteButton from "@/components/core/DomainFavoriteButton";
@@ -84,6 +85,7 @@ export default function HojokinListPage() {
 
   return (
     <DomainListPage
+      headerSlot={<CategoryPageHeader categoryId="hojokin" />}
       title="補助金ナビ"
       subtitle={loading ? "読み込み中..." : `${total}件の制度`}
       items={items}

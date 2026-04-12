@@ -218,11 +218,22 @@ function findOrCreateOrg(db, rawName, corporateNumber, prefecture, city) {
   return { org, action: "created" };
 }
 
-function generateSlug(item) {
+/**
+ * ASCII-only slug を生成する。
+ * 形式: YYYYMMDD-action_type (衝突時: YYYYMMDD-action_type-2, -3, ...)
+ */
+function generateSlug(item, db) {
   const datePart = (item.action_date || "unknown").replace(/-/g, "");
-  const orgPart = normalizeName(item.organization_name_raw).normalized.substring(0, 10);
-  const typePart = item.action_type;
-  return `${datePart}-${typePart}-${orgPart}`.replace(/\s+/g, "-").replace(/[^\w\u3000-\u9FFF-]/g, "").substring(0, 60);
+  const typePart = item.action_type || "other";
+  const base = `${datePart}-${typePart}`;
+  if (!db) return base;
+  let candidate = base;
+  let seq = 2;
+  while (db.prepare("SELECT id FROM administrative_actions WHERE slug = ?").get(candidate)) {
+    candidate = `${base}-${seq}`;
+    seq++;
+  }
+  return candidate;
 }
 
 // ─── メイン処理 ───
@@ -323,7 +334,7 @@ async function main() {
   let created = 0, updated = 0, orgCreated = 0, orgFound = 0;
 
   for (const item of SEED_ITEMS) {
-    const slug = generateSlug(item);
+    const slug = generateSlug(item, db);
     const { org, action: orgAction } = findOrCreateOrg(db, item.organization_name_raw, item.corporate_number, item.prefecture, item.city);
     if (orgAction === "created") orgCreated++;
     else orgFound++;

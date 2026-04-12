@@ -17,6 +17,61 @@ import {
 
 const shiteiDomain = getDomain("shitei");
 
+// ─── キー情報バー ─────────────────────
+
+function ShiteiInfoBanner({ item }) {
+  const sb = getRecruitmentStatusBadge(item.recruitment_status);
+  const deadline = item.application_deadline ? new Date(item.application_deadline) : null;
+  const now = new Date();
+  const daysLeft = deadline ? Math.ceil((deadline - now) / (1000 * 60 * 60 * 24)) : null;
+  const isPast = daysLeft !== null && daysLeft < 0;
+  const isUrgent = daysLeft !== null && !isPast && daysLeft <= 7;
+  const isSoon = daysLeft !== null && !isPast && daysLeft <= 30;
+  const accent = sb.color?.includes("red") ? "#DC2626" : sb.color?.includes("green") ? "#16A34A" : sb.color?.includes("amber") ? "#D97706" : "#2563EB";
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden mb-6 shadow-sm">
+      <div className="h-1.5" style={{ backgroundColor: accent }} />
+      <div className="p-5">
+        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          {item.municipality_name && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-400 text-xs">発行元</span>
+              <span className="font-bold text-gray-900">{item.municipality_name}</span>
+            </div>
+          )}
+          {item.prefecture && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-400 text-xs">地域</span>
+              <span className="font-medium text-gray-800">{item.prefecture}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-1.5">
+            <span className="text-gray-400 text-xs">募集状態</span>
+            <span className="font-bold text-gray-900">{sb.label}</span>
+          </div>
+          {item.application_deadline && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-400 text-xs">応募期限</span>
+              <span className={`font-bold ${isPast ? "text-gray-400" : isUrgent ? "text-red-600" : isSoon ? "text-amber-600" : "text-gray-900"}`}>
+                {formatDate(item.application_deadline)}{daysLeft !== null && !isPast ? ` (残${daysLeft}日)` : isPast ? " (期限切れ)" : ""}
+              </span>
+            </div>
+          )}
+          {(item.detail_url || item.source_url) && (
+            <div className="ml-auto">
+              <a href={item.detail_url || item.source_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
+                原文ソース
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── 応募期限カウントダウン ─────────────────────
 
 function DeadlineCountdown({ deadline }) {
@@ -137,6 +192,9 @@ export default function ShiteiDetailPage() {
       }
       footerSlot={<div className="flex gap-3 mt-2"><Link href="/shitei" className="btn-secondary text-sm">← 一覧に戻る</Link></div>}
     >
+      {/* キー情報バー */}
+      <ShiteiInfoBanner item={item} />
+
       {/* 募集情報サマリー */}
       <RecruitmentSummary item={item} />
 

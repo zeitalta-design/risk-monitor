@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import DomainListPage from "@/components/core/DomainListPage";
+import CategoryPageHeader from "@/components/CategoryPageHeader";
 import DomainCompareBar from "@/components/core/DomainCompareBar";
 import DomainCompareButton from "@/components/core/DomainCompareButton";
 import DomainFavoriteButton from "@/components/core/DomainFavoriteButton";
@@ -121,6 +122,7 @@ export default function NyusatsuListPage() {
 
   return (
     <DomainListPage
+      headerSlot={<CategoryPageHeader categoryId="nyusatsu" />}
       title="入札ナビ"
       subtitle={loading ? "読み込み中..." : `${total}件の案件`}
       items={items}

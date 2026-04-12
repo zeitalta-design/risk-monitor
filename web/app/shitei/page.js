@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import DomainListPage from "@/components/core/DomainListPage";
+import CategoryPageHeader from "@/components/CategoryPageHeader";
 import DomainFavoriteButton from "@/components/core/DomainFavoriteButton";
 import "@/lib/domains";
 import { getDomain } from "@/lib/core/domain-registry";
@@ -118,6 +119,7 @@ export default function ShiteiListPage() {
 
   return (
     <DomainListPage
+      headerSlot={<CategoryPageHeader categoryId="shitei" />}
       title="指定管理公募まとめ"
       subtitle={loading ? "読み込み中..." : `${total}件の公募案件`}
       items={items}

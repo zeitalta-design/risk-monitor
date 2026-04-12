@@ -20,6 +20,59 @@ import {
 
 const hojokinDomain = getDomain("hojokin");
 
+// ─── キー情報バー ─────────────────────
+
+function HojokinInfoBanner({ item }) {
+  const statusColor = getStatusColor(item.status);
+  const accent = statusColor?.includes("green") ? "#16A34A" : statusColor?.includes("red") ? "#DC2626" : statusColor?.includes("amber") ? "#D97706" : "#2563EB";
+  const deadline = item.deadline ? new Date(item.deadline) : null;
+  const now = new Date();
+  const daysLeft = deadline ? Math.ceil((deadline - now) / (1000 * 60 * 60 * 24)) : null;
+  const isPast = daysLeft !== null && daysLeft < 0;
+  const isUrgent = daysLeft !== null && !isPast && daysLeft <= 7;
+  const isSoon = daysLeft !== null && !isPast && daysLeft <= 30;
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden mb-6 shadow-sm">
+      <div className="h-1.5" style={{ backgroundColor: accent }} />
+      <div className="p-5">
+        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          {item.provider_name && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-400 text-xs">提供主体</span>
+              <span className="font-bold text-gray-900">{item.provider_name}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-1.5">
+            <span className="text-gray-400 text-xs">募集状況</span>
+            <span className="font-bold text-gray-900">{getStatusLabel(item.status)}</span>
+          </div>
+          {item.max_amount != null && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-400 text-xs">補助上限</span>
+              <span className="font-bold text-gray-900">{formatAmount(item.max_amount)}</span>
+            </div>
+          )}
+          {item.deadline && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-400 text-xs">公募締切</span>
+              <span className={`font-bold ${isPast ? "text-gray-400" : isUrgent ? "text-red-600" : isSoon ? "text-amber-600" : "text-gray-900"}`}>
+                {formatDeadline(item.deadline)}{daysLeft !== null && !isPast ? ` (残${daysLeft}日)` : isPast ? " (締切済)" : ""}
+              </span>
+            </div>
+          )}
+          {item.target_type && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-400 text-xs">対象者</span>
+              <span className="font-medium text-gray-800">{getTargetLabel(item.target_type)}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function HojokinDetailPage() {
   const { slug } = useParams();
   const [item, setItem] = useState(null);
@@ -77,6 +130,8 @@ export default function HojokinDetailPage() {
       }
       footerSlot={<div className="flex gap-3 mt-2"><Link href="/hojokin" className="btn-secondary text-sm">← 一覧に戻る</Link></div>}
     >
+      <HojokinInfoBanner item={item} />
+
       <section className="card p-6 mb-6">
         <h2 className="text-sm font-bold text-gray-900 mb-3">制度概要</h2>
         <p className="text-sm text-gray-700 leading-relaxed">{item.summary}</p>

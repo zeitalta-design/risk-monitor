@@ -95,6 +95,7 @@ export function detectPendingNotifications() {
       latest_action_date: row.latest_action_date,
       latest_action_type: row.latest_action_type,
       prefecture: row.prefecture,
+      last_notified_action_date: row.last_notified_action_date,
     });
   }
 
@@ -174,6 +175,102 @@ function updateNotifiedCursor(watchIds) {
   })();
 }
 
+// ─── risk_alerts 挿入（冪等） ─────────────────────
+
+/**
+ * 新着処分を risk_alerts テーブルに挿入する。
+ * UNIQUE INDEX (user_id, action_id) により重複挿入は INSERT OR IGNORE で無視される。
+ *
+ * @param {number} userId
+ * @param {number} watchId - watched_organizations.id
+ * @param {string} organizationName
+ * @param {string} industry
+ * @param {string|null} lastNotifiedDate - この日付より新しい処分のみ対象
+ * @returns {number} 挿入件数
+ */
+function insertRiskAlertsForWatch(userId, watchId, organizationName, industry, lastNotifiedDate) {
+  const db = getDb();
+
+  const dateFilter = lastNotifiedDate
+    ? `AND action_date >= '${lastNotifiedDate.replace(/'/g, "''")}'`
+    : "";
+
+  const newActions = db.prepare(`
+    SELECT id, action_type, action_date, organization_name_raw, industry, summary
+    FROM administrative_actions
+    WHERE organization_name_raw = @org
+      AND industry = @industry
+      AND is_published = 1
+      ${dateFilter}
+    ORDER BY action_date DESC NULLS LAST, id DESC
+    LIMIT 50
+  `).all({ org: organizationName, industry: industry || "" });
+
+  if (newActions.length === 0) return 0;
+
+  const ACTION_LABELS = {
+    license_revocation: "許可取消",
+    business_suspension: "業務停止",
+    improvement_order: "指示処分",
+    warning: "警告",
+    guidance: "指導",
+    other: "その他",
+  };
+
+  const insertStmt = db.prepare(`
+    INSERT OR IGNORE INTO risk_alerts
+      (user_id, watched_org_id, action_id, organization_name, industry, action_type, action_date, title, body)
+    VALUES
+      (@user_id, @watched_org_id, @action_id, @organization_name, @industry, @action_type, @action_date, @title, @body)
+  `);
+
+  let inserted = 0;
+  db.transaction(() => {
+    for (const action of newActions) {
+      const label = ACTION_LABELS[action.action_type] || "処分";
+      const result = insertStmt.run({
+        user_id: userId,
+        watched_org_id: watchId,
+        action_id: action.id,
+        organization_name: organizationName,
+        industry: industry || "",
+        action_type: action.action_type,
+        action_date: action.action_date || null,
+        title: `${organizationName}に新しい行政処分が追加されました（${label}）`,
+        body: action.summary ? action.summary.slice(0, 200) : null,
+      });
+      inserted += result.changes;
+    }
+  })();
+
+  return inserted;
+}
+
+/**
+ * 全ウォッチ対象に対して risk_alerts を挿入する（冪等）。
+ * runWatchlistNotifications と独立して呼び出し可能。
+ * @returns {{ inserted: number, watches: number }}
+ */
+export function syncRiskAlerts() {
+  const db = getDb();
+
+  const watches = db.prepare(`
+    SELECT w.id, w.user_id, w.organization_name, w.industry, w.last_notified_action_date
+    FROM watched_organizations w
+    JOIN users u ON u.id = w.user_id AND u.is_active = 1
+  `).all();
+
+  let totalInserted = 0;
+  for (const w of watches) {
+    const inserted = insertRiskAlertsForWatch(
+      w.user_id, w.id, w.organization_name, w.industry, w.last_notified_action_date
+    );
+    totalInserted += inserted;
+  }
+
+  return { inserted: totalInserted, watches: watches.length };
+}
+
 // ─── メイン実行 ─────────────────────
 
 /**
@@ -233,7 +330,12 @@ export async function runWatchlistNotifications({ dryRun = false } = {}) {
         text: bodyText,
       });
 
-      // 送信成功 → カーソル更新
+      // 送信成功 → risk_alerts 挿入 → カーソル更新
+      for (const w of watches) {
+        insertRiskAlertsForWatch(
+          userId, w.watch_id, w.organization_name, w.industry, w.last_notified_action_date || null
+        );
+      }
       updateNotifiedCursor(watchIds);
       emailsSent++;
 

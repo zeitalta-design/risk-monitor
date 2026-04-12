@@ -18,6 +18,64 @@ import {
 
 const nyusatsuDomain = getDomain("nyusatsu");
 
+// ─── キー情報バー ─────────────────────
+
+function NyusatsuInfoBanner({ item }) {
+  // 締切の緊急度でアクセントカラー決定
+  // item.deadline が文字列 "YYYY-MM-DD" 形式を想定
+  const deadline = item.deadline ? new Date(item.deadline) : null;
+  const now = new Date();
+  const daysLeft = deadline ? Math.ceil((deadline - now) / (1000 * 60 * 60 * 24)) : null;
+  const isPast = daysLeft !== null && daysLeft < 0;
+  const isUrgent = daysLeft !== null && !isPast && daysLeft <= 7;
+  const isSoon = daysLeft !== null && !isPast && daysLeft <= 30;
+  const accent = isPast ? "#9CA3AF" : isUrgent ? "#DC2626" : isSoon ? "#D97706" : "#2563EB";
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden mb-6 shadow-sm">
+      <div className="h-1.5" style={{ backgroundColor: accent }} />
+      <div className="p-5">
+        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          {item.issuer_name && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-400 text-xs">発注機関</span>
+              <span className="font-bold text-gray-900">{item.issuer_name}</span>
+            </div>
+          )}
+          {item.target_area && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-400 text-xs">対象地域</span>
+              <span className="font-medium text-gray-800">{item.target_area}</span>
+            </div>
+          )}
+          {item.budget_amount != null && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-400 text-xs">予算規模</span>
+              <span className="font-bold text-gray-900">{formatBudget(item.budget_amount)}</span>
+            </div>
+          )}
+          {item.deadline && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-400 text-xs">締切</span>
+              <span className={`font-bold ${isPast ? "text-gray-400" : isUrgent ? "text-red-600" : isSoon ? "text-amber-600" : "text-gray-900"}`}>
+                {formatDeadline(item.deadline)}{daysLeft !== null && !isPast ? ` (残${daysLeft}日)` : isPast ? " (締切済)" : ""}
+              </span>
+            </div>
+          )}
+          {item.announcement_url && (
+            <div className="ml-auto">
+              <a href={item.announcement_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
+                原文ソース
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function NyusatsuDetailPage() {
   const { slug } = useParams();
   const [item, setItem] = useState(null);
@@ -75,6 +133,8 @@ export default function NyusatsuDetailPage() {
       }
       footerSlot={<div className="flex gap-3 mt-2"><Link href="/nyusatsu" className="btn-secondary text-sm">← 一覧に戻る</Link></div>}
     >
+      <NyusatsuInfoBanner item={item} />
+
       <section className="card p-6 mb-6">
         <h2 className="text-sm font-bold text-gray-900 mb-3">案件概要</h2>
         <p className="text-sm text-gray-700 leading-relaxed">{item.summary}</p>
