@@ -23,9 +23,7 @@ const TAB_GROUPS = [
   {
     label: "品質・分析",
     tabs: [
-      { href: "/admin/quality", label: "品質管理" },
       { href: "/admin/data-growth", label: "成長KPI" },
-      { href: "/admin/verification-conflicts", label: "相互検証" },
       { href: "/admin/analytics", label: "分析" },
     ],
   },
