@@ -3,11 +3,91 @@ import { getDb } from "@/lib/db";
 import { requireAdminApi } from "@/lib/admin-api-guard";
 
 /**
- * Phase240: 巡回パトロール / 品質確認API（改善版）
- * - 問題種別ごとの件数カード
- * - patrol_status フィルタリング対応
- * - 再取得ログ取得
+ * 巡回パトロール API — リスクデータ品質監視
+ * 6カテゴリ横断の品質チェック
  */
+
+const DOMAIN_CONFIG = {
+  "gyosei-shobun": {
+    table: "administrative_actions",
+    label: "行政処分",
+    nameCol: "organization_name_raw",
+    sourceUrlCol: "source_url",
+    prefectureCol: "prefecture",
+    publishCol: "is_published",
+    slugCol: "slug",
+    editPath: "/admin/gyosei-shobun",
+  },
+  sanpai: {
+    table: "sanpai_items",
+    label: "産廃処分",
+    nameCol: "company_name",
+    sourceUrlCol: "source_url",
+    prefectureCol: "prefecture",
+    publishCol: "is_published",
+    slugCol: "slug",
+    editPath: "/admin/sanpai",
+  },
+  nyusatsu: {
+    table: "nyusatsu_items",
+    label: "入札",
+    nameCol: "title",
+    sourceUrlCol: "announcement_url",
+    prefectureCol: null,
+    publishCol: "is_published",
+    slugCol: "slug",
+    editPath: "/admin/nyusatsu",
+  },
+  shitei: {
+    table: "shitei_items",
+    label: "指定管理",
+    nameCol: "title",
+    sourceUrlCol: "source_url",
+    prefectureCol: "prefecture",
+    publishCol: "is_published",
+    slugCol: "slug",
+    editPath: "/admin/shitei",
+  },
+  hojokin: {
+    table: "hojokin_items",
+    label: "補助金",
+    nameCol: "title",
+    sourceUrlCol: "source_url",
+    prefectureCol: null,
+    publishCol: "is_published",
+    slugCol: "slug",
+    editPath: "/admin/hojokin",
+  },
+  kyoninka: {
+    table: "kyoninka_entities",
+    label: "許認可",
+    nameCol: "entity_name",
+    sourceUrlCol: "source_url",
+    prefectureCol: "prefecture",
+    publishCol: "is_published",
+    slugCol: "slug",
+    editPath: "/admin/kyoninka",
+  },
+};
+
+const ISSUE_META = {
+  missing_source: { label: "ソースURL未設定", level: "danger", priority: 1 },
+  unpublished: { label: "未公開データ", level: "warning", priority: 2 },
+  stale_30d: { label: "30日以上未更新", level: "warning", priority: 3 },
+  no_prefecture: { label: "都道府県未設定", level: "warning", priority: 4 },
+  sync_failed: { label: "同期エラー", level: "danger", priority: 5 },
+  needs_review: { label: "要レビュー", level: "danger", priority: 6 },
+  low_confidence: { label: "信頼度低", level: "info", priority: 7 },
+};
+
+function safeCount(db, sql, params = []) {
+  try {
+    return db.prepare(sql).get(...params)?.c || 0;
+  } catch {
+    return 0;
+  }
+}
+
 export async function GET(request) {
   const guard = await requireAdminApi();
   if (guard.error) return guard.error;
@@ -16,56 +96,65 @@ export async function GET(request) {
     const db = getDb();
     const { searchParams } = new URL(request.url);
     const issue = searchParams.get("issue");
-    const now = new Date().toISOString().split("T")[0];
-    const staleDate = new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0];
-    const archivedDate = new Date(Date.now() - 31 * 86400000).toISOString().split("T")[0];
+    const staleDate = new Date(Date.now() - 30 * 86400000).toISOString().replace("T", " ").slice(0, 19);
 
-    // patrol_status除外条件: manual_resolved / refetch_excluded は除外
-    const excludePatrol = `AND (patrol_status IS NULL OR patrol_status NOT IN ('manual_resolved', 'refetch_excluded'))`;
+    // 問題種別ごとの件数を集計
+    const issueCounts = {};
 
-    // 問題種別ごとの件数
-    const issueCounts = {
-      no_date: db.prepare(
-        `SELECT COUNT(*) as c FROM events WHERE is_active = 1 AND (event_date IS NULL OR event_date = '') ${excludePatrol}`
-      ).get().c,
-      no_prefecture: db.prepare(
-        `SELECT COUNT(*) as c FROM events WHERE is_active = 1 AND (prefecture IS NULL OR prefecture = '') ${excludePatrol}`
-      ).get().c,
-      no_venue: db.prepare(
-        `SELECT COUNT(*) as c FROM events WHERE is_active = 1 AND (venue_name IS NULL OR venue_name = '') ${excludePatrol}`
-      ).get().c,
-      no_distance: db.prepare(
-        `SELECT COUNT(*) as c FROM events WHERE is_active = 1 AND id NOT IN (SELECT DISTINCT event_id FROM event_races) ${excludePatrol}`
-      ).get().c,
-      no_url: db.prepare(
-        `SELECT COUNT(*) as c FROM events WHERE is_active = 1 AND (official_url IS NULL OR official_url = '') ${excludePatrol}`
-      ).get().c,
-      past_archived: db.prepare(
-        `SELECT COUNT(*) as c FROM events WHERE is_active = 1 AND event_date < ? AND event_date IS NOT NULL AND event_date != ''`
-      ).get(archivedDate).c,
-      past_recent: db.prepare(
-        `SELECT COUNT(*) as c FROM events WHERE is_active = 1 AND event_date < ? AND event_date >= ? AND event_date IS NOT NULL AND event_date != ''`
-      ).get(now, archivedDate).c,
-      stale: db.prepare(
-        `SELECT COUNT(*) as c FROM events WHERE is_active = 1 AND updated_at < ? ${excludePatrol}`
-      ).get(staleDate + "T00:00:00").c,
-      conflict: db.prepare(
-        `SELECT COUNT(*) as c FROM events WHERE is_active = 1 AND verification_conflict = 1`
-      ).get().c,
-    };
+    // missing_source: ソースURL未設定
+    let missingSource = 0;
+    for (const [, cfg] of Object.entries(DOMAIN_CONFIG)) {
+      missingSource += safeCount(db,
+        `SELECT COUNT(*) as c FROM ${cfg.table} WHERE ${cfg.publishCol} = 1 AND (${cfg.sourceUrlCol} IS NULL OR ${cfg.sourceUrlCol} = '')`
+      );
+    }
+    issueCounts.missing_source = missingSource;
 
-    const ISSUE_META = {
-      no_date: { label: "開催日未設定", level: "danger", priority: 1, refetchable: true },
-      no_prefecture: { label: "都道府県未設定", level: "danger", priority: 2, refetchable: true },
-      no_venue: { label: "会場未設定", level: "warning", priority: 3, refetchable: true },
-      no_distance: { label: "種目（距離）未設定", level: "warning", priority: 4, refetchable: true },
-      no_url: { label: "公式URL未設定", level: "warning", priority: 5, refetchable: true },
-      past_archived: { label: "終了31日超で公開中", level: "danger", priority: 6, refetchable: false },
-      past_recent: { label: "終了30日以内（公開中）", level: "info", priority: 7, refetchable: false },
-      stale: { label: "30日以上未更新", level: "info", priority: 8, refetchable: true },
-      conflict: { label: "情報矛盾あり", level: "warning", priority: 9, refetchable: false },
-    };
+    // unpublished: 未公開データ
+    let unpublished = 0;
+    for (const [, cfg] of Object.entries(DOMAIN_CONFIG)) {
+      unpublished += safeCount(db,
+        `SELECT COUNT(*) as c FROM ${cfg.table} WHERE ${cfg.publishCol} = 0`
+      );
+    }
+    issueCounts.unpublished = unpublished;
 
+    // stale_30d: 30日以上未更新
+    let stale = 0;
+    for (const [, cfg] of Object.entries(DOMAIN_CONFIG)) {
+      stale += safeCount(db,
+        `SELECT COUNT(*) as c FROM ${cfg.table} WHERE ${cfg.publishCol} = 1 AND updated_at < ?`,
+        [staleDate]
+      );
+    }
+    issueCounts.stale_30d = stale;
+
+    // no_prefecture: 都道府県未設定（対象カテゴリのみ）
+    let noPref = 0;
+    for (const [, cfg] of Object.entries(DOMAIN_CONFIG)) {
+      if (!cfg.prefectureCol) continue;
+      noPref += safeCount(db,
+        `SELECT COUNT(*) as c FROM ${cfg.table} WHERE ${cfg.publishCol} = 1 AND (${cfg.prefectureCol} IS NULL OR ${cfg.prefectureCol} = '')`
+      );
+    }
+    issueCounts.no_prefecture = noPref;
+
+    // sync_failed: 同期エラー
+    issueCounts.sync_failed = safeCount(db,
+      `SELECT COUNT(*) as c FROM sync_runs WHERE run_status = 'failed'`
+    );
+
+    // needs_review: 要レビュー
+    issueCounts.needs_review = safeCount(db,
+      `SELECT COUNT(*) as c FROM change_logs WHERE requires_review = 1 AND reviewed_at IS NULL`
+    );
+
+    // low_confidence: 信頼度低
+    issueCounts.low_confidence = safeCount(db,
+      `SELECT COUNT(*) as c FROM ai_extractions WHERE confidence_score < 0.5 AND quality_level = 'draft'`
+    );
+
+    // カード生成
     const issueCards = Object.entries(issueCounts).map(([key, count]) => ({
       key,
       ...ISSUE_META[key],
@@ -76,73 +165,224 @@ export async function GET(request) {
       return a.priority - b.priority;
     });
 
-    // 指定された問題種別の一覧取得
-    let events = [];
+    // 全公開データ数
+    let totalPublished = 0;
+    for (const [, cfg] of Object.entries(DOMAIN_CONFIG)) {
+      totalPublished += safeCount(db,
+        `SELECT COUNT(*) as c FROM ${cfg.table} WHERE ${cfg.publishCol} = 1`
+      );
+    }
+
+    // 選択された問題種別の詳細一覧
+    let items = [];
     if (issue && ISSUE_META[issue]) {
-      const selectCols = `SELECT e.id, e.title, e.sport_type, e.event_date, e.prefecture, e.city,
-                          e.venue_name, e.source_url, e.source_site, e.official_url, e.updated_at,
-                          e.patrol_status, e.patrol_note`;
-      const baseWhere = `FROM events e WHERE e.is_active = 1`;
-
-      const queries = {
-        no_date: `${selectCols} ${baseWhere} AND (e.event_date IS NULL OR e.event_date = '') ${excludePatrol}`,
-        no_prefecture: `${selectCols} ${baseWhere} AND (e.prefecture IS NULL OR e.prefecture = '') ${excludePatrol}`,
-        no_venue: `${selectCols} ${baseWhere} AND (e.venue_name IS NULL OR e.venue_name = '') ${excludePatrol}`,
-        no_distance: `${selectCols} ${baseWhere} AND e.id NOT IN (SELECT DISTINCT event_id FROM event_races) ${excludePatrol}`,
-        no_url: `${selectCols} ${baseWhere} AND (e.official_url IS NULL OR e.official_url = '') ${excludePatrol}`,
-        past_archived: `${selectCols} ${baseWhere} AND e.event_date < '${archivedDate}' AND e.event_date IS NOT NULL AND e.event_date != '' ORDER BY e.event_date DESC`,
-        past_recent: `${selectCols} ${baseWhere} AND e.event_date < '${now}' AND e.event_date >= '${archivedDate}' AND e.event_date IS NOT NULL AND e.event_date != '' ORDER BY e.event_date DESC`,
-        stale: `${selectCols} ${baseWhere} AND e.updated_at < '${staleDate}T00:00:00' ${excludePatrol} ORDER BY e.updated_at ASC`,
-        conflict: `${selectCols}, e.verification_conflict_summary ${baseWhere} AND e.verification_conflict = 1`,
-      };
-
-      events = db.prepare(queries[issue] + " LIMIT 100").all();
-
-      // 直近の再取得ログを各イベントに紐付け
-      const eventIds = events.map((e) => e.id);
-      if (eventIds.length > 0) {
-        const logPlaceholders = eventIds.map(() => "?").join(",");
-        const recentLogs = db.prepare(`
-          SELECT event_id, status, failure_reason, failure_detail,
-                 updated_fields, remaining_missing, created_at
-          FROM patrol_refetch_logs
-          WHERE event_id IN (${logPlaceholders})
-          AND created_at = (
-            SELECT MAX(created_at) FROM patrol_refetch_logs p2
-            WHERE p2.event_id = patrol_refetch_logs.event_id
-          )
-        `).all(...eventIds);
-
-        const logMap = {};
-        for (const log of recentLogs) {
-          logMap[log.event_id] = log;
-        }
-
-        for (const ev of events) {
-          ev.last_refetch = logMap[ev.id] || null;
-        }
-      }
+      items = loadIssueItems(db, issue, staleDate);
     }
 
     return NextResponse.json({
       issueCards,
-      events,
+      items,
       selectedIssue: issue,
-      totalActive: db.prepare("SELECT COUNT(*) as c FROM events WHERE is_active = 1").get().c,
+      totalPublished,
     });
   } catch (err) {
     console.error("Patrol API error:", err);
     return NextResponse.json({
       error: "取得に失敗しました",
       issueCards: [],
-      events: [],
-      totalActive: 0,
+      items: [],
+      totalPublished: 0,
     }, { status: 500 });
   }
 }
 
 /**
- * PATCH: 大会に対するアクション
+ * 問題種別に応じた詳細アイテム一覧を取得
+ */
+function loadIssueItems(db, issue, staleDate) {
+  const results = [];
+
+  switch (issue) {
+    case "missing_source": {
+      for (const [domain, cfg] of Object.entries(DOMAIN_CONFIG)) {
+        try {
+          const rows = db.prepare(
+            `SELECT id, ${cfg.nameCol} as name, ${cfg.sourceUrlCol} as source_url, updated_at
+             ${cfg.prefectureCol ? `, ${cfg.prefectureCol} as prefecture` : ""}
+             FROM ${cfg.table}
+             WHERE ${cfg.publishCol} = 1 AND (${cfg.sourceUrlCol} IS NULL OR ${cfg.sourceUrlCol} = '')
+             LIMIT 50`
+          ).all();
+          for (const row of rows) {
+            results.push({ ...row, domain, domainLabel: cfg.label, editPath: cfg.editPath, prefecture: row.prefecture || null });
+          }
+        } catch { /* table may not exist */ }
+      }
+      break;
+    }
+
+    case "unpublished": {
+      for (const [domain, cfg] of Object.entries(DOMAIN_CONFIG)) {
+        try {
+          const rows = db.prepare(
+            `SELECT id, ${cfg.nameCol} as name, ${cfg.sourceUrlCol} as source_url, updated_at
+             ${cfg.prefectureCol ? `, ${cfg.prefectureCol} as prefecture` : ""}
+             FROM ${cfg.table}
+             WHERE ${cfg.publishCol} = 0
+             ORDER BY updated_at DESC LIMIT 50`
+          ).all();
+          for (const row of rows) {
+            results.push({ ...row, domain, domainLabel: cfg.label, editPath: cfg.editPath, prefecture: row.prefecture || null });
+          }
+        } catch { /* table may not exist */ }
+      }
+      break;
+    }
+
+    case "stale_30d": {
+      for (const [domain, cfg] of Object.entries(DOMAIN_CONFIG)) {
+        try {
+          const rows = db.prepare(
+            `SELECT id, ${cfg.nameCol} as name, ${cfg.sourceUrlCol} as source_url, updated_at
+             ${cfg.prefectureCol ? `, ${cfg.prefectureCol} as prefecture` : ""}
+             FROM ${cfg.table}
+             WHERE ${cfg.publishCol} = 1 AND updated_at < ?
+             ORDER BY updated_at ASC LIMIT 50`,
+          ).all(staleDate);
+          for (const row of rows) {
+            results.push({ ...row, domain, domainLabel: cfg.label, editPath: cfg.editPath, prefecture: row.prefecture || null });
+          }
+        } catch { /* table may not exist */ }
+      }
+      break;
+    }
+
+    case "no_prefecture": {
+      for (const [domain, cfg] of Object.entries(DOMAIN_CONFIG)) {
+        if (!cfg.prefectureCol) continue;
+        try {
+          const rows = db.prepare(
+            `SELECT id, ${cfg.nameCol} as name, ${cfg.sourceUrlCol} as source_url, updated_at
+             FROM ${cfg.table}
+             WHERE ${cfg.publishCol} = 1 AND (${cfg.prefectureCol} IS NULL OR ${cfg.prefectureCol} = '')
+             LIMIT 50`
+          ).all();
+          for (const row of rows) {
+            results.push({ ...row, domain, domainLabel: cfg.label, editPath: cfg.editPath, prefecture: null });
+          }
+        } catch { /* table may not exist */ }
+      }
+      break;
+    }
+
+    case "sync_failed": {
+      try {
+        const rows = db.prepare(
+          `SELECT id, domain_id as domain, run_type, run_status, error_summary,
+                  started_at, finished_at, fetched_count, failed_count
+           FROM sync_runs WHERE run_status = 'failed'
+           ORDER BY started_at DESC LIMIT 50`
+        ).all();
+        for (const row of rows) {
+          const cfg = DOMAIN_CONFIG[row.domain];
+          results.push({
+            id: row.id,
+            name: `${cfg?.label || row.domain} — ${row.run_type}同期 (${row.error_summary || "エラー"})`,
+            domain: row.domain,
+            domainLabel: cfg?.label || row.domain,
+            editPath: null,
+            source_url: null,
+            prefecture: null,
+            updated_at: row.started_at,
+            sync_detail: {
+              run_type: row.run_type,
+              error_summary: row.error_summary,
+              fetched_count: row.fetched_count,
+              failed_count: row.failed_count,
+              started_at: row.started_at,
+              finished_at: row.finished_at,
+            },
+          });
+        }
+      } catch { /* table may not exist */ }
+      break;
+    }
+
+    case "needs_review": {
+      try {
+        const rows = db.prepare(
+          `SELECT cl.id, cl.domain_id as domain, cl.entity_type, cl.entity_id,
+                  cl.entity_slug, cl.change_type, cl.field_name,
+                  cl.before_value, cl.after_value, cl.confidence_score,
+                  cl.created_at as updated_at
+           FROM change_logs cl
+           WHERE cl.requires_review = 1 AND cl.reviewed_at IS NULL
+           ORDER BY cl.created_at DESC LIMIT 50`
+        ).all();
+        for (const row of rows) {
+          const cfg = DOMAIN_CONFIG[row.domain];
+          results.push({
+            id: row.id,
+            name: `${row.entity_type}#${row.entity_id} — ${row.field_name}: ${row.change_type}`,
+            domain: row.domain,
+            domainLabel: cfg?.label || row.domain,
+            editPath: cfg?.editPath || null,
+            entity_id: row.entity_id,
+            source_url: null,
+            prefecture: null,
+            updated_at: row.updated_at,
+            change_detail: {
+              field_name: row.field_name,
+              change_type: row.change_type,
+              before_value: row.before_value,
+              after_value: row.after_value,
+              confidence_score: row.confidence_score,
+            },
+          });
+        }
+      } catch { /* table may not exist */ }
+      break;
+    }
+
+    case "low_confidence": {
+      try {
+        const rows = db.prepare(
+          `SELECT ae.id, ae.domain_id as domain, ae.entity_type, ae.entity_id,
+                  ae.extraction_type, ae.confidence_score, ae.missing_fields,
+                  ae.review_reasons, ae.created_at as updated_at
+           FROM ai_extractions ae
+           WHERE ae.confidence_score < 0.5 AND ae.quality_level = 'draft'
+           ORDER BY ae.confidence_score ASC LIMIT 50`
+        ).all();
+        for (const row of rows) {
+          const cfg = DOMAIN_CONFIG[row.domain];
+          results.push({
+            id: row.id,
+            name: `${row.entity_type}#${row.entity_id} — ${row.extraction_type} (信頼度: ${Math.round(row.confidence_score * 100)}%)`,
+            domain: row.domain,
+            domainLabel: cfg?.label || row.domain,
+            editPath: cfg?.editPath || null,
+            entity_id: row.entity_id,
+            source_url: null,
+            prefecture: null,
+            updated_at: row.updated_at,
+            extraction_detail: {
+              confidence_score: row.confidence_score,
+              missing_fields: row.missing_fields,
+              review_reasons: row.review_reasons,
+            },
+          });
+        }
+      } catch { /* table may not exist */ }
+      break;
+    }
+  }
+
+  return results;
+}
+
+/**
+ * PATCH: データに対するアクション
  */
 export async function PATCH(request) {
   const guard = await requireAdminApi();
@@ -151,74 +391,39 @@ export async function PATCH(request) {
   try {
     const db = getDb();
     const body = await request.json();
-    const { event_id, action, event_ids } = body;
+    const { action, domain, item_id, change_log_id } = body;
 
-    // 一括アーカイブ
-    if (action === "archive_past" && event_ids && Array.isArray(event_ids)) {
-      const placeholders = event_ids.map(() => "?").join(",");
-      const result = db.prepare(
-        `UPDATE events SET is_active = 0, updated_at = datetime('now') WHERE id IN (${placeholders}) AND is_active = 1`
-      ).run(...event_ids);
-      return NextResponse.json({
-        message: `${result.changes}件を非公開に変更しました`,
-        count: result.changes,
-      });
-    }
-
-    if (!event_id || !action) {
-      return NextResponse.json({ error: "event_id と action は必須です" }, { status: 400 });
+    if (!action) {
+      return NextResponse.json({ error: "action は必須です" }, { status: 400 });
     }
 
     switch (action) {
-      case "toggle_active": {
-        const ev = db.prepare("SELECT is_active FROM events WHERE id = ?").get(event_id);
-        if (!ev) return NextResponse.json({ error: "大会が見つかりません" }, { status: 404 });
-        const newActive = ev.is_active ? 0 : 1;
-        db.prepare("UPDATE events SET is_active = ?, updated_at = datetime('now') WHERE id = ?").run(newActive, event_id);
-        return NextResponse.json({ event_id, is_active: newActive, message: newActive ? "公開に変更しました" : "非公開に変更しました" });
+      case "toggle_publish": {
+        if (!domain || !item_id) {
+          return NextResponse.json({ error: "domain と item_id は必須です" }, { status: 400 });
+        }
+        const cfg = DOMAIN_CONFIG[domain];
+        if (!cfg) {
+          return NextResponse.json({ error: `不明なドメイン: ${domain}` }, { status: 400 });
+        }
+        const row = db.prepare(`SELECT ${cfg.publishCol} as pub FROM ${cfg.table} WHERE id = ?`).get(item_id);
+        if (!row) return NextResponse.json({ error: "データが見つかりません" }, { status: 404 });
+        const newVal = row.pub ? 0 : 1;
+        db.prepare(`UPDATE ${cfg.table} SET ${cfg.publishCol} = ?, updated_at = datetime('now') WHERE id = ?`).run(newVal, item_id);
+        return NextResponse.json({
+          message: newVal ? "公開に変更しました" : "非公開に変更しました",
+          is_published: newVal,
+        });
       }
 
-      case "flag_review": {
+      case "mark_reviewed": {
+        if (!change_log_id) {
+          return NextResponse.json({ error: "change_log_id は必須です" }, { status: 400 });
+        }
         db.prepare(
-          "UPDATE events SET patrol_status = 'manual_review', updated_at = datetime('now') WHERE id = ?"
-        ).run(event_id);
-        db.prepare(
-          `INSERT INTO admin_event_notes (event_id, note_type, note_text, created_by)
-           VALUES (?, 'patrol_review', '巡回パトロールで「手動確認が必要」フラグを設定', 'admin')`
-        ).run(event_id);
-        return NextResponse.json({ event_id, message: "手動確認フラグを設定しました" });
-      }
-
-      case "dismiss": {
-        db.prepare(
-          "UPDATE events SET patrol_status = 'manual_resolved', patrol_note = '管理者が解消済みとして処理', updated_at = datetime('now') WHERE id = ?"
-        ).run(event_id);
-        db.prepare(
-          `INSERT INTO admin_event_notes (event_id, note_type, note_text, created_by)
-           VALUES (?, 'patrol_dismiss', '巡回パトロールで解消済みとして処理', 'admin')`
-        ).run(event_id);
-        return NextResponse.json({ event_id, message: "解消済みとして記録し、一覧から除外しました" });
-      }
-
-      case "mark_manual_required": {
-        db.prepare(
-          "UPDATE events SET patrol_status = 'manual_review', patrol_note = ?, updated_at = datetime('now') WHERE id = ?"
-        ).run(body.note || "手動対応が必要", event_id);
-        return NextResponse.json({ event_id, message: "手動対応フラグを設定しました" });
-      }
-
-      case "exclude_refetch": {
-        db.prepare(
-          "UPDATE events SET patrol_status = 'refetch_excluded', patrol_note = ?, updated_at = datetime('now') WHERE id = ?"
-        ).run(body.note || "再取得対象外", event_id);
-        return NextResponse.json({ event_id, message: "再取得対象外に設定しました" });
-      }
-
-      case "reset_patrol_status": {
-        db.prepare(
-          "UPDATE events SET patrol_status = 'auto', patrol_note = NULL, updated_at = datetime('now') WHERE id = ?"
-        ).run(event_id);
-        return NextResponse.json({ event_id, message: "パトロール状態をリセットしました" });
+          `UPDATE change_logs SET reviewed_at = datetime('now'), reviewed_by = 'admin' WHERE id = ?`
+        ).run(change_log_id);
+        return NextResponse.json({ message: "レビュー済みに変更しました" });
       }
 
       default:
