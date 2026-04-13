@@ -87,10 +87,10 @@ export default function PlatformSection() {
       {/* 用途別導線 */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10">
         {[
-          { label: "監視・追跡", icon: "🔍", desc: "リコール/処分/補助金", links: ["/food-recall", "/sanpai", "/hojokin"] },
-          { label: "公募・応募", icon: "📝", desc: "指定管理/補助金", links: ["/shitei", "/hojokin"] },
+          { label: "監視・追跡", icon: "🔍", desc: "行政処分/産廃処分", links: ["/gyosei-shobun", "/sanpai"] },
+          { label: "公募・応募", icon: "📝", desc: "入札/指定管理/補助金", links: ["/nyusatsu", "/shitei", "/hojokin"] },
           { label: "事業者検索", icon: "🏢", desc: "許認可/建設業者", links: ["/kyoninka"] },
-          { label: "比較・検索", icon: "💻", desc: "SaaS/優待/民泊", links: ["/saas", "/yutai", "/minpaku"] },
+          { label: "比較・検索", icon: "💻", desc: "SaaS比較", links: ["/saas"] },
         ].map((u) => (
           <Link key={u.label} href={u.links[0]} className="p-4 bg-gray-50 rounded-xl hover:bg-blue-50 transition-colors text-center group">
             <span className="text-2xl block mb-1">{u.icon}</span>

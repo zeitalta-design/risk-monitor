@@ -9,8 +9,8 @@ import { useRouter } from "next/navigation";
  *
  * @param {Object} props
  * @param {string} props.title - ページタイトル
- * @param {string} props.apiPath - API パス (e.g. "/api/admin/yutai")
- * @param {string} props.basePath - 管理画面パス (e.g. "/admin/yutai")
+ * @param {string} props.apiPath - API パス (e.g. "/api/admin/sanpai")
+ * @param {string} props.basePath - 管理画面パス (e.g. "/admin/sanpai")
  * @param {number|null} [props.itemId] - 編集時の ID（null なら新規作成）
  * @param {Array<{key: string, label: string, type?: string, required?: boolean, options?: Array, placeholder?: string}>} props.fields
  * @param {Object} [props.defaults] - 新規作成時のデフォルト値

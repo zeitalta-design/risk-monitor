@@ -22,9 +22,6 @@ const CATEGORIES = [
   { id: "shitei", label: "指定管理", dbDomain: "shitei", description: "自治体の指定管理者公募情報源" },
   { id: "hojokin", label: "補助金", dbDomain: "hojokin", description: "国・自治体の補助金・助成金情報源" },
   { id: "kyoninka", label: "許認可", dbDomain: "kyoninka", description: "許認可・登録事業者情報源" },
-  { id: "food-recall", label: "食品リコール", dbDomain: "food-recall", description: "食品リコール・自主回収情報源" },
-  { id: "yutai", label: "株主優待", dbDomain: "yutai", description: "上場企業の株主優待情報源" },
-  { id: "minpaku", label: "民泊", dbDomain: "minpaku", description: "住宅宿泊事業者届出情報源" },
 ];
 
 // ─── バッジ ─────────────────────
@@ -348,7 +345,7 @@ function CoverageMatrix({ matrix, sectors, summaries }) {
   );
 }
 
-// ─── DBカテゴリビュー（入札〜民泊） ─────────────────────
+// ─── DBカテゴリビュー（入札〜許認可） ─────────────────────
 
 function DbCategoryView({ cat, sources, loading, showAddForm, setShowAddForm, onSourceAdded }) {
   if (loading) return <div className="py-16 text-center text-gray-400">読み込み中...</div>;

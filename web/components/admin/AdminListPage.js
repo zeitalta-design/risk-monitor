@@ -8,9 +8,9 @@ import Link from "next/link";
  *
  * @param {Object} props
  * @param {string} props.title - ページタイトル
- * @param {string} props.apiPath - API パス (e.g. "/api/admin/yutai")
- * @param {string} props.basePath - 管理画面パス (e.g. "/admin/yutai")
- * @param {string} props.publicPath - 公開側パス (e.g. "/yutai")
+ * @param {string} props.apiPath - API パス (e.g. "/api/admin/sanpai")
+ * @param {string} props.basePath - 管理画面パス (e.g. "/admin/sanpai")
+ * @param {string} props.publicPath - 公開側パス (e.g. "/sanpai")
  * @param {Array<{key: string, label: string, render?: function}>} props.columns - テーブル列定義
  * @param {string} [props.slugField="slug"] - 公開側リンクに使うフィールド
  */

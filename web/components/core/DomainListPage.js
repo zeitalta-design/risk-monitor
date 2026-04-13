@@ -9,7 +9,7 @@
  * データ取得、フィルタ UI、カード本体、お気に入り/比較ロジックは
  * 各ドメインページに残し、slot / renderItem で委譲する。
  *
- * 現在 SaaS 一覧で使用。将来 sports / 株主優待ナビ 等にも適用可能な props 設計。
+ * 現在 SaaS 一覧で使用。将来の他カテゴリにも適用可能な props 設計。
  *
  * @example
  *   <DomainListPage

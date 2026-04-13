@@ -29,9 +29,6 @@ const NAV_SECTIONS = [
       { href: "/admin/shitei", label: "指定管理", icon: DataIcon },
       { href: "/admin/hojokin", label: "補助金", icon: DataIcon },
       { href: "/admin/kyoninka", label: "許認可", icon: DataIcon },
-      { href: "/admin/food-recall", label: "食品リコール", icon: DataIcon },
-      { href: "/admin/yutai", label: "株主優待", icon: DataIcon },
-      { href: "/admin/minpaku", label: "民泊", icon: DataIcon },
     ],
   },
   {

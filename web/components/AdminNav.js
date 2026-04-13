@@ -18,7 +18,6 @@ const TAB_GROUPS = [
       { href: "/admin/shitei", label: "指定管理" },
       { href: "/admin/hojokin", label: "補助金" },
       { href: "/admin/kyoninka", label: "許認可" },
-      { href: "/admin/food-recall", label: "食品リコール" },
     ],
   },
   {
