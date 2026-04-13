@@ -32,6 +32,7 @@ const TAB_GROUPS = [
   {
     label: "運用",
     tabs: [
+      { href: "/admin/ops/cron-settings", label: "⚙ 自動更新設定" },
       { href: "/admin/watchlist", label: "ウォッチリスト" },
       { href: "/admin/jobs", label: "ジョブ" },
       { href: "/admin/emails", label: "メール" },
