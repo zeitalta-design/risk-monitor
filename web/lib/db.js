@@ -1,7 +1,9 @@
-import Database from "better-sqlite3";
+import Database from "libsql";
 import path from "path";
 import fs from "fs";
 
+const TURSO_URL = process.env.TURSO_DATABASE_URL;
+const TURSO_TOKEN = process.env.TURSO_AUTH_TOKEN;
 const DB_PATH = path.join(process.cwd(), "data", "risk-monitor.db");
 const SCHEMA_PATH = path.join(process.cwd(), "..", "sql", "001_create_tables.sql");
 
@@ -9,16 +11,24 @@ let _db = null;
 
 export function getDb() {
   if (!_db) {
-    fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
-    _db = new Database(DB_PATH);
-    _db.pragma("journal_mode = WAL");
-    _db.pragma("busy_timeout = 5000");
+    if (TURSO_URL) {
+      // Turso リモート接続（Vercel本番環境）
+      _db = new Database(TURSO_URL, { authToken: TURSO_TOKEN });
+    } else {
+      // ローカル開発用（SQLiteファイル直接アクセス）
+      fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+      _db = new Database(DB_PATH);
+      _db.pragma("journal_mode = WAL");
+      _db.pragma("busy_timeout = 5000");
+    }
     _db.pragma("foreign_keys = ON");
 
-    if (fs.existsSync(SCHEMA_PATH)) {
-      const schema = fs.readFileSync(SCHEMA_PATH, "utf-8");
-      _db.exec(schema);
-    }
+    // Turso接続時はスキーマ・マイグレーションは不要（事前にTurso CLIで実行済み）
+    if (!TURSO_URL) {
+      if (fs.existsSync(SCHEMA_PATH)) {
+        const schema = fs.readFileSync(SCHEMA_PATH, "utf-8");
+        _db.exec(schema);
+      }
 
     // Phase35-36: 新カラム追加マイグレーション
     const migrations = [
@@ -1289,6 +1299,7 @@ export function getDb() {
     _db.exec(`CREATE INDEX IF NOT EXISTS idx_watched_orgs_name ON watched_organizations(organization_name)`);
     // 既存テーブルへのカラム追加（冪等）
     try { _db.exec("ALTER TABLE watched_organizations ADD COLUMN last_notified_action_date TEXT"); } catch {}
+    } // end if (!TURSO_URL) — ローカル専用スキーマ・マイグレーション
   }
   return _db;
 }
