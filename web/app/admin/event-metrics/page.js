@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 import AdminNav from "@/components/AdminNav";
 
 /**
- * Phase135: イベント指標ダッシュボード
+ * Phase135: リスクデータ指標ダッシュボード
  *
- * /admin/event-metrics — エンゲージメント上位イベント一覧
+ * /admin/event-metrics — エンゲージメント上位リスクデータ一覧
  */
 
 const SORT_KEYS = [
@@ -83,7 +83,7 @@ export default function AdminEventMetricsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       <AdminNav />
-      <h1 className="text-xl font-bold text-gray-900 mb-4">イベント指標ダッシュボード</h1>
+      <h1 className="text-xl font-bold text-gray-900 mb-4">リスクデータ指標ダッシュボード</h1>
 
       {/* フィルターバー */}
       <div className="flex flex-wrap items-center gap-3 mb-5">
@@ -114,7 +114,7 @@ export default function AdminEventMetricsPage() {
         </select>
         <input
           type="text"
-          placeholder="大会名で検索..."
+          placeholder="データ名で検索..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="text-xs border border-gray-200 rounded px-3 py-1.5 w-48 text-gray-700 placeholder-gray-400"
@@ -133,7 +133,7 @@ export default function AdminEventMetricsPage() {
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 w-8">#</th>
-                <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 min-w-[200px]">大会名</th>
+                <th className="text-left px-3 py-2 text-xs font-medium text-gray-500 min-w-[200px]">データ名</th>
                 <th className="text-left px-3 py-2 text-xs font-medium text-gray-500">競技</th>
                 <th className="text-left px-3 py-2 text-xs font-medium text-gray-500">地域</th>
                 {SORT_KEYS.map((col) => (

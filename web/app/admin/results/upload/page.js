@@ -32,7 +32,7 @@ export default function AdminResultsUploadPage() {
       return;
     }
     if (!eventId) {
-      setError("大会IDを入力してください");
+      setError("データIDを入力してください");
       return;
     }
 
@@ -81,7 +81,7 @@ export default function AdminResultsUploadPage() {
           <h2 className="text-sm font-bold text-gray-700">基本情報</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">大会ID *</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">データID *</label>
               <input
                 type="number"
                 value={eventId}

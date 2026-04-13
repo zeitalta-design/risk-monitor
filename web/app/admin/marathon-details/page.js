@@ -5,7 +5,7 @@ import Link from "next/link";
 import AdminNav from "@/components/AdminNav";
 
 /**
- * 管理画面 — 大会詳細情報一覧
+ * 管理画面 — リスク情報詳細情報一覧
  * marathon_details の有無を確認し、編集ページへ遷移する
  */
 export default function AdminMarathonDetailsPage() {
@@ -55,7 +55,7 @@ export default function AdminMarathonDetailsPage() {
       <AdminNav />
 
       <h1 className="text-xl font-bold text-gray-900 mb-2">
-        大会詳細情報 管理
+        リスク情報詳細情報 データ管理
       </h1>
       <p className="text-sm text-gray-500 mb-6">
         marathon_details のデータ有無を確認し、編集・新規作成できます
@@ -65,7 +65,7 @@ export default function AdminMarathonDetailsPage() {
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="card p-4 text-center">
           <div className="text-2xl font-bold text-gray-900">{total}</div>
-          <div className="text-xs text-gray-500">総大会数</div>
+          <div className="text-xs text-gray-500">総データ件数</div>
         </div>
         <div className="card p-4 text-center">
           <div className="text-2xl font-bold text-blue-600">{withDetail}</div>
@@ -87,7 +87,7 @@ export default function AdminMarathonDetailsPage() {
       <form onSubmit={handleSearch} className="flex gap-3 mb-6">
         <input
           type="text"
-          placeholder="大会名で検索..."
+          placeholder="データ名で検索..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -117,7 +117,7 @@ export default function AdminMarathonDetailsPage() {
         <div className="text-center py-12 text-gray-400">読み込み中...</div>
       ) : events.length === 0 ? (
         <div className="text-center py-12 text-gray-400">
-          該当する大会がありません
+          該当するリスク情報がありません
         </div>
       ) : (
         <>
@@ -129,7 +129,7 @@ export default function AdminMarathonDetailsPage() {
                     ID
                   </th>
                   <th className="text-left py-3 px-3 font-semibold text-gray-500">
-                    大会名
+                    データ名
                   </th>
                   <th className="text-left py-3 px-3 font-semibold text-gray-500">
                     開催日
@@ -141,7 +141,7 @@ export default function AdminMarathonDetailsPage() {
                     詳細
                   </th>
                   <th className="text-left py-3 px-3 font-semibold text-gray-500">
-                    主催者
+                    データソース
                   </th>
                   <th className="text-left py-3 px-3 font-semibold text-gray-500">
                     更新日

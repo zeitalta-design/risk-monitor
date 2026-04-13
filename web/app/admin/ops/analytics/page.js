@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
  * Phase228: 基本分析ページ
  * - 期間別KPI（今日/7日/30日）
  * - 人気スポーツ・エリア
- * - よく見られている大会
+ * - よく見られているリスク情報
  * - アクション分布
  * - 日別推移
  */
@@ -122,7 +122,7 @@ export default function AnalyticsPage() {
         {/* 人気エリア */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
           <div className="px-5 py-4 border-b border-gray-100">
-            <h3 className="font-extrabold text-gray-900">エリア別大会数 TOP10</h3>
+            <h3 className="font-extrabold text-gray-900">エリア別データ件数 TOP10</h3>
           </div>
           <div className="p-5">
             {popularAreas.length === 0 ? (
@@ -144,10 +144,10 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* よく見られている大会 */}
+      {/* よく見られているリスク情報 */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-8">
         <div className="px-5 py-4 border-b border-gray-100">
-          <h3 className="font-extrabold text-gray-900">よく見られている大会（7日間）</h3>
+          <h3 className="font-extrabold text-gray-900">よく見られているリスク情報（7日間）</h3>
         </div>
         {popularEvents.length === 0 ? (
           <div className="p-8"><EmptyState message="閲覧データがまだありません" /></div>
@@ -156,7 +156,7 @@ export default function AnalyticsPage() {
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="text-left px-4 py-2.5 font-extrabold text-gray-600 text-xs">順位</th>
-                <th className="text-left px-4 py-2.5 font-extrabold text-gray-600 text-xs">大会名</th>
+                <th className="text-left px-4 py-2.5 font-extrabold text-gray-600 text-xs">データ名</th>
                 <th className="text-left px-4 py-2.5 font-extrabold text-gray-600 text-xs">種目</th>
                 <th className="text-left px-4 py-2.5 font-extrabold text-gray-600 text-xs">開催日</th>
                 <th className="text-left px-4 py-2.5 font-extrabold text-gray-600 text-xs">エリア</th>

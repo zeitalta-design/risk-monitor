@@ -5,7 +5,7 @@ import AdminNav from "@/components/AdminNav";
 /**
  * RUNNET × MOSHICOM ソース統合管理画面
  *
- * 1. イベント一覧（統合ステータスフィルタ）
+ * 1. リスクデータ一覧（統合ステータスフィルタ）
  * 2. 自動検索 → マッチ候補表示
  * 3. 手動URL入力 → 統合実行
  * 4. 差分プレビュー
@@ -111,14 +111,14 @@ export default function SourceMergePage() {
         🔗 ソース統合（RUNNET × MOSHICOM）
       </h1>
       <p className="text-sm text-gray-500 mb-6">
-        RUNNETイベントにMOSHICOMの詳細情報を統合
+        RUNNETリスクデータにMOSHICOMの詳細情報を統合
       </p>
 
       {/* フィルタ */}
       <div className="flex flex-wrap items-center gap-3 mb-6">
         <input
           type="text"
-          placeholder="大会名検索..."
+          placeholder="データ名検索..."
           value={q}
           onChange={(e) => {
             setQ(e.target.value);
@@ -152,7 +152,7 @@ export default function SourceMergePage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 左: イベント一覧 */}
+        {/* 左: リスクデータ一覧 */}
         <div>
           {loading ? (
             <p className="text-sm text-gray-400 py-10 text-center">読み込み中...</p>
@@ -229,11 +229,11 @@ export default function SourceMergePage() {
         <div>
           {!selectedEvent ? (
             <div className="text-center py-20 text-gray-400 text-sm">
-              左の一覧からイベントを選択
+              左の一覧からリスクデータを選択
             </div>
           ) : (
             <div className="space-y-4">
-              {/* 選択中のイベント */}
+              {/* 選択中のリスクデータ */}
               <div className="bg-gray-50 rounded-lg p-4">
                 <h3 className="text-sm font-bold text-gray-800">
                   {selectedEvent.title}

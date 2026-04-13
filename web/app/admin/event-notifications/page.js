@@ -237,7 +237,7 @@ export default function AdminEventNotificationsPage() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      大会ID
+                      データID
                     </label>
                     <input
                       type="number"
@@ -354,7 +354,7 @@ function NotificationTable({ notifications, title }) {
           <thead>
             <tr className="border-b text-left text-gray-500 text-xs">
               <th className="px-4 py-2">作成日時</th>
-              <th className="px-4 py-2">大会</th>
+              <th className="px-4 py-2">リスク情報</th>
               <th className="px-4 py-2">ユーザー</th>
               <th className="px-4 py-2">種別</th>
               <th className="px-4 py-2">チャンネル</th>
@@ -425,7 +425,7 @@ function BatchTable({ batches, title }) {
           <thead>
             <tr className="border-b text-left text-gray-500 text-xs">
               <th className="px-4 py-2">作成日時</th>
-              <th className="px-4 py-2">大会</th>
+              <th className="px-4 py-2">リスク情報</th>
               <th className="px-4 py-2">変化種別</th>
               <th className="px-4 py-2">before → after</th>
               <th className="px-4 py-2">対象数</th>

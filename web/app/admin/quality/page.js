@@ -103,15 +103,15 @@ function DashboardView({ data, onNavigate }) {
       {/* KPIカード */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <KpiCard label="重複候補" value={data.duplicateCount || 0} color={data.duplicateCount > 0 ? "text-amber-600" : "text-gray-900"} onClick={() => onNavigate("duplicates")} />
-        <KpiCard label="欠損大会" value={`${cs.missing?.noDate || 0}+`} sub="開催日なし" color="text-amber-600" onClick={() => onNavigate("incomplete")} />
+        <KpiCard label="欠損データ件数" value={`${cs.missing?.noDate || 0}+`} sub="開催日なし" color="text-amber-600" onClick={() => onNavigate("incomplete")} />
         <KpiCard label="要確認口コミ" value={(rs.pending || 0) + (rs.flagged || 0)} sub={`短文: ${rs.shortBody || 0}`} color="text-orange-600" onClick={() => onNavigate("reviews")} />
         <KpiCard label="承認待ち写真" value={ps.pending || 0} sub={`ALTなし: ${ps.noAlt || 0}`} color="text-orange-600" onClick={() => onNavigate("photos")} />
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <KpiCard label="結果イベント" value={ress.eventCount || 0} sub={`全${ress.total || 0}件`} />
+        <KpiCard label="結果リスクデータ" value={ress.eventCount || 0} sub={`全${ress.total || 0}件`} />
         <KpiCard label="ゼッケンなし" value={ress.noBib || 0} color={ress.noBib > 0 ? "text-amber-600" : "text-gray-900"} onClick={() => onNavigate("results")} />
-        <KpiCard label="平均品質" value={`${sd.averageScore || 0}点`} sub={`全${sd.totalEvents || 0}大会`} />
+        <KpiCard label="平均品質" value={`${sd.averageScore || 0}点`} sub={`全${sd.totalEvents || 0}リスク情報`} />
         <KpiCard label="低品質(E)" value={sd.distribution?.E || 0} color={sd.distribution?.E > 0 ? "text-red-500" : "text-gray-900"} onClick={() => onNavigate("scores")} />
       </div>
 
@@ -167,10 +167,10 @@ function DashboardView({ data, onNavigate }) {
         </div>
       )}
 
-      {/* 優先改善大会 */}
+      {/* 優先改善リスク情報 */}
       {data.priorityEvents?.length > 0 && (
         <div className="bg-white border border-gray-200 rounded-xl p-5">
-          <h2 className="text-sm font-bold text-gray-700 mb-3">改善優先度が高い大会</h2>
+          <h2 className="text-sm font-bold text-gray-700 mb-3">改善優先度が高いリスク情報</h2>
           <div className="space-y-1.5">
             {data.priorityEvents.map((e) => (
               <div key={e.id} className="flex items-center gap-2 text-xs">
@@ -231,13 +231,13 @@ function IncompleteView({ data, offset, setOffset, limit }) {
   const total = data.total || 0;
   return (
     <div>
-      <p className="text-xs text-gray-500 mb-4">{total}件の欠損大会</p>
+      <p className="text-xs text-gray-500 mb-4">{total}件の欠損データ件数</p>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-200 text-left">
               <th className="py-2 pr-3 text-xs font-medium text-gray-500">ID</th>
-              <th className="py-2 pr-3 text-xs font-medium text-gray-500">大会名</th>
+              <th className="py-2 pr-3 text-xs font-medium text-gray-500">データ名</th>
               <th className="py-2 pr-3 text-xs font-medium text-gray-500 text-right">充足率</th>
               <th className="py-2 pr-3 text-xs font-medium text-gray-500 text-right">欠損数</th>
               <th className="py-2 text-xs font-medium text-gray-500">欠損項目</th>
@@ -385,7 +385,7 @@ function ScoresView({ data, offset, setOffset, limit }) {
           <thead>
             <tr className="border-b border-gray-200 text-left">
               <th className="py-2 pr-2 text-xs font-medium text-gray-500">ID</th>
-              <th className="py-2 pr-3 text-xs font-medium text-gray-500">大会名</th>
+              <th className="py-2 pr-3 text-xs font-medium text-gray-500">データ名</th>
               <th className="py-2 pr-2 text-xs font-medium text-gray-500 text-center">グレード</th>
               <th className="py-2 pr-2 text-xs font-medium text-gray-500 text-right">スコア</th>
               <th className="py-2 pr-2 text-xs font-medium text-gray-500 text-right">写真</th>

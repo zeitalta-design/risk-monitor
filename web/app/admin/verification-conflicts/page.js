@@ -165,7 +165,7 @@ export default function AdminVerificationConflictsPage() {
           {[
             { key: "overview", label: "概要" },
             { key: "conflicts", label: "矛盾一覧" },
-            { key: "multi", label: "複数ソース大会" },
+            { key: "multi", label: "複数ソースリスク情報" },
             { key: "detail", label: "詳細" },
           ].map((t) => (
             <button
@@ -195,7 +195,7 @@ export default function AdminVerificationConflictsPage() {
                 />
                 <MultiSourceTable
                   events={multiSource}
-                  title="複数ソース大会"
+                  title="複数ソースリスク情報"
                   onView={handleViewDetail}
                   onVerify={handleVerifySingle}
                   running={running}
@@ -206,7 +206,7 @@ export default function AdminVerificationConflictsPage() {
             {tab === "conflicts" && (
               <ConflictTable
                 events={conflicts}
-                title="矛盾ありの大会"
+                title="矛盾ありのリスク情報"
                 onView={handleViewDetail}
                 onVerify={handleVerifySingle}
                 running={running}
@@ -216,7 +216,7 @@ export default function AdminVerificationConflictsPage() {
             {tab === "multi" && (
               <MultiSourceTable
                 events={multiSource}
-                title="複数ソースを持つ大会"
+                title="複数ソースを持つリスク情報"
                 onView={handleViewDetail}
                 onVerify={handleVerifySingle}
                 running={running}
@@ -269,7 +269,7 @@ function ConflictTable({ events, title, onView, onVerify, running }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b text-left text-gray-500 text-xs">
-              <th className="px-4 py-2">大会</th>
+              <th className="px-4 py-2">リスク情報</th>
               <th className="px-4 py-2">開催日</th>
               <th className="px-4 py-2">受付状態</th>
               <th className="px-4 py-2">矛盾レベル</th>
@@ -310,7 +310,7 @@ function ConflictTable({ events, title, onView, onVerify, running }) {
 
 function MultiSourceTable({ events, title, onView, onVerify, running }) {
   if (!events || events.length === 0) {
-    return <div className="bg-white rounded-lg border p-6 text-center text-gray-500 text-sm">複数ソース大会なし</div>;
+    return <div className="bg-white rounded-lg border p-6 text-center text-gray-500 text-sm">複数ソースリスク情報なし</div>;
   }
   return (
     <div className="bg-white rounded-lg border overflow-hidden">
@@ -321,7 +321,7 @@ function MultiSourceTable({ events, title, onView, onVerify, running }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b text-left text-gray-500 text-xs">
-              <th className="px-4 py-2">大会</th>
+              <th className="px-4 py-2">リスク情報</th>
               <th className="px-4 py-2">開催日</th>
               <th className="px-4 py-2">ソース数</th>
               <th className="px-4 py-2">ソース種別</th>
@@ -360,15 +360,15 @@ function MultiSourceTable({ events, title, onView, onVerify, running }) {
 
 function DetailPanel({ detail, loading }) {
   if (loading) return <div className="text-center py-12 text-gray-500">読み込み中...</div>;
-  if (!detail) return <div className="bg-white rounded-lg border p-6 text-center text-gray-500 text-sm">大会を選択してください</div>;
+  if (!detail) return <div className="bg-white rounded-lg border p-6 text-center text-gray-500 text-sm">リスク情報を選択してください</div>;
 
   const { event, sourceLinks, snapshots } = detail;
 
   return (
     <div className="space-y-4">
-      {/* 大会情報 */}
+      {/* リスク情報 */}
       <div className="bg-white rounded-lg border p-4">
-        <h3 className="font-semibold text-gray-900 mb-2">{event?.title || "大会詳細"}</h3>
+        <h3 className="font-semibold text-gray-900 mb-2">{event?.title || "リスク情報詳細"}</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
           <div><span className="text-gray-500">開催日:</span> {event?.event_date || "-"}</div>
           <div><span className="text-gray-500">受付状態:</span> {event?.entry_status || "-"}</div>

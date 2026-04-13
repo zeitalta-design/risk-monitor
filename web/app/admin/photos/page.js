@@ -108,7 +108,7 @@ export default function AdminPhotosPage() {
           type="text"
           value={filterEventId}
           onChange={(e) => { setFilterEventId(e.target.value); setOffset(0); }}
-          placeholder="大会ID"
+          placeholder="データID"
           className="text-xs border border-gray-200 rounded px-2 py-1.5 text-gray-600 w-24"
         />
         <select
@@ -175,7 +175,7 @@ export default function AdminPhotosPage() {
                       </p>
                       <div className="flex items-center gap-2 text-[10px] text-gray-400 mt-0.5">
                         <span>ID:{photo.id}</span>
-                        <span>大会:{photo.event_id}</span>
+                        <span>リスク情報:{photo.event_id}</span>
                         {photo.source_type && <span>{SOURCE_LABELS[photo.source_type] || photo.source_type}</span>}
                         {photo.taken_year && <span>{photo.taken_year}年</span>}
                         <span>順序:{photo.display_order}</span>

@@ -11,11 +11,11 @@ import Link from "next/link";
 
 const TYPE_LABELS = {
   general: "一般問い合わせ",
-  listing_request: "掲載依頼",
+  listing_request: "公開依頼",
   correction: "情報修正依頼",
   deletion: "削除依頼",
   bug_report: "不具合報告",
-  organizer_apply: "主催者登録申請",
+  organizer_apply: "データソース登録申請",
 };
 
 const STATUS_OPTIONS = [
@@ -278,7 +278,7 @@ function DetailPanel({ inquiry, onClose, onUpdate, onDelete }) {
           <InfoRow label="メール" value={inquiry.email} />
           <InfoRow label="受信日時" value={formatDateTime(inquiry.created_at)} />
           {inquiry.event_title && (
-            <InfoRow label="対象大会" value={inquiry.event_title} />
+            <InfoRow label="対象リスク情報" value={inquiry.event_title} />
           )}
           {inquiry.target_url && (
             <InfoRow label="対象URL" value={

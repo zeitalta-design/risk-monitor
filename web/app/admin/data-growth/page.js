@@ -6,7 +6,7 @@ import AdminNav from "@/components/AdminNav";
 /**
  * Phase207: データ成長ダッシュボード
  *
- * /admin/data-growth — 大会数・口コミ数・写真数・結果掲載大会・月別成長率
+ * /admin/data-growth — データ件数・口コミ数・写真数・結果公開データ・月別成長率
  */
 
 export default function AdminDataGrowthPage() {
@@ -59,10 +59,10 @@ export default function AdminDataGrowthPage() {
 
       {/* KPIカード */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-        <KpiCard label="大会数" value={c.totalEvents} sub={`うち今後: ${c.futureEvents}`} />
+        <KpiCard label="データ件数" value={c.totalEvents} sub={`うち今後: ${c.futureEvents}`} />
         <KpiCard label="口コミ数" value={c.totalReviews} color="text-blue-600" />
         <KpiCard label="写真数" value={c.totalPhotos} color="text-emerald-600" />
-        <KpiCard label="結果掲載大会" value={c.eventsWithResults} sub={`全${c.totalResults}件`} color="text-purple-600" />
+        <KpiCard label="結果公開データ" value={c.eventsWithResults} sub={`全${c.totalResults}件`} color="text-purple-600" />
         <KpiCard label="ユーザー数" value={c.totalUsers} />
         <KpiCard label="紐付済ユーザー" value={c.linkedUsers} color="text-indigo-600" />
         <KpiCard
@@ -71,7 +71,7 @@ export default function AdminDataGrowthPage() {
           color="text-amber-600"
         />
         <KpiCard
-          label="口コミ/大会"
+          label="口コミ/データ件数"
           value={c.totalEvents > 0 ? (c.totalReviews / c.totalEvents).toFixed(1) : "0"}
           color="text-teal-600"
         />

@@ -186,7 +186,7 @@ export default function PatrolPage() {
     const patrolJson = await patrolRes.json();
     setData(patrolJson);
 
-    // 次にイベント一覧を再読込
+    // 次にリスクデータ一覧を再読込
     if (selectedIssue) {
       const issueRes = await fetch(`/api/admin/ops/patrol?issue=${selectedIssue}`);
       const issueJson = await issueRes.json();
@@ -253,7 +253,7 @@ export default function PatrolPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">巡回パトロール</h1>
         <p className="text-sm text-gray-500 mt-1">
-          掲載大会 {totalActive} 件 · 要確認 {totalIssues} 件
+          公開データ {totalActive} 件 · 要確認 {totalIssues} 件
         </p>
       </div>
 
@@ -304,7 +304,7 @@ export default function PatrolPage() {
                 {selectedCard?.label || selectedIssue}
               </h3>
               <p className="text-xs text-gray-500 mt-0.5">
-                {events.length} 件の大会が該当（最大100件表示）
+                {events.length} 件のリスク情報が該当（最大100件表示）
                 {refetchableEvents.length < events.length && isRefetchable && (
                   <span className="ml-2 text-orange-600">
                     (うち再取得可能 {refetchableEvents.length} 件)
@@ -343,11 +343,11 @@ export default function PatrolPage() {
                   )}
                 </>
               )}
-              {/* 過去大会一括アーカイブ */}
+              {/* 過去リスク情報一括アーカイブ */}
               {selectedIssue === "past_archived" && events.length > 0 && (
                 <button
                   onClick={async () => {
-                    if (!confirm(`${events.length}件の大会を非公開にしますか？`)) return;
+                    if (!confirm(`${events.length}件のリスク情報を非公開にしますか？`)) return;
                     try {
                       const res = await fetch("/api/admin/ops/patrol", {
                         method: "PATCH",
@@ -397,7 +397,7 @@ export default function PatrolPage() {
           ) : events.length === 0 ? (
             <div className="p-8 text-center">
               <div className="text-3xl mb-2">✅</div>
-              <p className="text-green-700 font-bold">この問題に該当する大会はありません</p>
+              <p className="text-green-700 font-bold">この問題に該当するリスク情報はありません</p>
               <p className="text-xs text-gray-500 mt-1">再取得または手動編集で解消されました</p>
             </div>
           ) : (
@@ -416,7 +416,7 @@ export default function PatrolPage() {
                       </th>
                     )}
                     <th className="text-left px-4 py-2.5 font-extrabold text-gray-600 text-xs">ID</th>
-                    <th className="text-left px-4 py-2.5 font-extrabold text-gray-600 text-xs">大会名</th>
+                    <th className="text-left px-4 py-2.5 font-extrabold text-gray-600 text-xs">データ名</th>
                     <th className="text-left px-4 py-2.5 font-extrabold text-gray-600 text-xs">種目</th>
                     <th className="text-left px-4 py-2.5 font-extrabold text-gray-600 text-xs">開催日</th>
                     <th className="text-left px-4 py-2.5 font-extrabold text-gray-600 text-xs">都道府県</th>
@@ -450,13 +450,13 @@ export default function PatrolPage() {
         totalIssues === 0 ? (
           <div className="bg-green-50 rounded-xl border border-green-200 p-8 text-center">
             <div className="text-3xl mb-3">✅</div>
-            <p className="text-green-800 font-extrabold">現在、要確認の大会はありません</p>
+            <p className="text-green-800 font-extrabold">現在、要確認のリスク情報はありません</p>
             <p className="text-sm text-green-600 mt-1">すべての品質チェックをパスしています</p>
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
             <div className="text-3xl mb-3">🔍</div>
-            <p className="text-gray-600 font-bold">問題カードをクリックすると該当大会が表示されます</p>
+            <p className="text-gray-600 font-bold">問題カードをクリックすると該当リスク情報が表示されます</p>
             <p className="text-sm text-gray-400 mt-1">
               「再取得可」マーク付きカードは一括再取得が可能です
             </p>
@@ -468,7 +468,7 @@ export default function PatrolPage() {
 }
 
 /**
- * イベント行コンポーネント
+ * リスクデータ行コンポーネント
  */
 function EventRow({ ev, isRefetchable, selectedIds, setSelectedIds, refetchingId, refetchSingle, rowResult, onAction }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -775,7 +775,7 @@ function RefetchResultPanel({ result, onClose }) {
       {/* 失敗・手動対応が必要なもののみ詳細表示 */}
       {results.some((r) => r.status === "FAILED" || r.status === "MANUAL_REQUIRED") && (
         <div className="px-5 pb-3 max-h-60 overflow-y-auto">
-          <p className="text-xs font-bold text-red-800 mb-2">以下の大会は手動対応が必要です:</p>
+          <p className="text-xs font-bold text-red-800 mb-2">以下のリスク情報は手動対応が必要です:</p>
           <div className="space-y-1.5">
             {results.filter((r) => r.status === "FAILED" || r.status === "MANUAL_REQUIRED").map((r) => (
               <div key={r.event_id} className="text-xs bg-white rounded-lg px-3 py-2 border border-red-100 flex items-center justify-between gap-2">
@@ -809,7 +809,7 @@ function ErrorState({ message }) {
       </div>
       <div className="bg-red-50 border border-red-200 rounded-xl p-8 text-center">
         <div className="text-3xl mb-3">⚠️</div>
-        <p className="text-red-800 font-extrabold">{message || "要確認大会データの取得に失敗しました"}</p>
+        <p className="text-red-800 font-extrabold">{message || "要確認リスク情報データの取得に失敗しました"}</p>
         <p className="text-sm text-red-600 mt-2">ページを再読み込みするか、時間をおいてお試しください</p>
         <button
           onClick={() => window.location.reload()}

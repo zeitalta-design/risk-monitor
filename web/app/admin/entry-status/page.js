@@ -10,7 +10,7 @@
  * - 鮮度分布
  * - confidence 分布
  * - 直近の状態変化ログ
- * - 要確認（長時間未確認の受付中イベント）
+ * - 要確認（長時間未確認の受付中リスクデータ）
  * - バッチ実行ボタン
  */
 
@@ -259,9 +259,9 @@ export default function AdminEntryStatusPage() {
         </div>
       </div>
 
-      {/* 要確認: 長時間未確認の受付中イベント */}
+      {/* 要確認: 長時間未確認の受付中リスクデータ */}
       <div className="mt-6 bg-white border border-gray-200 rounded-xl p-5">
-        <h2 className="text-sm font-bold text-gray-700 mb-3">⚠️ 要確認: 長時間未確認の受付中イベント</h2>
+        <h2 className="text-sm font-bold text-gray-700 mb-3">⚠️ 要確認: 長時間未確認の受付中リスクデータ</h2>
         {(data?.staleEvents || []).length === 0 ? (
           <p className="text-xs text-gray-400">すべて確認済みです</p>
         ) : (
@@ -270,7 +270,7 @@ export default function AdminEntryStatusPage() {
               <thead>
                 <tr className="text-gray-500 border-b">
                   <th className="text-left py-2 pr-3">ID</th>
-                  <th className="text-left py-2 pr-3">大会名</th>
+                  <th className="text-left py-2 pr-3">データ名</th>
                   <th className="text-left py-2 pr-3">ステータス</th>
                   <th className="text-left py-2 pr-3">信頼度</th>
                   <th className="text-left py-2 pr-3">理由</th>

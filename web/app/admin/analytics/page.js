@@ -9,7 +9,7 @@ import Link from "next/link";
  * CV改善に必要な指標を一覧表示:
  * - KPIカード（PV、クリック、CTR等）
  * - 日別アクティビティ
- * - 大会別PV+CTRランキング
+ * - リスク情報別PV+CTRランキング
  * - source_site別クリック
  * - 検索キーワード上位
  */
@@ -113,14 +113,14 @@ export default function AdminAnalyticsPage() {
           </section>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* 大会別 PV + CTR ランキング */}
+            {/* リスク情報別 PV + CTR ランキング */}
             <section className="bg-white rounded-xl border border-gray-100 p-5">
-              <h2 className="text-sm font-bold text-gray-800 mb-4">🏆 大会別 PV・CTRランキング</h2>
+              <h2 className="text-sm font-bold text-gray-800 mb-4">🏆 リスク情報別 PV・CTRランキング</h2>
               {data.topEvents?.length > 0 ? (
                 <div className="space-y-2">
                   <div className="flex items-center gap-3 text-[10px] text-gray-400 font-medium px-1">
                     <span className="w-5" />
-                    <span className="flex-1">大会名</span>
+                    <span className="flex-1">データ名</span>
                     <span className="w-10 text-right">PV</span>
                     <span className="w-12 text-right">クリック</span>
                     <span className="w-12 text-right">CTR</span>
@@ -179,7 +179,7 @@ export default function AdminAnalyticsPage() {
               {/* クリック数ランキング */}
               {data.topClickEvents?.length > 0 && (
                 <div className="mt-6 pt-4 border-t border-gray-100">
-                  <h3 className="text-xs font-bold text-gray-600 mb-3">🔥 クリック数TOP大会</h3>
+                  <h3 className="text-xs font-bold text-gray-600 mb-3">🔥 クリック数TOPリスク情報</h3>
                   <div className="space-y-2">
                     {data.topClickEvents.map((ev, i) => (
                       <div key={ev.event_id} className="flex items-center gap-3">

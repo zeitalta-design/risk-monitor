@@ -2,11 +2,11 @@
 import { useState, useEffect } from "react";
 
 const PLACEMENT_LABELS = {
-  standard: "通常掲載",
-  featured: "注目掲載",
-  beginner: "初心者向け掲載",
-  deadline: "締切間近掲載",
-  popular: "人気掲載",
+  standard: "通常公開",
+  featured: "注目公開",
+  beginner: "初心者向け公開",
+  deadline: "締切間近公開",
+  popular: "人気公開",
 };
 
 const PLACEMENT_COLORS = {
@@ -26,11 +26,11 @@ const PLACEMENT_ACCENTS = {
 };
 
 const PRODUCT_DESC = {
-  featured: "幅広く認知を増やしたい大会向け",
-  beginner: "初参加者を増やしたい大会向け",
-  deadline: "締切前に短期集客したい大会向け",
-  popular: "人気導線の中で露出したい大会向け",
-  standard: "基本掲載（無料）",
+  featured: "幅広く認知を増やしたいリスク情報向け",
+  beginner: "初参加者を増やしたいリスク情報向け",
+  deadline: "締切前に短期集客したいリスク情報向け",
+  popular: "人気導線の中で露出したいリスク情報向け",
+  standard: "基本公開（無料）",
 };
 
 const PRODUCT_ICONS = {
@@ -91,7 +91,7 @@ export default function PlacementAnalyticsPage() {
   }
 
   async function handleEndPlacement(eventId, placement) {
-    if (!confirm(`大会ID ${eventId} の「${PLACEMENT_LABELS[placement]}」を終了しますか？`)) return;
+    if (!confirm(`データID ${eventId} の「${PLACEMENT_LABELS[placement]}」を終了しますか？`)) return;
     try {
       await fetch("/api/admin/placement-analytics", {
         method: "POST",
@@ -111,9 +111,9 @@ export default function PlacementAnalyticsPage() {
     <div className="p-6 lg:p-8 max-w-7xl">
       {/* ヘッダー */}
       <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">掲載効果レポート</h1>
+        <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">公開効果レポート</h1>
         <p className="text-sm text-gray-500 mt-1">
-          掲載プランごとの集客効果を可視化 · 営業提案にそのまま使えます
+          公開プランごとの集客効果を可視化 · 営業提案にそのまま使えます
         </p>
       </div>
 
@@ -141,8 +141,8 @@ export default function PlacementAnalyticsPage() {
       <div className="flex gap-1 mb-6 border-b border-gray-200">
         {[
           { key: "products", label: "商品別効果" },
-          { key: "events", label: "大会別レポート" },
-          { key: "manage", label: "掲載管理" },
+          { key: "events", label: "データ別レポート" },
+          { key: "manage", label: "公開管理" },
         ].map((t) => (
           <button
             key={t.key}
@@ -206,7 +206,7 @@ export default function PlacementAnalyticsPage() {
                       {/* 詳細指標 */}
                       <div className="space-y-1.5 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-gray-500">掲載大会数</span>
+                          <span className="text-gray-500">公開データ件数</span>
                           <span className="font-extrabold text-gray-800">{avg?.eventCount || 0}</span>
                         </div>
                         <div className="flex justify-between">
@@ -243,7 +243,7 @@ export default function PlacementAnalyticsPage() {
                 <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                   <div>
                     <h3 className="font-extrabold text-gray-900">成功事例</h3>
-                    <p className="text-xs text-gray-500 mt-0.5">掲載効果が高かった大会（クリック増加率順）</p>
+                    <p className="text-xs text-gray-500 mt-0.5">公開効果が高かったリスク情報（クリック増加率順）</p>
                   </div>
                   <select
                     value={filterPlacement}
@@ -258,7 +258,7 @@ export default function PlacementAnalyticsPage() {
                 </div>
                 {successCases.length === 0 ? (
                   <div className="p-8 text-center text-gray-400 text-sm">
-                    まだ効果データがありません。掲載を追加するとデータが蓄積されます。
+                    まだ効果データがありません。公開を追加するとデータが蓄積されます。
                   </div>
                 ) : (
                   <div className="divide-y divide-gray-50">
@@ -274,7 +274,7 @@ export default function PlacementAnalyticsPage() {
                             </div>
                             <p className="font-bold text-gray-800 text-sm truncate">{row.title}</p>
                             <p className="text-[10px] text-gray-400 mt-0.5">
-                              ID: {row.eventId} · 掲載開始: {formatDate(row.startedAt)}
+                              ID: {row.eventId} · 公開開始: {formatDate(row.startedAt)}
                             </p>
                           </div>
                           <div className="text-right shrink-0">
@@ -286,7 +286,7 @@ export default function PlacementAnalyticsPage() {
                             <p className="text-[10px] text-gray-500">クリック増加</p>
                           </div>
                         </div>
-                        {/* 掲載前後比較 */}
+                        {/* 公開前後比較 */}
                         <div className="mt-3 grid grid-cols-3 gap-3">
                           <BeforeAfterCell
                             label="表示回数"
@@ -316,12 +316,12 @@ export default function PlacementAnalyticsPage() {
             </div>
           )}
 
-          {/* ── 大会別レポートタブ ── */}
+          {/* ── データ別レポートタブ ── */}
           {tab === "events" && (
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
               <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                 <div>
-                  <h3 className="font-extrabold text-gray-900">大会別掲載効果</h3>
+                  <h3 className="font-extrabold text-gray-900">データ別公開効果</h3>
                   <p className="text-xs text-gray-500 mt-0.5">
                     比較: 直近{days}日 vs 前{days}日
                   </p>
@@ -340,13 +340,13 @@ export default function PlacementAnalyticsPage() {
               <div className="overflow-x-auto">
                 {!data?.summary || data.summary.length === 0 ? (
                   <div className="p-8 text-center text-gray-400 text-sm">
-                    掲載データがありません。「掲載管理」タブから大会を追加してください。
+                    公開データがありません。「公開管理」タブからリスク情報を追加してください。
                   </div>
                 ) : (
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-100 bg-gray-50">
-                        <th className="text-left px-5 py-3 font-bold text-gray-600 text-xs">大会名</th>
+                        <th className="text-left px-5 py-3 font-bold text-gray-600 text-xs">データ名</th>
                         <th className="text-center px-3 py-3 font-bold text-gray-600 text-xs">プラン</th>
                         <th className="text-right px-3 py-3 font-bold text-gray-600 text-xs">表示</th>
                         <th className="text-right px-3 py-3 font-bold text-gray-600 text-xs">クリック</th>
@@ -395,18 +395,18 @@ export default function PlacementAnalyticsPage() {
             </div>
           )}
 
-          {/* ── 掲載管理タブ ── */}
+          {/* ── 公開管理タブ ── */}
           {tab === "manage" && (
             <div className="space-y-6">
-              {/* 掲載追加フォーム */}
+              {/* 公開追加フォーム */}
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
                 <div className="px-5 py-4 border-b border-gray-100">
-                  <h3 className="font-extrabold text-gray-900">掲載プランを追加</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">大会IDと掲載プランを指定して追加</p>
+                  <h3 className="font-extrabold text-gray-900">公開プランを追加</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">データIDと公開プランを指定して追加</p>
                 </div>
                 <form onSubmit={handleAddPlacement} className="px-5 py-4 flex items-end gap-3 flex-wrap">
                   <div>
-                    <label className="text-xs font-bold text-gray-600 block mb-1">大会ID</label>
+                    <label className="text-xs font-bold text-gray-600 block mb-1">データID</label>
                     <input
                       type="number"
                       value={addForm.eventId}
@@ -417,7 +417,7 @@ export default function PlacementAnalyticsPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-gray-600 block mb-1">掲載プラン</label>
+                    <label className="text-xs font-bold text-gray-600 block mb-1">公開プラン</label>
                     <select
                       value={addForm.placement}
                       onChange={(e) => setAddForm((p) => ({ ...p, placement: e.target.value }))}
@@ -438,23 +438,23 @@ export default function PlacementAnalyticsPage() {
                 </form>
               </div>
 
-              {/* 現在の掲載一覧 */}
+              {/* 現在の公開一覧 */}
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
                 <div className="px-5 py-4 border-b border-gray-100">
-                  <h3 className="font-extrabold text-gray-900">現在の掲載一覧</h3>
+                  <h3 className="font-extrabold text-gray-900">現在の公開一覧</h3>
                 </div>
                 <div className="overflow-x-auto">
                   {!data?.summary || data.summary.length === 0 ? (
                     <div className="p-8 text-center text-gray-400 text-sm">
-                      掲載中の大会はありません
+                      公開中のリスク情報はありません
                     </div>
                   ) : (
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-gray-100 bg-gray-50">
-                          <th className="text-left px-5 py-3 font-bold text-gray-600 text-xs">大会名</th>
+                          <th className="text-left px-5 py-3 font-bold text-gray-600 text-xs">データ名</th>
                           <th className="text-center px-3 py-3 font-bold text-gray-600 text-xs">プラン</th>
-                          <th className="text-left px-3 py-3 font-bold text-gray-600 text-xs">掲載開始</th>
+                          <th className="text-left px-3 py-3 font-bold text-gray-600 text-xs">公開開始</th>
                           <th className="text-right px-3 py-3 font-bold text-gray-600 text-xs">表示</th>
                           <th className="text-right px-3 py-3 font-bold text-gray-600 text-xs">クリック</th>
                           <th className="text-right px-3 py-3 font-bold text-gray-600 text-xs">CTR</th>

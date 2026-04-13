@@ -111,7 +111,7 @@ export default function AdminReviewsPage() {
           type="text"
           value={searchEventId}
           onChange={(e) => setSearchEventId(e.target.value)}
-          placeholder="大会IDで検索"
+          placeholder="データIDで検索"
           className="text-xs border border-gray-200 rounded px-3 py-1.5 w-36 text-gray-700 placeholder-gray-400"
         />
         <span className="text-xs text-gray-400 ml-auto">{total}件</span>

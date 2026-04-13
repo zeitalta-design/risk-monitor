@@ -29,7 +29,7 @@ export default function AdminMarathonDetailImportPage() {
       <AdminNav />
 
       <h1 className="text-2xl font-bold text-gray-900 mb-6">
-        大会情報の取込
+        リスク情報の取込
       </h1>
 
       {/* モード切替タブ */}
@@ -133,7 +133,7 @@ function UrlImportMode({ prefilledEventId = "" }) {
         {/* URL入力 */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            大会ページURL <span className="text-red-500">*</span>
+            リスク情報ページURL <span className="text-red-500">*</span>
           </label>
           <input
             type="url"
@@ -145,20 +145,20 @@ function UrlImportMode({ prefilledEventId = "" }) {
           />
         </div>
 
-        {/* 既存大会ID（任意） */}
+        {/* 既存データID（任意） */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            既存大会ID（任意）
+            既存データID（任意）
           </label>
           <input
             type="number"
             value={existingId}
             onChange={(e) => setExistingId(e.target.value)}
-            placeholder="空欄なら新規作成、指定すれば既存大会を更新"
+            placeholder="空欄なら新規作成、指定すれば既存データを更新"
             className="border border-gray-300 rounded px-3 py-2 w-64 text-sm"
           />
           <p className="text-xs text-gray-400 mt-1">
-            空欄の場合、新規大会として登録されます。同じURLの大会が既にある場合は自動で更新されます。
+            空欄の場合、新規リスク情報として登録されます。同じURLのリスク情報が既にある場合は自動で更新されます。
           </p>
         </div>
 
@@ -202,11 +202,11 @@ function UrlImportMode({ prefilledEventId = "" }) {
 
           <div className="space-y-2 text-sm mb-4">
             <div>
-              <span className="text-gray-500">大会名:</span>{" "}
+              <span className="text-gray-500">データ名:</span>{" "}
               <span className="font-medium text-gray-900">{result.title}</span>
             </div>
             <div>
-              <span className="text-gray-500">大会ID:</span>{" "}
+              <span className="text-gray-500">データID:</span>{" "}
               <span className="font-medium text-gray-900">{result.eventId}</span>
             </div>
             <div>
@@ -236,7 +236,7 @@ function UrlImportMode({ prefilledEventId = "" }) {
               href={`/marathon/${result.eventId}`}
               className="px-4 py-2 text-sm bg-blue-600 text-white font-medium rounded hover:bg-blue-700 transition-colors"
             >
-              大会ページを開く
+              リスク情報ページを開く
             </a>
             <a
               href={`/admin/marathon-details/${result.eventId}`}
@@ -383,19 +383,19 @@ function TextImportMode({ router }) {
       <div className="card p-6 mb-6">
         <h2 className="text-lg font-bold text-gray-900 mb-1">テキスト貼付で構造化</h2>
         <p className="text-xs text-gray-400 mb-4">
-          外部サイトから大会情報テキストをコピペして、LLMで構造化します。
+          外部サイトからリスク情報テキストをコピペして、LLMで構造化します。
         </p>
 
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            対象大会ID
+            対象データID
           </label>
           <div className="flex gap-2">
             <input
               type="number"
               value={marathonId}
               onChange={(e) => setMarathonId(e.target.value)}
-              placeholder="大会IDを入力"
+              placeholder="データIDを入力"
               className="border border-gray-300 rounded px-3 py-2 w-40 text-sm"
               onKeyDown={(e) => e.key === "Enter" && lookupEvent()}
             />
@@ -424,7 +424,7 @@ function TextImportMode({ router }) {
           )}
           {eventInfo?.error && (
             <p className="mt-2 text-sm text-red-600">
-              大会が見つかりません: {eventInfo.error}
+              リスク情報が見つかりません: {eventInfo.error}
             </p>
           )}
         </div>
@@ -466,7 +466,7 @@ function TextImportMode({ router }) {
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Moshicom / RUNNET / 公式サイトなどから大会情報のテキストを貼り付けてください"
+            placeholder="Moshicom / RUNNET / 公式サイトなどからリスク情報のテキストを貼り付けてください"
             rows={15}
             className="border border-gray-300 rounded px-3 py-2 w-full text-sm font-mono leading-relaxed"
           />
@@ -554,7 +554,7 @@ function TextImportMode({ router }) {
                       .join(" / ") || null
                   }
                 />
-                <SummaryItem label="主催者" value={result.data.organizer_name} />
+                <SummaryItem label="データソース" value={result.data.organizer_name} />
 
                 <div>
                   <span className="text-gray-500 text-xs">特徴:</span>
@@ -594,7 +594,7 @@ function TextImportMode({ router }) {
                   <CountBadge label="FAQ" count={parseJsonField(result.data.faq_json).length} />
                   <CountBadge label="スケジュール" count={parseJsonField(result.data.schedule_json).length} />
                   <CountBadge label="制限時間" count={parseJsonField(result.data.time_limits_json).length} />
-                  <CountBadge label="系列大会" count={parseJsonField(result.data.series_events_json).length} />
+                  <CountBadge label="系列リスク情報" count={parseJsonField(result.data.series_events_json).length} />
                 </div>
               </div>
             </div>
@@ -622,7 +622,7 @@ function TextImportMode({ router }) {
             <h3 className="text-base font-bold text-gray-900 mb-4">保存</h3>
             {!eventInfo?.id ? (
               <p className="text-sm text-gray-500">
-                保存するには、上部で対象大会を選択してください。
+                保存するには、上部で対象リスク情報を選択してください。
               </p>
             ) : (
               <div className="flex flex-wrap items-center gap-4">

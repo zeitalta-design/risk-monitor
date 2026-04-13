@@ -17,8 +17,8 @@ const MANUAL_CHECKS = [
   { id: "contact", label: "お問い合わせフォームが正常に送信できる", category: "法務" },
   { id: "mobile", label: "主要ページがモバイルで正常表示される", category: "UI" },
   { id: "login", label: "ログイン・会員登録フローが正常動作する", category: "機能" },
-  { id: "search", label: "大会検索（キーワード・フィルタ）が動作する", category: "機能" },
-  { id: "detail", label: "大会詳細ページが正常表示される", category: "機能" },
+  { id: "search", label: "リスク情報検索（キーワード・フィルタ）が動作する", category: "機能" },
+  { id: "detail", label: "リスク情報詳細ページが正常表示される", category: "機能" },
   { id: "favorite", label: "お気に入り追加/解除が動作する", category: "機能" },
   { id: "notify", label: "通知設定が動作する", category: "機能" },
   { id: "ssl", label: "SSL証明書が有効（https）", category: "インフラ" },
@@ -53,7 +53,7 @@ export default function LaunchCheckPage() {
       label: "データベース接続",
       status: health.checks?.database?.status === "ok" ? "pass" : "fail",
       detail: health.checks?.database?.status === "ok"
-        ? `${health.checks.database.active_events}件のアクティブイベント`
+        ? `${health.checks.database.active_events}件のアクティブリスクデータ`
         : "接続エラー",
     });
     autoChecks.push({
@@ -66,17 +66,17 @@ export default function LaunchCheckPage() {
   }
   if (monitoring) {
     autoChecks.push({
-      label: "イベントデータ充実度",
+      label: "リスクデータ充実度",
       status: monitoring.summary?.total_events >= 100 ? "pass" : "warn",
       detail: `${monitoring.summary?.total_events || 0}件`,
     });
     autoChecks.push({
-      label: "日付未設定イベント",
+      label: "日付未設定リスクデータ",
       status: monitoring.data_quality?.events_no_date === 0 ? "pass" : "warn",
       detail: `${monitoring.data_quality?.events_no_date || 0}件`,
     });
     autoChecks.push({
-      label: "県未設定イベント",
+      label: "県未設定リスクデータ",
       status: monitoring.data_quality?.events_no_prefecture === 0 ? "pass" : "warn",
       detail: `${monitoring.data_quality?.events_no_prefecture || 0}件`,
     });

@@ -7,7 +7,7 @@ import AdminNav from "@/components/AdminNav";
 /**
  * Phase155: 結果管理画面
  *
- * /admin/results — イベント別結果概要、公開ステータス管理
+ * /admin/results — リスクデータ別結果概要、公開ステータス管理
  */
 
 const SPORT_OPTIONS = [
@@ -51,7 +51,7 @@ export default function AdminResultsPage() {
     <div className="max-w-6xl mx-auto px-4 py-6">
       <AdminNav />
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold text-gray-900">大会結果管理</h1>
+        <h1 className="text-xl font-bold text-gray-900">データ結果管理</h1>
         <Link href="/admin/results/upload" className="px-4 py-2 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
           CSVアップロード
         </Link>
@@ -82,8 +82,8 @@ export default function AdminResultsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-left">
-                  <th className="py-2 pr-3 text-xs font-medium text-gray-500">大会ID</th>
-                  <th className="py-2 pr-3 text-xs font-medium text-gray-500">大会名</th>
+                  <th className="py-2 pr-3 text-xs font-medium text-gray-500">データID</th>
+                  <th className="py-2 pr-3 text-xs font-medium text-gray-500">データ名</th>
                   <th className="py-2 pr-3 text-xs font-medium text-gray-500">年度</th>
                   <th className="py-2 pr-3 text-xs font-medium text-gray-500">種別</th>
                   <th className="py-2 pr-3 text-xs font-medium text-gray-500 text-right">全件</th>

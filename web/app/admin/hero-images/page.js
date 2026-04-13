@@ -9,9 +9,9 @@ import AdminNav from "@/components/AdminNav";
  */
 
 const SLIDE_LABELS = {
-  "entry-open": { label: "今エントリーできる大会", color: "blue" },
-  "deadline-soon": { label: "締切間近の大会", color: "rose" },
-  "beginner-friendly": { label: "初心者でも参加しやすい大会", color: "emerald" },
+  "entry-open": { label: "今エントリーできるリスク情報", color: "blue" },
+  "deadline-soon": { label: "締切間近のリスク情報", color: "rose" },
+  "beginner-friendly": { label: "初心者でも参加しやすいリスク情報", color: "emerald" },
 };
 
 export default function HeroImagesPage() {

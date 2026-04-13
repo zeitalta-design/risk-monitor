@@ -173,7 +173,7 @@ export default function ScrapingPage() {
                     {src.lastSuccessAt ? formatDateTime(src.lastSuccessAt) : "—"}
                   </p>
                   <p>
-                    <span className="font-bold text-gray-600">掲載大会数:</span> {src.eventCount} 件
+                    <span className="font-bold text-gray-600">公開データ件数:</span> {src.eventCount} 件
                   </p>
                   {src.consecutiveFails > 0 && (
                     <p className="text-red-600 font-bold">

@@ -195,7 +195,7 @@ export default function AdminMarathonDetailEditPage({ params }) {
       <div className="max-w-4xl mx-auto px-4 py-6">
         <AdminNav />
         <div className="text-center py-12 text-gray-400">
-          大会が見つかりません
+          リスク情報が見つかりません
         </div>
       </div>
     );
@@ -286,7 +286,7 @@ export default function AdminMarathonDetailEditPage({ params }) {
             value={form.summary}
             onChange={updateField}
             rows={5}
-            placeholder="大会の概要を記入"
+            placeholder="リスク情報の概要を記入"
           />
           <TextInput
             label="スポーツカテゴリ"
@@ -296,14 +296,14 @@ export default function AdminMarathonDetailEditPage({ params }) {
             placeholder="例: ランニング"
           />
           <TextInput
-            label="大会種別"
+            label="リスク情報種別"
             field="event_type_label"
             value={form.event_type_label}
             onChange={updateField}
             placeholder="例: ロードレース"
           />
           <TextInput
-            label="大会規模"
+            label="リスク情報規模"
             field="event_scale_label"
             value={form.event_scale_label}
             onChange={updateField}
@@ -507,10 +507,10 @@ export default function AdminMarathonDetailEditPage({ params }) {
           />
         </FormSection>
 
-        {/* セクション6: 主催者 */}
-        <FormSection title="主催者情報">
+        {/* セクション6: データソース */}
+        <FormSection title="データソース情報">
           <TextInput
-            label="主催者名"
+            label="データソース名"
             field="organizer_name"
             value={form.organizer_name}
             onChange={updateField}
@@ -536,7 +536,7 @@ export default function AdminMarathonDetailEditPage({ params }) {
             />
           </div>
           <TextArea
-            label="主催者説明"
+            label="データソース説明"
             field="organizer_description"
             value={form.organizer_description}
             onChange={updateField}
@@ -560,10 +560,10 @@ export default function AdminMarathonDetailEditPage({ params }) {
           </div>
         </FormSection>
 
-        {/* セクション7: 系列大会 */}
-        <FormSection title="系列大会">
+        {/* セクション7: 系列リスク情報 */}
+        <FormSection title="系列リスク情報">
           <JsonTextArea
-            label="系列大会情報"
+            label="系列リスク情報"
             field="series_events_json"
             value={form.series_events_json}
             onChange={updateField}

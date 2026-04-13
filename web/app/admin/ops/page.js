@@ -13,11 +13,11 @@ import Link from "next/link";
 
 const INQUIRY_TYPE_LABELS = {
   general: "一般",
-  listing_request: "掲載依頼",
+  listing_request: "情報提供",
   correction: "情報修正",
   deletion: "削除依頼",
   bug_report: "不具合",
-  organizer_apply: "主催者申請",
+  organizer_apply: "その他",
 };
 
 const STATUS_STYLES = {
@@ -72,12 +72,12 @@ export default function OpsDashboard() {
         <KpiCard label="7日間の閲覧" value={kpi.weekViews} icon="📊" />
         <KpiCard label="今日の検索" value={kpi.todaySearches} icon="🔍" />
         <KpiCard label="外部クリック" value={kpi.todayExtClicks} icon="🔗" />
-        <KpiCard label="掲載大会数" value={kpi.totalEvents} icon="🏃" />
+        <KpiCard label="公開中データ数" value={kpi.totalEvents} icon="🏃" />
         <KpiCard label="未対応問い合わせ" value={kpi.openInquiries} icon="📨"
           alert={kpi.openInquiries > 0} href="/admin/ops/inquiries?status=open" />
         <KpiCard label="巡回失敗" value={kpi.scrapingFails} icon="⚠️"
           alert={kpi.scrapingFails > 0} href="/admin/ops/scraping" />
-        <KpiCard label="要確認大会" value={kpi.patrolIssues} icon="🔎"
+        <KpiCard label="要確認データ" value={kpi.patrolIssues} icon="🔎"
           alert={kpi.patrolIssues > 0} href="/admin/ops/patrol" />
         <KpiCard label="本日更新" value={kpi.todayUpdated} icon="🔄" />
         <KpiCard label="本日新規検出" value={kpi.todayNew} icon="🆕" />
@@ -203,9 +203,9 @@ export default function OpsDashboard() {
           </div>
           <div className="p-5">
             <div className="space-y-3">
-              <PatrolItem label="開催日未設定" count={kpi.patrolIssues > 0 ? "あり" : "0件"} level={kpi.patrolIssues > 0 ? "danger" : "ok"} />
+              <PatrolItem label="日付未設定" count={kpi.patrolIssues > 0 ? "あり" : "0件"} level={kpi.patrolIssues > 0 ? "danger" : "ok"} />
               <PatrolItem label="30日以上未更新" count={`${data.kpi.todayUpdated > 0 ? "更新あり" : "要確認"}`} level="info" />
-              <PatrolItem label="掲載大会数" count={`${kpi.totalEvents}件`} level="ok" />
+              <PatrolItem label="公開中データ数" count={`${kpi.totalEvents}件`} level="ok" />
             </div>
           </div>
         </div>

@@ -51,7 +51,7 @@ const WEEKLY_TASKS = [
   },
   {
     title: "データ鮮度チェック",
-    desc: "更新から30日以上経過したイベント数を確認。再クロール優先度を決定",
+    desc: "更新から30日以上経過したリスクデータ数を確認。再クロール優先度を決定",
     action: "/admin/quality",
     actionLabel: "品質管理へ",
   },
@@ -63,19 +63,19 @@ const WEEKLY_TASKS = [
   },
   {
     title: "運営依頼対応",
-    desc: "大会運営からの情報修正依頼を確認・反映",
+    desc: "リスク情報運営からの情報修正依頼を確認・反映",
     action: "/admin/organizer-requests",
     actionLabel: "運営依頼へ",
   },
   {
-    title: "人気イベント分析",
-    desc: "PV上位イベントの情報充実度を確認。写真・口コミ・詳細の補強",
+    title: "人気リスクデータ分析",
+    desc: "PV上位リスクデータの情報充実度を確認。写真・口コミ・詳細の補強",
     action: "/admin/event-metrics",
     actionLabel: "指標画面へ",
   },
   {
-    title: "新規大会追加",
-    desc: "未登録の新大会をスクレイピング or 手動追加。カバー率向上",
+    title: "新規リスク情報追加",
+    desc: "未登録の新リスク情報をスクレイピング or 手動追加。カバー率向上",
     action: "/admin/marathon-details/import",
     actionLabel: "取込画面へ",
   },
@@ -127,7 +127,7 @@ const KPI_DEFINITIONS = [
   {
     name: "データカバー率",
     target: "80% → 95%",
-    formula: "登録大会数 / 実在大会数",
+    formula: "登録データ件数 / 実在データ件数",
     importance: "検索の網羅性",
     priority: "重要",
   },
