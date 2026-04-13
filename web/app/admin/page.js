@@ -1,10 +1,12 @@
 import Link from "next/link";
 
 const DOMAINS = [
-  { key: "yutai", name: "株主優待ナビ", path: "/admin/yutai", icon: "🎁" },
-  { key: "hojokin", name: "補助金ナビ", path: "/admin/hojokin", icon: "💰" },
-  { key: "nyusatsu", name: "入札ナビ", path: "/admin/nyusatsu", icon: "📋" },
-  { key: "minpaku", name: "民泊ナビ", path: "/admin/minpaku", icon: "🏠" },
+  { key: "gyosei-shobun", name: "行政処分DB", path: "/admin/gyosei-shobun", icon: "⚖️" },
+  { key: "sanpai", name: "産廃処分", path: "/admin/sanpai", icon: "♻️" },
+  { key: "nyusatsu", name: "入札", path: "/admin/nyusatsu", icon: "📋" },
+  { key: "shitei", name: "指定管理", path: "/admin/shitei", icon: "🏛️" },
+  { key: "hojokin", name: "補助金", path: "/admin/hojokin", icon: "💰" },
+  { key: "kyoninka", name: "許認可", path: "/admin/kyoninka", icon: "📄" },
 ];
 
 export default function AdminTopPage() {

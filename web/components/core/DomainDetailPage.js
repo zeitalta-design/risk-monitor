@@ -9,7 +9,7 @@
  * セクション中身、SEO、データ取得は各ドメインページに残し、
  * children / slot で委譲する。
  *
- * 現在 saas / yutai で使用。将来 sports / 補助金ナビ 等にも適用可能。
+ * 現在 saas で使用。将来の他カテゴリにも適用可能。
  *
  * @param {Object} props
  * @param {boolean} [props.loading=false] - ローディング中か
