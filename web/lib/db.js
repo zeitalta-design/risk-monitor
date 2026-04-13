@@ -11,17 +11,36 @@ let _db = null;
 
 export function getDb() {
   if (!_db) {
-    if (TURSO_URL) {
-      // Turso リモート接続（Vercel本番環境）
-      _db = new Database(TURSO_URL, { authToken: TURSO_TOKEN });
-    } else {
-      // ローカル開発用（SQLiteファイル直接アクセス）
-      fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
-      _db = new Database(DB_PATH);
-      _db.pragma("journal_mode = WAL");
-      _db.pragma("busy_timeout = 5000");
+    try {
+      if (TURSO_URL && TURSO_TOKEN) {
+        // Turso リモート接続（Vercel本番環境）
+        console.log("[db] Connecting to Turso:", TURSO_URL.replace(/\/\/(.{8}).*/, "//$1..."));
+        _db = new Database(TURSO_URL, { authToken: TURSO_TOKEN });
+        console.log("[db] Turso connection established");
+      } else {
+        // ローカル開発用 or ビルド時フォールバック（SQLiteファイル直接アクセス）
+        if (TURSO_URL && !TURSO_TOKEN) {
+          console.warn("[db] TURSO_URL is set but TURSO_TOKEN is missing — falling back to local SQLite");
+        }
+        console.log("[db] Using local SQLite:", DB_PATH);
+        fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+        _db = new Database(DB_PATH);
+        _db.pragma("journal_mode = WAL");
+        _db.pragma("busy_timeout = 5000");
+      }
+    } catch (err) {
+      console.error("[db] Database connection FAILED:", err.message);
+      console.error("[db] TURSO_URL set:", !!TURSO_URL, "| TURSO_TOKEN set:", !!TURSO_TOKEN);
+      // フォールバック: ローカルSQLiteを試行
+      try {
+        console.log("[db] Falling back to local SQLite...");
+        fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+        _db = new Database(DB_PATH);
+      } catch (fallbackErr) {
+        throw new Error(`Database connection failed: ${err.message} (fallback also failed: ${fallbackErr.message})`);
+      }
     }
-    _db.pragma("foreign_keys = ON");
+    try { _db.pragma("foreign_keys = ON"); } catch {}
 
     // Turso接続時はスキーマ・マイグレーションは不要（事前にTurso CLIで実行済み）
     if (!TURSO_URL) {

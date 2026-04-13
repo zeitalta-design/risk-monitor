@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { listYutaiItems, getYutaiByIds } from "@/lib/repositories/yutai";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);

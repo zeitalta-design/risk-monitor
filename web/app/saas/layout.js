@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 /**
  * SaaSナビ レイアウト
  * /saas 配下の全ページに適用。既存スポーツアプリのレイアウトはそのまま維持。

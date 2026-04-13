@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getCompareMarathons } from "@/lib/marathon-compare-service";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/compare?ids=1,2,3
  *

@@ -12,6 +12,8 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { addWatch, removeWatch, isWatched } from "@/lib/repositories/watched-organizations";
 
+export const dynamic = "force-dynamic";
+
 async function requireAuth() {
   const user = await getCurrentUser();
   if (!user) return { user: null, error: NextResponse.json({ error: "login_required" }, { status: 401 }) };

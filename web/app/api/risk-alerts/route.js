@@ -6,6 +6,8 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request) {
   try {
     const user = await getCurrentUser();

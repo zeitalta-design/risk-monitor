@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { listMinpakuItems, getMinpakuByIds } from "@/lib/repositories/minpaku";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);

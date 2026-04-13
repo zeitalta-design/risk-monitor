@@ -3,6 +3,8 @@ import { getDb } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { recordEventActivity } from "@/lib/event-activity";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request) {
   try {
     const user = await getCurrentUser();

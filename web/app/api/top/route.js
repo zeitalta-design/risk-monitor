@@ -4,6 +4,8 @@ import { getFeatureSummaries } from "@/lib/feature-marathons";
 import { getEventDisplayStatus } from "@/lib/entry-status";
 import { getPopularEvents } from "@/lib/event-popularity";
 
+export const dynamic = "force-dynamic";
+
 // 名寄せ済みレコード除外条件
 const NOT_MERGED = "AND canonical_event_id IS NULL";
 

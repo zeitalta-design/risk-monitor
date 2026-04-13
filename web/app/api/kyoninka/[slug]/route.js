@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getKyoninkaBySlug, listRegistrationsByEntityId } from "@/lib/repositories/kyoninka";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request, { params }) {
   try {
     const { slug } = await params;

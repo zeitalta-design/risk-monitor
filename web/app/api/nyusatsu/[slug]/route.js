@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getNyusatsuBySlug } from "@/lib/repositories/nyusatsu";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request, { params }) {
   try {
     const { slug } = await params;

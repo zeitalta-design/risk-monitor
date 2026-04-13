@@ -3,6 +3,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { getUserNotifications, getNotificationStats } from "@/lib/user-notifications";
 import { getTypesForCategory } from "@/lib/notification-ui";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request) {
   try {
     const user = await getCurrentUser();

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/platform/search?q=keyword&domain=all&limit=20
  * 7ドメイン横断検索

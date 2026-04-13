@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSanpaiBySlug, listPenaltiesByItemId } from "@/lib/repositories/sanpai";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request, { params }) {
   try {
     const { slug } = await params;

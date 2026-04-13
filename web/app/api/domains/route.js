@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import "@/lib/domains"; // side-effect: 全ドメイン登録
 import { getAllDomains } from "@/lib/core/domain-registry";
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/domains
  * 登録済み全ドメインのメタ情報を返す。
