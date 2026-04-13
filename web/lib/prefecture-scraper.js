@@ -261,7 +261,7 @@ function upsertPrefectureItems(items, prefKey, config) {
     ) VALUES (
       @slug, @org, @action_type, @action_date,
       @authority, 'prefectural', @prefecture, @industry,
-      @summary, @source_name, @source_url, 0, 'pending'
+      @summary, @source_name, @source_url, 1, 'approved'
     )
     ON CONFLICT(slug) DO UPDATE SET
       organization_name_raw=@org, action_type=@action_type,
