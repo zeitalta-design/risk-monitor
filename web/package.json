@@ -42,6 +42,7 @@
     "imports:source:verbose": "node scripts/run-imports.js --all --source primary --verbose"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.2",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.6.2",
     "cheerio": "^1.2.0",
