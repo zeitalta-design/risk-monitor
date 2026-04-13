@@ -53,7 +53,7 @@ export async function GET() {
        FROM scraping_logs ORDER BY created_at DESC LIMIT 5`
     ).all();
 
-    // 大会品質
+    // データ品質
     const totalEvents = db.prepare(
       `SELECT COUNT(*) as count FROM events WHERE is_active = 1`
     ).get()?.count || 0;
@@ -103,7 +103,7 @@ export async function GET() {
     if (noDateEvents > 0) {
       alerts.push({
         level: "warning",
-        message: `開催日が未設定の大会が${noDateEvents}件あります`,
+        message: `開催日が未設定のデータが${noDateEvents}件あります`,
         href: "/admin/ops/patrol?issue=no_date",
       });
     }
@@ -111,7 +111,7 @@ export async function GET() {
     if (staleEvents > 10) {
       alerts.push({
         level: "info",
-        message: `30日以上更新されていない大会が${staleEvents}件あります`,
+        message: `30日以上更新されていないデータが${staleEvents}件あります`,
         href: "/admin/ops/patrol?issue=stale",
       });
     }
@@ -157,7 +157,7 @@ export async function GET() {
     if (noDateEvents > 0) {
       tasks.push({
         priority: "high",
-        label: `開催日未設定の大会 ${noDateEvents}件を修正する`,
+        label: `開催日未設定のデータ ${noDateEvents}件を修正する`,
         href: "/admin/ops/patrol?issue=no_date",
         count: noDateEvents,
         category: "品質",
@@ -171,7 +171,7 @@ export async function GET() {
     if (pastActiveEvents > 0) {
       tasks.push({
         priority: "high",
-        label: `過去開催で公開中の大会 ${pastActiveEvents}件を確認する`,
+        label: `過去開催で公開中のデータ ${pastActiveEvents}件を確認する`,
         href: "/admin/ops/patrol?issue=past_active",
         count: pastActiveEvents,
         category: "品質",
@@ -182,7 +182,7 @@ export async function GET() {
     if (noPrefEvents > 0) {
       tasks.push({
         priority: "normal",
-        label: `都道府県未設定の大会 ${noPrefEvents}件を補完する`,
+        label: `都道府県未設定のデータ ${noPrefEvents}件を補完する`,
         href: "/admin/ops/patrol?issue=no_prefecture",
         count: noPrefEvents,
         category: "品質",
@@ -193,7 +193,7 @@ export async function GET() {
     if (staleEvents > 10) {
       tasks.push({
         priority: "normal",
-        label: `30日以上未更新の大会 ${staleEvents}件を再巡回する`,
+        label: `30日以上未更新のデータ ${staleEvents}件を再巡回する`,
         href: "/admin/ops/patrol?issue=stale",
         count: staleEvents,
         category: "品質",

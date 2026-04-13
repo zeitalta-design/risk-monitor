@@ -34,7 +34,7 @@ export async function POST(request) {
       },
       {
         key: "past_active",
-        label: "過去開催なのに公開中",
+        label: "過去データなのに公開中",
         query: `SELECT COUNT(*) as c FROM events WHERE is_active = 1 AND event_date < '${now}' AND event_date IS NOT NULL AND event_date != ''`,
       },
       {

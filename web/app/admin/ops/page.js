@@ -7,7 +7,7 @@ import Link from "next/link";
  * - 上部KPIカード群
  * - 今日の対応タスク（緊急/重要/通常）
  * - 重要アラート
- * - 3カラム（問い合わせ・スクレイピング・品質）
+ * - 3カラム（問い合わせ・データ取得・品質）
  * - 最新活動ログ
  */
 
@@ -157,17 +157,17 @@ export default function OpsDashboard() {
           </div>
         </div>
 
-        {/* スクレイピング状況 */}
+        {/* データ取得状況 */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="font-extrabold text-gray-900">スクレイピング状況</h3>
+            <h3 className="font-extrabold text-gray-900">データ取得状況</h3>
             <Link href="/admin/ops/scraping" className="text-xs text-blue-600 hover:text-blue-800 font-bold">
               詳細 →
             </Link>
           </div>
           <div className="p-5">
             {recentScraping.length === 0 ? (
-              <EmptyState message="スクレイピング実行履歴がありません" />
+              <EmptyState message="データ取得実行履歴がありません" />
             ) : (
               <ul className="space-y-3">
                 {recentScraping.map((log, i) => (
