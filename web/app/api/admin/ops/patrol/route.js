@@ -13,6 +13,7 @@ const DOMAIN_CONFIG = {
     label: "行政処分",
     nameCol: "organization_name_raw",
     sourceUrlCol: "source_url",
+    refCols: ["source_url", "source_name"],
     prefectureCol: "prefecture",
     publishCol: "is_published",
     slugCol: "slug",
@@ -23,6 +24,7 @@ const DOMAIN_CONFIG = {
     label: "産廃処分",
     nameCol: "company_name",
     sourceUrlCol: "source_url",
+    refCols: ["source_url", "detail_url", "source_name"],
     prefectureCol: "prefecture",
     publishCol: "is_published",
     slugCol: "slug",
@@ -33,6 +35,7 @@ const DOMAIN_CONFIG = {
     label: "入札",
     nameCol: "title",
     sourceUrlCol: "announcement_url",
+    refCols: ["announcement_url"],
     prefectureCol: null,
     publishCol: "is_published",
     slugCol: "slug",
@@ -43,6 +46,7 @@ const DOMAIN_CONFIG = {
     label: "指定管理",
     nameCol: "title",
     sourceUrlCol: "source_url",
+    refCols: ["source_url", "detail_url", "source_name"],
     prefectureCol: "prefecture",
     publishCol: "is_published",
     slugCol: "slug",
@@ -53,6 +57,7 @@ const DOMAIN_CONFIG = {
     label: "補助金",
     nameCol: "title",
     sourceUrlCol: "source_url",
+    refCols: ["source_url", "detail_url", "source_name"],
     prefectureCol: null,
     publishCol: "is_published",
     slugCol: "slug",
@@ -63,6 +68,7 @@ const DOMAIN_CONFIG = {
     label: "許認可",
     nameCol: "entity_name",
     sourceUrlCol: "source_url",
+    refCols: ["source_url", "source_name"],
     prefectureCol: "prefecture",
     publishCol: "is_published",
     slugCol: "slug",
@@ -70,8 +76,18 @@ const DOMAIN_CONFIG = {
   },
 };
 
+/**
+ * 全参照列（URL + source_name）が空であることを確認するWHERE条件を生成
+ * 1つでも参照情報があれば出典が判明しているので除外
+ */
+function allRefsEmptyCondition(refCols) {
+  return refCols
+    .map(col => `(${col} IS NULL OR ${col} = '')`)
+    .join(" AND ");
+}
+
 const ISSUE_META = {
-  missing_source: { label: "ソースURL未設定", level: "danger", priority: 1 },
+  missing_source: { label: "参照URL完全欠損", level: "danger", priority: 1 },
   unpublished: { label: "未公開データ", level: "warning", priority: 2 },
   stale_30d: { label: "30日以上未更新", level: "warning", priority: 3 },
   no_prefecture: { label: "都道府県未設定", level: "warning", priority: 4 },
@@ -101,11 +117,11 @@ export async function GET(request) {
     // 問題種別ごとの件数を集計
     const issueCounts = {};
 
-    // missing_source: ソースURL未設定
+    // missing_source: 参照URL完全欠損（全URL列が空の場合のみ）
     let missingSource = 0;
     for (const [, cfg] of Object.entries(DOMAIN_CONFIG)) {
       missingSource += safeCount(db,
-        `SELECT COUNT(*) as c FROM ${cfg.table} WHERE ${cfg.publishCol} = 1 AND (${cfg.sourceUrlCol} IS NULL OR ${cfg.sourceUrlCol} = '')`
+        `SELECT COUNT(*) as c FROM ${cfg.table} WHERE ${cfg.publishCol} = 1 AND ${allRefsEmptyCondition(cfg.refCols)}`
       );
     }
     issueCounts.missing_source = missingSource;
@@ -210,7 +226,7 @@ function loadIssueItems(db, issue, staleDate) {
             `SELECT id, ${cfg.nameCol} as name, ${cfg.sourceUrlCol} as source_url, updated_at
              ${cfg.prefectureCol ? `, ${cfg.prefectureCol} as prefecture` : ""}
              FROM ${cfg.table}
-             WHERE ${cfg.publishCol} = 1 AND (${cfg.sourceUrlCol} IS NULL OR ${cfg.sourceUrlCol} = '')
+             WHERE ${cfg.publishCol} = 1 AND ${allRefsEmptyCondition(cfg.refCols)}
              LIMIT 50`
           ).all();
           for (const row of rows) {
