@@ -58,7 +58,7 @@ export async function POST(request) {
             totalItems += data.totalFetched || 0;
           } else if (target === "prefecture") {
             const baseUrl = process.env.APP_BASE_URL || "http://localhost:3001";
-            const res = await fetch(`${baseUrl}/api/cron/fetch-prefecture-shobun?max=5`, { method: "POST" });
+            const res = await fetch(`${baseUrl}/api/cron/fetch-prefecture-shobun?max=10`, { method: "POST" });
             const data = await res.json();
             totalItems += data.results?.reduce((s, r) => s + (r.items || 0), 0) || 0;
           } else {
