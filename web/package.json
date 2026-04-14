@@ -50,6 +50,7 @@
     "libsql": "^0.5.29",
     "next": "16.1.6",
     "nodemailer": "^8.0.2",
+    "pdf-parse": "^2.4.5",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
