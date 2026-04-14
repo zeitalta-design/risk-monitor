@@ -33,7 +33,6 @@ const NAV_SECTIONS = [
     label: "データソース監査",
     items: [
       { href: "/admin/ops/gyosei-shobun-sources", label: "情報源管理", icon: PatrolIcon },
-      { href: "/admin/ops/patrol", label: "巡回パトロール", icon: QualityIcon },
       { href: "/admin/data-growth", label: "成長KPI", icon: AnalyticsIcon },
       { href: "/admin/analytics", label: "分析", icon: AnalyticsIcon },
     ],

@@ -170,9 +170,6 @@ export default function OpsDashboard() {
             title="データ品質"
             description="6カテゴリ横断の品質チェック結果です。問題があるカードをクリックすると詳細を確認できます"
           />
-          <Link href="/admin/ops/patrol" className="text-xs text-blue-600 hover:text-blue-800 font-bold">
-            詳細 &rarr;
-          </Link>
         </div>
 
         {patrol?.issueCards ? (
@@ -186,7 +183,7 @@ export default function OpsDashboard() {
                 return (
                   <Link
                     key={card.key}
-                    href={`/admin/ops/patrol`}
+                    href={`/admin/ops`}
                     className={`block p-3 rounded-xl border transition-all hover:shadow-md ${
                       card.count > 0 ? lc.card : "border-gray-200 bg-gray-50 opacity-60"
                     }`}
