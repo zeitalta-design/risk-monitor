@@ -436,6 +436,36 @@ async function parseSubpagesWithText(html, config) {
       if (subItems.length === 0) {
         subItems = parseTextSections(subHtml, config);
       }
+      // まだ見つからなければ、さらにサブページを1段追従（2段目）
+      if (subItems.length === 0) {
+        const subUrl = new URL(url);
+        const subDir = url.substring(0, url.lastIndexOf("/") + 1);
+        const subLinkPattern = /<a[^>]*href=["']([^"']+\.html?)["'][^>]*>/gi;
+        const subLinks = new Set();
+        let sm;
+        while ((sm = subLinkPattern.exec(subHtml)) !== null) {
+          let href = sm[1];
+          if (href.startsWith("/")) href = `${subUrl.protocol}//${subUrl.host}${href}`;
+          else if (!href.startsWith("http")) href = subDir + href;
+          if (!href.endsWith(".pdf") && href.includes(subUrl.host) && href !== url && href !== config.url &&
+              href.startsWith(subDir)) {
+            subLinks.add(href);
+          }
+        }
+        for (const deepUrl of [...subLinks].slice(0, 8)) {
+          try {
+            const deepRes = await fetch(deepUrl, {
+              headers: { "User-Agent": "RiskMonitor/1.0 (administrative-data-collection)" },
+            });
+            if (!deepRes.ok) continue;
+            const deepHtml = await deepRes.text();
+            let deepItems = parseGenericTable(deepHtml, config);
+            if (deepItems.length === 0) deepItems = parseTextSections(deepHtml, config);
+            subItems.push(...deepItems);
+            await new Promise(r => setTimeout(r, 800));
+          } catch { /* ignore */ }
+        }
+      }
       items.push(...subItems);
       await new Promise(r => setTimeout(r, 1000));
     } catch {
