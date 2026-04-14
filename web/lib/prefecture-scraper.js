@@ -388,24 +388,39 @@ async function parseSubpagesWithText(html, config) {
   const baseUrl = new URL(config.url);
   const items = [];
 
-  // サブページへのリンクを抽出
-  const linkPattern = /<a[^>]*href=["']([^"']+)["'][^>]*>[^<]*(?:処分|syobun|kantoku|監督|令和|平成|概要)[^<]*<\/a>/gi;
+  // 2段階リンク追従: まずインデックスページからサブページを取得
+  // パターン1: キーワードマッチ（処分/監督/令和等）
+  const linkPattern1 = /<a[^>]*href=["']([^"']+)["'][^>]*>[^<]*(?:処分|syobun|kantoku|監督|令和|平成|概要)[^<]*<\/a>/gi;
+  // パターン2: 同一ディレクトリ内のHTMLリンク（事業者名リンク等）
+  const currentDir = config.url.substring(0, config.url.lastIndexOf("/") + 1);
+  const linkPattern2 = /<a[^>]*href=["']([^"']+\.html?)["'][^>]*>/gi;
+
   const links = new Set();
   let match;
-  while ((match = linkPattern.exec(html)) !== null) {
+
+  while ((match = linkPattern1.exec(html)) !== null) {
     let href = match[1];
-    if (href.startsWith("/")) {
-      href = `${baseUrl.protocol}//${baseUrl.host}${href}`;
-    } else if (!href.startsWith("http")) {
-      const dir = config.url.substring(0, config.url.lastIndexOf("/") + 1);
-      href = dir + href;
-    }
-    if (!href.endsWith(".pdf") && href.includes(baseUrl.host)) {
+    if (href.startsWith("/")) href = `${baseUrl.protocol}//${baseUrl.host}${href}`;
+    else if (!href.startsWith("http")) href = currentDir + href;
+    if (!href.endsWith(".pdf") && href.includes(baseUrl.host) && href !== config.url) links.add(href);
+  }
+
+  // パターン2は本文エリア内のリンクのみ（ナビ除外のため、本文内のol/ul/divにあるリンク）
+  const mainContent = html.match(/<main[\s\S]*?<\/main>/i)?.[0] ||
+    html.match(/<div[^>]*(?:content|main|article)[^>]*>[\s\S]*?<\/div>/i)?.[0] ||
+    html;
+  while ((match = linkPattern2.exec(mainContent)) !== null) {
+    let href = match[1];
+    if (href.startsWith("/")) href = `${baseUrl.protocol}//${baseUrl.host}${href}`;
+    else if (!href.startsWith("http")) href = currentDir + href;
+    // 同一ディレクトリ配下のみ、ナビゲーション除外
+    if (!href.endsWith(".pdf") && href.includes(baseUrl.host) && href !== config.url &&
+        (href.startsWith(currentDir) || href.includes(baseUrl.pathname.split("/").slice(0, -1).join("/")))) {
       links.add(href);
     }
   }
 
-  const subpageUrls = [...links].slice(0, 8);
+  const subpageUrls = [...links].slice(0, 10);
 
   for (const url of subpageUrls) {
     try {
