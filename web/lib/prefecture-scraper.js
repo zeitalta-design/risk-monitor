@@ -322,7 +322,7 @@ function parseDlSections(html, config) {
   return items;
 }
 
-/** h3+テキスト型パーサー（千葉県・新潟県等） */
+/** h2/h3+テキスト型パーサー（千葉県・新潟県・長野県等） */
 function parseH3Sections(html, config) {
   const items = [];
   // ページ全体から処分情報を抽出
@@ -330,27 +330,47 @@ function parseH3Sections(html, config) {
   let actionDate = null;
   let actionTypeRaw = null;
 
-  // h3の見出しとそれに続くテキストをペアで抽出
-  const h3Pattern = /<h3[^>]*>([\s\S]*?)<\/h3>\s*(?:<[^h][^>]*>)*([\s\S]*?)(?=<h[23]|$)/gi;
-  let match;
-  while ((match = h3Pattern.exec(html)) !== null) {
-    const heading = match[1].replace(/<[^>]+>/g, "").trim();
-    const content = match[2].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+  // 事前に&nbsp;や全角スペースを統一、改行を維持
+  const normalized = html
+    .replace(/&nbsp;|&#8203;/g, " ")
+    .replace(/&amp;/g, "&");
 
-    if ((heading.includes("商号") || heading.includes("名称")) && content.length >= 2) {
-      companyName = content.split(/\s/)[0].slice(0, 100);
+  // h2/h3の見出しとそれに続くテキストをペアで抽出
+  const headingPattern = /<h[23][^>]*>([\s\S]*?)<\/h[23]>\s*([\s\S]*?)(?=<h[23]|$)/gi;
+  let match;
+  while ((match = headingPattern.exec(normalized)) !== null) {
+    const heading = match[1].replace(/<[^>]+>/g, "").trim();
+    const contentRaw = match[2].replace(/<[^>]+>/g, "");
+    const content = contentRaw.replace(/\s+/g, " ").trim();
+
+    // 商号・名称（新潟県「処分を行った相手方」配下の「商号又は名称」も対応）
+    if (!companyName && (heading.includes("商号") || heading.includes("名称") || heading.includes("相手方") || heading.includes("被処分者"))) {
+      // ネスト型「1. 被処分者の商号又は名称」パターン: ラベル直後の値を抽出
+      const nested = content.match(/(?:商号(?:又は|若しくは)?名称|商号|名称)(?:\s|[.。:：]|\d+\s*[.．．])*\s*([^\s][^\d]*?)(?=\s*\d+\s*[.．．]|$|主たる|所在地|代表者)/);
+      if (nested && nested[1]) {
+        companyName = nested[1].replace(/[（(].*?[）)]/g, "").trim().slice(0, 100);
+      } else if (content.length >= 2 && !heading.includes("相手方") && !heading.includes("被処分者")) {
+        // 見出しが「商号」等なら content 先頭
+        companyName = content.split(/\s/)[0].slice(0, 100);
+      }
     }
     if (heading.includes("処分年月日") || heading.includes("処分日")) {
       actionDate = extractDate(content);
     }
     if (heading.includes("処分の内容") || heading.includes("処分内容") || heading.includes("処分の種類")) {
-      actionTypeRaw = content.slice(0, 100);
+      // ネスト型「1. 内容」パターン: 「内容」ラベル直後の値を取得
+      const nested = content.match(/(?:^|\s)内容\s*[.。:：]?\s*([^\s][^\d]*?)(?=\s*\d+\s*[.．．]|期間|$)/);
+      if (nested && nested[1]) {
+        actionTypeRaw = nested[1].trim().slice(0, 100);
+      } else {
+        actionTypeRaw = content.slice(0, 100);
+      }
     }
   }
 
   // 概要タイトルからも事業者名を取得（千葉県「監督処分の概要（XXX）」パターン）
   if (!companyName) {
-    const titleMatch = html.match(/監督処分の概要[（(]([^）)]+)[）)]/);
+    const titleMatch = normalized.match(/監督処分の概要[（(]([^）)]+)[）)]/);
     if (titleMatch) companyName = titleMatch[1].slice(0, 100);
   }
 
