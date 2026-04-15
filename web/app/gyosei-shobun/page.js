@@ -396,8 +396,9 @@ function StatsDashboard({ stats, hasFilters, filters, onFilterChange }) {
         </div>
       </div>
 
-      {/* 追加統計: 業種別 / 処分種別 / 都道府県別 */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+      {/* 追加統計: 業種別 / 都道府県別 */}
+      {/* 処分種別件数は大半が「その他」で可視化価値が薄いため非表示 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
         <StatsRankingCard
           title="業種別件数"
           filterKey="industry"
@@ -411,18 +412,6 @@ function StatsDashboard({ stats, hasFilters, filters, onFilterChange }) {
           }))}
         />
         <StatsRankingCard
-          title="処分種別件数"
-          filterKey="action_type"
-          activeValue={filters.action_type}
-          onToggle={toggle}
-          data={(countsByActionType || []).map((r) => ({
-            value: r.actionType,
-            label: gyoseiShobunConfig.actionTypes.find((t) => t.slug === r.actionType)?.label || r.actionType,
-            count: r.count,
-            isUnknown: r.actionType === "種別不明",
-          }))}
-        />
-        <StatsRankingCard
           title="都道府県別件数"
           filterKey="prefecture"
           activeValue={filters.prefecture}
@@ -431,7 +420,6 @@ function StatsDashboard({ stats, hasFilters, filters, onFilterChange }) {
             value: r.prefecture,
             label: r.prefecture,
             count: r.count,
-            isUnknown: r.prefecture === "都道府県不明",
           }))}
         />
       </div>

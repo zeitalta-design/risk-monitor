@@ -134,13 +134,18 @@ export function getAdministrativeActionStats({
     .get(params).c;
 
   // 年別件数（action_date の先頭4文字で集計）
+  // 注: action_date が NULL のレコードは元データで日付欠損している
+  //     既知ケース（MLIT運送・公取委の古い元(措)案件等）。
+  //     可視化ノイズになるためランキングから除外する。
   const countsByYear = db
     .prepare(`
       SELECT
-        COALESCE(NULLIF(SUBSTR(action_date, 1, 4), ''), '不明') AS year,
+        SUBSTR(action_date, 1, 4) AS year,
         COUNT(*) AS count
       FROM administrative_actions
       ${whereClause}
+        AND action_date IS NOT NULL
+        AND SUBSTR(action_date, 1, 4) != ''
       GROUP BY year
       ORDER BY year DESC
     `)
