@@ -12,6 +12,10 @@ export async function GET(request) {
       license_type: searchParams.get("license_type") || "",
       risk_level: searchParams.get("risk_level") || "",
       status: searchParams.get("status") || "",
+      date_from: searchParams.get("date_from") || "",
+      date_to: searchParams.get("date_to") || "",
+      year: searchParams.get("year") || "",
+      company: searchParams.get("company") || "",
     });
     return NextResponse.json(stats);
   } catch (error) {

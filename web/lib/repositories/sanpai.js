@@ -12,6 +12,10 @@ export function listSanpaiItems({
   license_type = "",
   risk_level = "",
   status = "",
+  date_from = "",
+  date_to = "",
+  year = "",
+  company = "",
   sort = "newest",
   page = 1,
   pageSize = 20,
@@ -39,6 +43,22 @@ export function listSanpaiItems({
   if (status) {
     where.push("status = @status");
     params.status = status;
+  }
+  if (date_from) {
+    where.push("latest_penalty_date >= @date_from");
+    params.date_from = date_from;
+  }
+  if (date_to) {
+    where.push("latest_penalty_date <= @date_to");
+    params.date_to = date_to;
+  }
+  if (year) {
+    where.push("SUBSTR(latest_penalty_date, 1, 4) = @year");
+    params.year = year;
+  }
+  if (company) {
+    where.push("company_name = @company");
+    params.company = company;
   }
 
   const whereClause = `WHERE ${where.join(" AND ")}`;
@@ -78,6 +98,10 @@ export function getSanpaiStats({
   license_type = "",
   risk_level = "",
   status = "",
+  date_from = "",
+  date_to = "",
+  year = "",
+  company = "",
 } = {}) {
   const db = getDb();
   const where = ["is_published = 1"];
@@ -87,6 +111,10 @@ export function getSanpaiStats({
   if (license_type) { where.push("license_type = @license_type"); params.license_type = license_type; }
   if (risk_level) { where.push("risk_level = @risk_level"); params.risk_level = risk_level; }
   if (status) { where.push("status = @status"); params.status = status; }
+  if (date_from) { where.push("latest_penalty_date >= @date_from"); params.date_from = date_from; }
+  if (date_to) { where.push("latest_penalty_date <= @date_to"); params.date_to = date_to; }
+  if (year) { where.push("SUBSTR(latest_penalty_date, 1, 4) = @year"); params.year = year; }
+  if (company) { where.push("company_name = @company"); params.company = company; }
   const whereClause = `WHERE ${where.join(" AND ")}`;
 
   const totalCount = db.prepare(`SELECT COUNT(*) c FROM sanpai_items ${whereClause}`).get(params).c;

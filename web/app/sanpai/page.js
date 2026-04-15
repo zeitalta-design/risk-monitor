@@ -1,11 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import DomainListPage from "@/components/core/DomainListPage";
 import CategoryPageHeader from "@/components/CategoryPageHeader";
 import DomainFavoriteButton from "@/components/core/DomainFavoriteButton";
 import StatsDashboard from "@/components/StatsDashboard";
+import SearchForm from "@/components/search/SearchForm";
+import ActiveFilterChips from "@/components/search/ActiveFilterChips";
+import Pagination from "@/components/search/Pagination";
+import { PREFECTURES } from "@/lib/constants/prefectures";
 import "@/lib/domains";
 import { getDomain } from "@/lib/core/domain-registry";
 import {
@@ -14,21 +18,25 @@ import {
   getLicenseTypeIcon,
   getRiskLevel,
   getStatusBadge,
-  formatDate,
   getDaysSincePenalty,
 } from "@/lib/sanpai-config";
 
 const sanpaiDomain = getDomain("sanpai");
+const PAGE_SIZE = 20;
 
-const PREFECTURES = [
-  "北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県",
-  "茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県",
-  "新潟県","富山県","石川県","福井県","山梨県","長野県","岐阜県","静岡県","愛知県",
-  "三重県","滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県",
-  "鳥取県","島根県","岡山県","広島県","山口県",
-  "徳島県","香川県","愛媛県","高知県",
-  "福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県",
-];
+const INITIAL_FILTERS = {
+  keyword: "",
+  prefecture: "",
+  license_type: "",
+  risk_level: "",
+  status: "",
+  date_from: "",
+  date_to: "",
+  year: "",
+  company: "",
+  sort: "newest",
+  page: 1,
+};
 
 function RiskBadge({ level }) {
   const r = getRiskLevel(level);
@@ -80,203 +88,327 @@ function SanpaiCard({ item }) {
 }
 
 export default function SanpaiListPage() {
-  const [keyword, setKeyword] = useState("");
-  const [prefecture, setPrefecture] = useState("");
-  const [licenseType, setLicenseType] = useState("");
-  const [riskLevel, setRiskLevel] = useState("");
-  const [status, setStatus] = useState("");
-  const [sort, setSort] = useState("newest");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const fetchItems = useCallback(async () => {
+  const [filters, setFilters] = useState({
+    keyword: searchParams.get("keyword") || "",
+    prefecture: searchParams.get("prefecture") || "",
+    license_type: searchParams.get("license_type") || "",
+    risk_level: searchParams.get("risk_level") || "",
+    status: searchParams.get("status") || "",
+    date_from: searchParams.get("date_from") || "",
+    date_to: searchParams.get("date_to") || "",
+    year: searchParams.get("year") || "",
+    company: searchParams.get("company") || "",
+    sort: searchParams.get("sort") || "newest",
+    page: Math.max(1, parseInt(searchParams.get("page") || "1", 10)),
+  });
+
+  const [formInput, setFormInput] = useState(filters);
+
+  const syncUrl = useCallback((f) => {
+    const params = new URLSearchParams();
+    if (f.keyword) params.set("keyword", f.keyword);
+    if (f.prefecture) params.set("prefecture", f.prefecture);
+    if (f.license_type) params.set("license_type", f.license_type);
+    if (f.risk_level) params.set("risk_level", f.risk_level);
+    if (f.status) params.set("status", f.status);
+    if (f.date_from) params.set("date_from", f.date_from);
+    if (f.date_to) params.set("date_to", f.date_to);
+    if (f.year) params.set("year", f.year);
+    if (f.company) params.set("company", f.company);
+    if (f.sort && f.sort !== "newest") params.set("sort", f.sort);
+    if (f.page > 1) params.set("page", String(f.page));
+    const qs = params.toString();
+    router.replace(`/sanpai${qs ? `?${qs}` : ""}`, { scroll: false });
+  }, [router]);
+
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (keyword) params.set("keyword", keyword);
-      if (prefecture) params.set("prefecture", prefecture);
-      if (licenseType) params.set("license_type", licenseType);
-      if (riskLevel) params.set("risk_level", riskLevel);
-      if (status) params.set("status", status);
-      if (sort) params.set("sort", sort);
-      params.set("page", String(page));
-
+      const listParams = new URLSearchParams();
       const statsParams = new URLSearchParams();
-      if (keyword) statsParams.set("keyword", keyword);
-      if (prefecture) statsParams.set("prefecture", prefecture);
-      if (licenseType) statsParams.set("license_type", licenseType);
-      if (riskLevel) statsParams.set("risk_level", riskLevel);
-      if (status) statsParams.set("status", status);
+      const setBoth = (k, v) => { if (v) { listParams.set(k, v); statsParams.set(k, v); } };
+      setBoth("keyword", filters.keyword);
+      setBoth("prefecture", filters.prefecture);
+      setBoth("license_type", filters.license_type);
+      setBoth("risk_level", filters.risk_level);
+      setBoth("status", filters.status);
+      setBoth("date_from", filters.date_from);
+      setBoth("date_to", filters.date_to);
+      setBoth("year", filters.year);
+      setBoth("company", filters.company);
+      listParams.set("sort", filters.sort);
+      listParams.set("page", String(filters.page));
+      listParams.set("pageSize", String(PAGE_SIZE));
 
       const [listRes, statsRes] = await Promise.all([
-        fetch(`/api/sanpai?${params}`),
+        fetch(`/api/sanpai?${listParams}`),
         fetch(`/api/sanpai/stats?${statsParams}`),
       ]);
-      const data = await listRes.json();
+      const listData = await listRes.json();
       const statsData = await statsRes.json();
-      setItems(data.items || []);
-      setTotal(data.total || 0);
-      setTotalPages(data.totalPages || 1);
+
+      setItems(listData.items || []);
+      setTotal(listData.total || 0);
+      setTotalPages(listData.totalPages || 1);
       setStats(statsData.error ? null : statsData);
     } catch (err) {
-      console.error("Failed to fetch sanpai items:", err);
+      console.error("Failed to fetch sanpai:", err);
+      setItems([]);
+      setStats(null);
     } finally {
       setLoading(false);
     }
-  }, [keyword, prefecture, licenseType, riskLevel, status, sort, page]);
+  }, [filters]);
 
-  useEffect(() => { fetchItems(); }, [fetchItems]);
+  useEffect(() => {
+    fetchData();
+    syncUrl(filters);
+  }, [fetchData, syncUrl, filters]);
 
-  const hasFilters = !!(keyword || prefecture || licenseType || riskLevel || status);
-  const onStatsToggle = (key, value) => {
-    setPage(1);
-    if (key === "prefecture") setPrefecture(value);
-    else if (key === "license_type") setLicenseType(value);
+  const goToPage = (p) => {
+    const clamped = Math.max(1, Math.min(p, totalPages));
+    setFilters((prev) => ({ ...prev, page: clamped }));
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  function resetFilters() {
-    setKeyword(""); setPrefecture(""); setLicenseType("");
-    setRiskLevel(""); setStatus(""); setSort("newest"); setPage(1);
-  }
+  const hasFilters = !!(
+    filters.keyword || filters.prefecture || filters.license_type ||
+    filters.risk_level || filters.status || filters.date_from || filters.date_to ||
+    filters.year || filters.company
+  );
+
+  const startItem = total === 0 ? 0 : (filters.page - 1) * PAGE_SIZE + 1;
+  const endItem = Math.min(filters.page * PAGE_SIZE, total);
+
+  const handleSearch = () => setFilters({ ...formInput, page: 1 });
+  const handleReset = () => {
+    setFormInput(INITIAL_FILTERS);
+    setFilters(INITIAL_FILTERS);
+  };
+
+  // ─── 検索フィールド定義 ────────────────
+  const searchFields = useMemo(() => [
+    {
+      type: "text",
+      name: "keyword",
+      label: "事業者名・キーワード",
+      placeholder: "例: 〇〇産業",
+    },
+    {
+      type: "select",
+      name: "prefecture",
+      label: "所在地（都道府県）",
+      emptyOption: { value: "", label: "指定なし（全国）" },
+      options: PREFECTURES.map((p) => ({ value: p, label: p })),
+    },
+    {
+      type: "dateRange",
+      name: ["date_from", "date_to"],
+      label: "処分日（期間）",
+    },
+    {
+      type: "select",
+      name: "license_type",
+      label: "許可種別",
+      options: sanpaiConfig.licenseTypes.map((t) => ({ value: t.slug, label: t.label, icon: t.icon })),
+    },
+    {
+      type: "select",
+      name: "risk_level",
+      label: "リスクレベル",
+      options: sanpaiConfig.riskLevels.map((r) => ({ value: r.value, label: r.label })),
+    },
+    {
+      type: "select",
+      name: "status",
+      label: "ステータス",
+      options: sanpaiConfig.statusOptions.map((s) => ({ value: s.value, label: s.label })),
+    },
+  ], []);
+
+  const chipDefs = useMemo(() => [
+    { key: "keyword", label: "キーワード" },
+    { key: "prefecture", label: "都道府県" },
+    {
+      key: "license_type",
+      label: "許可種別",
+      resolve: (v) => sanpaiConfig.licenseTypes.find((t) => t.slug === v)?.label || v,
+    },
+    {
+      key: "risk_level",
+      label: "リスク",
+      resolve: (v) => sanpaiConfig.riskLevels.find((r) => r.value === v)?.label || v,
+    },
+    {
+      key: "status",
+      label: "ステータス",
+      resolve: (v) => sanpaiConfig.statusOptions.find((s) => s.value === v)?.label || v,
+    },
+    { key: "date_from", label: "処分日From" },
+    { key: "date_to", label: "処分日To" },
+    { key: "year", label: "年度" },
+    { key: "company", label: "事業者" },
+  ], []);
+
+  const onChipRemove = (key, value) => {
+    setFilters((p) => ({ ...p, [key]: value, page: 1 }));
+    setFormInput((p) => ({ ...p, [key]: value }));
+  };
+
+  // 統計ダッシュボードからのトグル
+  const onStatsToggle = (key, value) => {
+    setFilters((p) => ({ ...p, [key]: value, page: 1 }));
+    setFormInput((p) => ({ ...p, [key]: value }));
+  };
 
   return (
-    <DomainListPage
-      headerSlot={<CategoryPageHeader categoryId="sanpai" />}
-      title="産廃処分ウォッチ"
-      subtitle={loading ? "読み込み中..." : `${total}件の事業者`}
-      items={items}
-      loading={loading}
-      page={page}
-      totalPages={totalPages}
-      onPageChange={setPage}
-      renderItem={(item) => <SanpaiCard key={item.id} item={item} />}
-      renderFilters={() => (
-        <div className="card p-4 mb-4 space-y-3">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={keyword}
-              onChange={(e) => { setKeyword(e.target.value); setPage(1); }}
-              placeholder="事業者名・事業区域で検索..."
-              className="flex-1 border rounded-lg px-4 py-2.5 text-sm"
-            />
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-5xl mx-auto px-4 py-6">
+        <CategoryPageHeader categoryId="sanpai" />
+
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">産廃処分ウォッチ</h1>
+          <p className="text-sm text-gray-500">
+            全国の産業廃棄物処理業者に対する行政処分情報を横断検索
+          </p>
+        </div>
+
+        <SearchForm
+          fields={searchFields}
+          values={formInput}
+          onChange={(name, value) => setFormInput((p) => ({ ...p, [name]: value }))}
+          onSearch={handleSearch}
+          onReset={handleReset}
+          sortOptions={sanpaiConfig.sorts}
+          sort={filters.sort}
+          onSortChange={(v) => {
+            setFormInput((p) => ({ ...p, sort: v }));
+            setFilters((p) => ({ ...p, sort: v, page: 1 }));
+          }}
+        />
+
+        {hasFilters && (
+          <ActiveFilterChips chipDefs={chipDefs} filters={filters} onRemove={onChipRemove} />
+        )}
+
+        {stats && stats.totalCount > 0 && (
+          <StatsDashboard
+            totalCount={stats.totalCount}
+            hasFilters={hasFilters}
+            filters={filters}
+            onFilterChange={onStatsToggle}
+            accent="#059669"
+            sections={[
+              {
+                title: "年別件数（処分日）",
+                type: "bar",
+                filterKey: "year",
+                rows: (stats.countsByYear || []).map((r) => ({
+                  value: r.year,
+                  label: r.year,
+                  count: r.count,
+                  isUnknown: !r.year || r.year === "不明",
+                })),
+              },
+              {
+                title: "事業者別 TOP10",
+                type: "ranking",
+                filterKey: "company",
+                rows: (stats.countsByCompany || []).map((r) => ({
+                  value: r.name,
+                  label: r.name,
+                  count: r.count,
+                })),
+              },
+              {
+                title: "許可種別",
+                type: "ranking",
+                filterKey: "license_type",
+                rows: (stats.countsByLicenseType || []).map((r) => ({
+                  value: r.licenseType,
+                  label: getLicenseTypeLabel(r.licenseType),
+                  count: r.count,
+                })),
+              },
+              {
+                title: "都道府県別 TOP10",
+                type: "ranking",
+                filterKey: "prefecture",
+                rows: (stats.countsByPrefecture || []).map((r) => ({
+                  value: r.prefecture,
+                  label: r.prefecture,
+                  count: r.count,
+                })),
+              },
+            ]}
+          />
+        )}
+
+        {!loading && (
+          <p className="text-sm text-gray-500 mb-4">
+            {total}件中 {startItem}-{endItem}件を表示
+          </p>
+        )}
+
+        {loading && (
+          <div className="flex justify-center py-12">
+            <div className="w-8 h-8 border-2 border-gray-900 border-t-transparent rounded-full animate-spin" />
           </div>
+        )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-            <select value={prefecture} onChange={(e) => { setPrefecture(e.target.value); setPage(1); }} className="border rounded-lg px-3 py-2 text-sm">
-              <option value="">すべての都道府県</option>
-              {PREFECTURES.map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
-
-            <select value={licenseType} onChange={(e) => { setLicenseType(e.target.value); setPage(1); }} className="border rounded-lg px-3 py-2 text-sm">
-              <option value="">すべての許可種別</option>
-              {sanpaiConfig.licenseTypes.map((t) => (
-                <option key={t.slug} value={t.slug}>{t.icon} {t.label}</option>
-              ))}
-            </select>
-
-            <select value={riskLevel} onChange={(e) => { setRiskLevel(e.target.value); setPage(1); }} className="border rounded-lg px-3 py-2 text-sm">
-              <option value="">すべてのリスクレベル</option>
-              {sanpaiConfig.riskLevels.map((r) => (
-                <option key={r.value} value={r.value}>{r.label}</option>
-              ))}
-            </select>
-
-            <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} className="border rounded-lg px-3 py-2 text-sm">
-              <option value="">すべてのステータス</option>
-              {sanpaiConfig.statusOptions.map((s) => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
+        {!loading && items.length > 0 && (
+          <div className="space-y-3">
+            {items.map((item) => (
+              <SanpaiCard key={item.id} item={item} />
+            ))}
           </div>
+        )}
 
-          <div className="flex items-center gap-1 flex-wrap">
-            <span className="text-xs text-gray-500 mr-1">並び順:</span>
-            {sanpaiConfig.sorts.map((s) => (
+        {!loading && items.length === 0 && (
+          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+            <p className="text-gray-500">該当する事業者が見つかりません</p>
+            <button onClick={handleReset} className="mt-4 text-sm text-blue-600 hover:underline">
+              フィルタをリセット
+            </button>
+          </div>
+        )}
+
+        {!loading && (
+          <Pagination
+            currentPage={filters.page}
+            totalPages={totalPages}
+            onPageChange={goToPage}
+          />
+        )}
+
+        {/* 許可種別から探す */}
+        <div className="mt-10 pt-8 border-t border-gray-100">
+          <h2 className="text-sm font-bold text-gray-700 mb-3">許可種別から探す</h2>
+          <div className="flex flex-wrap gap-2">
+            {sanpaiConfig.licenseTypes.map((t) => (
               <button
-                key={s.key}
-                onClick={() => { setSort(s.key); setPage(1); }}
-                className={`text-xs px-2.5 py-1 rounded-full transition-colors ${
-                  sort === s.key ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
+                key={t.slug}
+                onClick={() => {
+                  setFormInput((p) => ({ ...p, license_type: t.slug }));
+                  setFilters((p) => ({ ...p, license_type: t.slug, page: 1 }));
+                }}
+                className="inline-block px-3 py-1.5 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-full hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all"
               >
-                {s.label}
+                {t.icon} {t.label}
               </button>
             ))}
           </div>
-
-          {(keyword || prefecture || licenseType || riskLevel || status) && (
-            <button onClick={resetFilters} className="text-xs text-gray-500 hover:text-blue-600">
-              条件をリセット
-            </button>
-          )}
-
-          {/* 統計ダッシュボード */}
-          {stats && stats.totalCount > 0 && (
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <StatsDashboard
-                totalCount={stats.totalCount}
-                hasFilters={hasFilters}
-                filters={{ prefecture, license_type: licenseType }}
-                onFilterChange={onStatsToggle}
-                accent="#059669"
-                sections={[
-                  {
-                    title: "年別件数（処分日）",
-                    type: "bar",
-                    filterKey: "year",
-                    rows: (stats.countsByYear || []).map((r) => ({ value: r.year, label: r.year, count: r.count })),
-                  },
-                  {
-                    title: "事業者別 TOP10",
-                    type: "ranking",
-                    filterKey: "company",
-                    rows: (stats.countsByCompany || []).map((r) => ({ value: r.name, label: r.name, count: r.count })),
-                  },
-                  {
-                    title: "許可種別",
-                    type: "ranking",
-                    filterKey: "license_type",
-                    rows: (stats.countsByLicenseType || []).map((r) => ({ value: r.licenseType, label: getLicenseTypeLabel(r.licenseType), count: r.count })),
-                  },
-                  {
-                    title: "都道府県別 TOP10",
-                    type: "ranking",
-                    filterKey: "prefecture",
-                    rows: (stats.countsByPrefecture || []).map((r) => ({ value: r.prefecture, label: r.prefecture, count: r.count })),
-                  },
-                ]}
-              />
-            </div>
-          )}
         </div>
-      )}
-      emptyState={
-        <div className="card p-8 text-center">
-          <p className="text-gray-500">条件に一致する事業者が見つかりません</p>
-          <button onClick={resetFilters} className="btn-secondary mt-4">フィルタをリセット</button>
-        </div>
-      }
-      footerSlot={
-        <div className="mt-10 pt-8 border-t border-gray-100 space-y-6">
-          <div>
-            <h2 className="text-sm font-bold text-gray-700 mb-3">許可種別から探す</h2>
-            <div className="flex flex-wrap gap-2">
-              {sanpaiConfig.licenseTypes.map((t) => (
-                <button key={t.slug} onClick={() => { setLicenseType(t.slug); setPage(1); }} className="inline-block px-3 py-1.5 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-full hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all">
-                  {t.icon} {t.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      }
-    />
+      </div>
+    </div>
   );
 }
