@@ -42,12 +42,30 @@ async function gbizFetch(pathOrUrl, { timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    const err = new Error(`gBizINFO HTTP ${res.status}: ${body.slice(0, 200)}`);
+    const snippet = body.slice(0, 300).replace(/\s+/g, " ");
+    const contentType = res.headers.get("content-type") || "";
+    const err = new Error(`gBizINFO HTTP ${res.status} (${contentType}): ${snippet} @ ${url}`);
+    err.status = res.status;
+    err.url = url;
+    err.body = body;
+    throw err;
+  }
+  // 成功時、202 Accepted で空レスポンスが来るケースに備えてチェック
+  const text = await res.text();
+  if (!text || text.trim().length === 0) {
+    const err = new Error(`gBizINFO empty response (HTTP ${res.status}) @ ${url}`);
     err.status = res.status;
     err.url = url;
     throw err;
   }
-  return res.json();
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    const err = new Error(`gBizINFO non-JSON (HTTP ${res.status}): ${text.slice(0, 200)}`);
+    err.status = res.status;
+    err.url = url;
+    throw err;
+  }
 }
 
 /**
