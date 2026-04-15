@@ -47,7 +47,9 @@
     "fetch:sanpai": "node scripts/fetch-sanpai.mjs",
     "fetch:sanpai:dry": "node scripts/fetch-sanpai.mjs --dry-run",
     "fetch:nyusatsu": "node scripts/fetch-nyusatsu.mjs",
-    "fetch:nyusatsu:dry": "node scripts/fetch-nyusatsu.mjs --dry-run"
+    "fetch:nyusatsu:dry": "node scripts/fetch-nyusatsu.mjs --dry-run",
+    "fetch:shitei": "node scripts/fetch-shitei.mjs",
+    "fetch:shitei:dry": "node scripts/fetch-shitei.mjs --dry-run"
   },
   "dependencies": {
     "@libsql/client": "^0.17.2",

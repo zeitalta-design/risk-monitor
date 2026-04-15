@@ -1,0 +1,90 @@
+name: "Fetch: Shitei (指定管理)"
+
+# ============================================================
+# 指定管理者情報を取得する（パイロット実装）。
+#
+# 指定管理者制度は一元化API不在、各自治体が個別に公表。
+# 当面は東京都2部局をパイロットとし、将来他自治体へ拡張する。
+#
+# ソース（パイロット）:
+#   - 東京都 生活文化スポーツ局
+#   - 東京都 建設局（都立公園）
+#
+# スケジュール: 週1回（毎週月曜日 JST 05:07）
+# 指定管理は頻繁に更新されないため日次ではなく週次。
+# ============================================================
+
+on:
+  schedule:
+    # 毎週月曜日 JST 05:07 = UTC 20:07 (日曜日)
+    - cron: "7 20 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: fetch-shitei
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    name: "指定管理者（パイロット）取得"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: "Info: 実行情報"
+        run: |
+          echo "Trigger:   ${{ github.event_name }}"
+          echo "Actor:     ${{ github.actor }}"
+          echo "Run ID:    ${{ github.run_id }}"
+          echo "Time UTC:  $(date -u '+%Y-%m-%d %H:%M:%S')"
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: web/package-lock.json
+
+      - name: "Install dependencies"
+        working-directory: web
+        run: npm ci --prefer-offline --no-audit
+
+      - name: "Run: fetch-shitei"
+        working-directory: web
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: node scripts/fetch-shitei.mjs
+
+      - name: "Alert: 失敗時 Issue 作成"
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          TITLE="[Shitei] 定期実行失敗 $(date -u '+%Y-%m-%d')"
+          BODY=$(printf '%s\n' \
+            "## 指定管理者取得の定期実行失敗" \
+            "" \
+            "| 項目 | 値 |" \
+            "|------|----|" \
+            "| Run | [詳細](${RUN_URL}) |" \
+            "| Time (UTC) | $(date -u '+%Y-%m-%d %H:%M:%S') |" \
+            "" \
+            "### 確認事項" \
+            "1. 東京都 生活文化スポーツ局 URL 変更" \
+            "2. 東京都 建設局 URL 変更" \
+            "3. HTML 構造（h2/h3）の変化")
+
+          EXISTING=$(gh issue list --state open --search "in:title [Shitei]" --limit 1 --json number --jq '.[0].number // empty' 2>/dev/null || true)
+          if [ -n "$EXISTING" ]; then
+            gh issue comment "$EXISTING" --body "$BODY"
+          else
+            gh issue create --title "$TITLE" --body "$BODY" --label "ops" 2>/dev/null \
+              || gh issue create --title "$TITLE" --body "$BODY"
+          fi
