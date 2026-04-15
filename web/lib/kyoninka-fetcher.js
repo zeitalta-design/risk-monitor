@@ -135,8 +135,9 @@ export async function fetchAndUpsertKyoninka({
         log(`  (dry) ${displayName}: ${certs.length}件の許認可`);
       }
     } catch (e) {
-      errors.push(`${displayName}: ${e.message}`);
-      log(`  ! ${displayName}: ${e.message}`);
+      const detail = e.status ? `HTTP ${e.status} ${e.url || ""}` : e.message;
+      errors.push(`${displayName}: ${detail}`);
+      log(`  ! ${displayName}: ${detail}`);
     }
   }
 

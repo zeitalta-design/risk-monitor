@@ -114,8 +114,8 @@ export async function searchByName(name, { page = 1, limit = 10 } = {}) {
     name: name.trim(),
     page: String(page),
   });
-  // search エンドポイントは v1/hojin?name=... でクエリできる（基本情報ベース）
-  const data = await gbizFetch(`/?${params}`);
+  // search エンドポイントは v1/hojin?name=... （末尾スラッシュなし）
+  const data = await gbizFetch(`?${params}`);
   const list = data?.["hojin-infos"] || [];
   return list.slice(0, limit);
 }
