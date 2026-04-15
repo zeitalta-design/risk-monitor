@@ -1,0 +1,33 @@
+name: "Fetch: 行政処分 金融庁 (Excel)"
+
+on:
+  schedule:
+    - cron: "19 19 * * 0"  # 毎週日曜 JST 04:19
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: fetch-gyosei-shobun-fsa
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: web/package-lock.json
+      - working-directory: web
+        run: npm ci --prefer-offline --no-audit
+      - working-directory: web
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: node scripts/fetch-gyosei-shobun-fsa.mjs
