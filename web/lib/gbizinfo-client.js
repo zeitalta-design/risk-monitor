@@ -134,9 +134,15 @@ export async function searchByName(name, { page = 1, limit = 10 } = {}) {
     page: String(page),
   });
   // search エンドポイントは v1/hojin?name=... （末尾スラッシュなし）
-  const data = await gbizFetch(`?${params}`);
-  const list = data?.["hojin-infos"] || [];
-  return list.slice(0, limit);
+  try {
+    const data = await gbizFetch(`?${params}`);
+    const list = data?.["hojin-infos"] || [];
+    return list.slice(0, limit);
+  } catch (e) {
+    // 404 は検索ヒットなし = 空配列を返す（エラー扱いしない）
+    if (e.status === 404) return [];
+    throw e;
+  }
 }
 
 /**

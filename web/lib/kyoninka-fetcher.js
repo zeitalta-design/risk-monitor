@@ -96,7 +96,14 @@ export async function fetchAndUpsertKyoninka({
       // 法人番号が未解決なら gBizINFO 名前検索で解決
       if (!corporateNumber) {
         await sleep(DELAY_MS);
-        const hits = await searchByName(displayName, { limit: 3 });
+        // 行政処分データの略記「（有）」「(株)」等を正式名称に展開してから検索
+        const searchQueries = buildSearchQueries(displayName);
+        let hits = [];
+        for (const q of searchQueries) {
+          hits = await searchByName(q, { limit: 3 });
+          if (hits.length > 0) break;
+          await sleep(300);
+        }
         const best = pickBestMatch(hits, displayName, row.prefecture);
         if (!best) {
           log(`  ✗ ${displayName}: gBizINFO で法人番号解決できず`);
@@ -167,6 +174,45 @@ export async function fetchAndUpsertKyoninka({
     errors,
     elapsed,
   };
+}
+
+/**
+ * 行政処分データの法人名から gBizINFO 向けの検索クエリ候補を生成。
+ *   「ゼロホームデザイン（有）」→ ["ゼロホームデザイン", "有限会社ゼロホームデザイン"]
+ *   「株式会社XXX（かぶしきがいしゃエックスエックス）」→ ["株式会社XXX"]
+ * 順に試行し、最初にヒットしたものを採用。
+ */
+function buildSearchQueries(rawName) {
+  const queries = [];
+  let s = String(rawName || "").trim();
+
+  // 末尾の読み仮名カッコを除去（例: 株式会社XXX（えっくすえっくす））
+  const kanaStripped = s.replace(/[（(][^）)]*[）)]$/, "").trim();
+  if (kanaStripped && kanaStripped !== s) queries.push(kanaStripped);
+
+  // 末尾の法人格簡略記号を展開（主に宅建業の表記パターン）
+  const suffixMap = [
+    { pattern: /[（(]有[）)]$/, repl: "有限会社", prefix: true },
+    { pattern: /[（(]株[）)]$/, repl: "株式会社", prefix: true },
+    { pattern: /[（(]合[）)]$/, repl: "合同会社", prefix: true },
+    { pattern: /[（(]資[）)]$/, repl: "合資会社", prefix: true },
+    { pattern: /[（(]名[）)]$/, repl: "合名会社", prefix: true },
+  ];
+  for (const { pattern, repl, prefix } of suffixMap) {
+    if (pattern.test(kanaStripped || s)) {
+      const stem = (kanaStripped || s).replace(pattern, "").trim();
+      if (stem) queries.push(prefix ? `${repl}${stem}` : `${stem}${repl}`);
+      // 法人格を単純に除去した形も候補に
+      if (stem) queries.push(stem);
+      break;
+    }
+  }
+
+  // 元の名前も候補として残す
+  queries.push(s);
+
+  // 重複除去
+  return [...new Set(queries.filter(Boolean))];
 }
 
 /** gBizINFO 検索結果から最適なものを1つ選ぶ（名前+都道府県で近い順） */
