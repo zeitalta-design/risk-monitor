@@ -19,6 +19,9 @@ export async function GET(request) {
       industry: searchParams.get("industry") || "",
       year: searchParams.get("year") || "",
       organization: searchParams.get("organization") || "",
+      authority: searchParams.get("authority") || "",
+      date_from: searchParams.get("date_from") || "",
+      date_to: searchParams.get("date_to") || "",
     });
     return NextResponse.json(stats);
   } catch (error) {

@@ -13,6 +13,9 @@ export function listAdministrativeActions({
   industry = "",
   year = "",
   organization = "",
+  authority = "",
+  date_from = "",
+  date_to = "",
   sort = "newest",
   page = 1,
   pageSize = 20,
@@ -44,6 +47,18 @@ export function listAdministrativeActions({
   if (organization) {
     where.push("organization_name_raw = @organization");
     params.organization = organization;
+  }
+  if (authority) {
+    where.push("authority_name LIKE @authority");
+    params.authority = `%${authority}%`;
+  }
+  if (date_from) {
+    where.push("action_date >= @date_from");
+    params.date_from = date_from;
+  }
+  if (date_to) {
+    where.push("action_date <= @date_to");
+    params.date_to = date_to;
   }
 
   const whereClause = `WHERE ${where.join(" AND ")}`;
@@ -96,6 +111,9 @@ export function getAdministrativeActionStats({
   industry = "",
   year = "",
   organization = "",
+  authority = "",
+  date_from = "",
+  date_to = "",
 } = {}) {
   const db = getDb();
   const where = ["is_published = 1"];
@@ -124,6 +142,18 @@ export function getAdministrativeActionStats({
   if (organization) {
     where.push("organization_name_raw = @organization");
     params.organization = organization;
+  }
+  if (authority) {
+    where.push("authority_name LIKE @authority");
+    params.authority = `%${authority}%`;
+  }
+  if (date_from) {
+    where.push("action_date >= @date_from");
+    params.date_from = date_from;
+  }
+  if (date_to) {
+    where.push("action_date <= @date_to");
+    params.date_to = date_to;
   }
 
   const whereClause = `WHERE ${where.join(" AND ")}`;

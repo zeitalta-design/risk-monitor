@@ -34,9 +34,15 @@ export default function GyoseiShobunListPage() {
     industry: searchParams.get("industry") || "",
     year: searchParams.get("year") || "",
     organization: searchParams.get("organization") || "",
+    authority: searchParams.get("authority") || "",
+    date_from: searchParams.get("date_from") || "",
+    date_to: searchParams.get("date_to") || "",
     sort: searchParams.get("sort") || "newest",
     page: Math.max(1, parseInt(searchParams.get("page") || "1", 10)),
   });
+
+  // 検索フォームの入力中値（「検索」ボタンで filters に反映される）
+  const [formInput, setFormInput] = useState(filters);
 
   const syncUrl = useCallback((f) => {
     const params = new URLSearchParams();
@@ -46,6 +52,9 @@ export default function GyoseiShobunListPage() {
     if (f.industry) params.set("industry", f.industry);
     if (f.year) params.set("year", f.year);
     if (f.organization) params.set("organization", f.organization);
+    if (f.authority) params.set("authority", f.authority);
+    if (f.date_from) params.set("date_from", f.date_from);
+    if (f.date_to) params.set("date_to", f.date_to);
     if (f.sort && f.sort !== "newest") params.set("sort", f.sort);
     if (f.page > 1) params.set("page", String(f.page));
     const qs = params.toString();
@@ -63,6 +72,9 @@ export default function GyoseiShobunListPage() {
       if (filters.industry) listParams.set("industry", filters.industry);
       if (filters.year) listParams.set("year", filters.year);
       if (filters.organization) listParams.set("organization", filters.organization);
+      if (filters.authority) listParams.set("authority", filters.authority);
+      if (filters.date_from) listParams.set("date_from", filters.date_from);
+      if (filters.date_to) listParams.set("date_to", filters.date_to);
       listParams.set("sort", filters.sort);
       listParams.set("page", String(filters.page));
       listParams.set("pageSize", String(PAGE_SIZE));
@@ -75,6 +87,9 @@ export default function GyoseiShobunListPage() {
       if (filters.industry) statsParams.set("industry", filters.industry);
       if (filters.year) statsParams.set("year", filters.year);
       if (filters.organization) statsParams.set("organization", filters.organization);
+      if (filters.authority) statsParams.set("authority", filters.authority);
+      if (filters.date_from) statsParams.set("date_from", filters.date_from);
+      if (filters.date_to) statsParams.set("date_to", filters.date_to);
 
       const [listRes, statsRes] = await Promise.all([
         fetch(`/api/gyosei-shobun?${listParams}`),
@@ -113,7 +128,21 @@ export default function GyoseiShobunListPage() {
 
   const startItem = total === 0 ? 0 : (filters.page - 1) * PAGE_SIZE + 1;
   const endItem = Math.min(filters.page * PAGE_SIZE, total);
-  const hasFilters = !!(filters.keyword || filters.action_type || filters.prefecture || filters.industry || filters.year || filters.organization);
+  const hasFilters = !!(filters.keyword || filters.action_type || filters.prefecture || filters.industry || filters.year || filters.organization || filters.authority || filters.date_from || filters.date_to);
+
+  // 検索実行: フォーム入力値を filters に反映して fetch を走らせる
+  const handleSearch = () => {
+    setFilters({ ...formInput, page: 1 });
+  };
+  const handleReset = () => {
+    const empty = {
+      keyword: "", action_type: "", prefecture: "", industry: "",
+      year: "", organization: "", authority: "", date_from: "", date_to: "",
+      sort: "newest", page: 1,
+    };
+    setFormInput(empty);
+    setFilters(empty);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -125,65 +154,25 @@ export default function GyoseiShobunListPage() {
           </p>
         </div>
 
-        {/* フィルタ */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
-          <div className="flex gap-2 mb-3">
-            <input
-              type="text"
-              value={filters.keyword}
-              onChange={(e) => setFilters((prev) => ({ ...prev, keyword: e.target.value }))}
-              onKeyDown={(e) => e.key === "Enter" && updateFilter("keyword", filters.keyword)}
-              placeholder="事業者名・キーワードで検索..."
-              className="flex-1 border rounded-lg px-4 py-2.5 text-sm"
-            />
-            <button
-              onClick={() => updateFilter("keyword", filters.keyword)}
-              className="px-5 py-2.5 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800"
-            >
-              検索
-            </button>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            <select
-              value={filters.action_type}
-              onChange={(e) => updateFilter("action_type", e.target.value)}
-              className="text-xs border rounded-lg px-3 py-1.5"
-            >
-              <option value="">処分種別</option>
-              {gyoseiShobunConfig.actionTypes.map((t) => (
-                <option key={t.slug} value={t.slug}>{t.icon} {t.label}</option>
-              ))}
-            </select>
-            <select
-              value={filters.industry}
-              onChange={(e) => updateFilter("industry", e.target.value)}
-              className="text-xs border rounded-lg px-3 py-1.5"
-            >
-              <option value="">業種</option>
-              {gyoseiShobunConfig.industries.map((i) => (
-                <option key={i.slug} value={i.slug}>{i.icon} {i.label}</option>
-              ))}
-            </select>
-            <select
-              value={filters.sort}
-              onChange={(e) => updateFilter("sort", e.target.value)}
-              className="text-xs border rounded-lg px-3 py-1.5"
-            >
-              {gyoseiShobunConfig.sorts.map((s) => (
-                <option key={s.key} value={s.key}>{s.label}</option>
-              ))}
-            </select>
-          </div>
-        </div>
+        {/* 検索フォーム（国交省ネガティブ情報検索風） */}
+        <SearchForm
+          formInput={formInput}
+          setFormInput={setFormInput}
+          onSearch={handleSearch}
+          onReset={handleReset}
+          sort={filters.sort}
+          onSortChange={(v) => {
+            setFormInput((p) => ({ ...p, sort: v }));
+            setFilters((p) => ({ ...p, sort: v, page: 1 }));
+          }}
+        />
 
         {/* 適用条件チップ */}
         {hasFilters && (
-          <ActiveFilterChips filters={filters} onRemove={updateFilter} />
-        )}
-
-        {/* 統計ダッシュボード */}
-        {!loading && stats && (
-          <StatsDashboard stats={stats} hasFilters={hasFilters} filters={filters} onFilterChange={updateFilter} />
+          <ActiveFilterChips filters={filters} onRemove={(k, v) => {
+            setFilters((p) => ({ ...p, [k]: v, page: 1 }));
+            setFormInput((p) => ({ ...p, [k]: v }));
+          }} />
         )}
 
         {/* 件数表示 */}
@@ -274,8 +263,164 @@ export default function GyoseiShobunListPage() {
   );
 }
 
-// ─── 統計ダッシュボード ─────────────────────
+// ─── 都道府県リスト ─────────────────────
 
+const PREFECTURES = [
+  "北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県",
+  "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県",
+  "新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県",
+  "岐阜県", "静岡県", "愛知県", "三重県",
+  "滋賀県", "京都府", "大阪府", "兵庫県", "奈良県", "和歌山県",
+  "鳥取県", "島根県", "岡山県", "広島県", "山口県",
+  "徳島県", "香川県", "愛媛県", "高知県",
+  "福岡県", "佐賀県", "長崎県", "熊本県", "大分県", "宮崎県", "鹿児島県",
+  "沖縄県",
+];
+
+const AUTHORITY_OPTIONS = [
+  { value: "", label: "指定なし" },
+  { value: "金融庁", label: "金融庁" },
+  { value: "消費者庁", label: "消費者庁" },
+  { value: "公正取引委員会", label: "公正取引委員会" },
+  { value: "個人情報保護委員会", label: "個人情報保護委員会" },
+  { value: "国税庁", label: "国税庁" },
+  { value: "国土交通省", label: "国土交通省" },
+  { value: "厚生労働省", label: "厚生労働省（労働局）" },
+];
+
+// ─── 検索フォーム ─────────────────────
+
+function SearchForm({ formInput, setFormInput, onSearch, onReset, sort, onSortChange }) {
+  const update = (k, v) => setFormInput((p) => ({ ...p, [k]: v }));
+  const onEnter = (e) => { if (e.key === "Enter") onSearch(); };
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* 事業者名・キーワード */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1.5">事業者名・キーワード</label>
+          <input
+            type="text"
+            value={formInput.keyword}
+            onChange={(e) => update("keyword", e.target.value)}
+            onKeyDown={onEnter}
+            placeholder="例: 〇〇株式会社"
+            className="w-full border rounded-lg px-3 py-2 text-sm"
+          />
+        </div>
+
+        {/* 都道府県 */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1.5">所在地（都道府県）</label>
+          <select
+            value={formInput.prefecture}
+            onChange={(e) => update("prefecture", e.target.value)}
+            className="w-full border rounded-lg px-3 py-2 text-sm bg-white"
+          >
+            <option value="">指定なし（全国 + 国レベル処分）</option>
+            {PREFECTURES.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </div>
+
+        {/* 処分日 From〜To */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1.5">処分日（期間）</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={formInput.date_from}
+              onChange={(e) => update("date_from", e.target.value)}
+              className="flex-1 border rounded-lg px-3 py-2 text-sm"
+            />
+            <span className="text-gray-400 text-sm">〜</span>
+            <input
+              type="date"
+              value={formInput.date_to}
+              onChange={(e) => update("date_to", e.target.value)}
+              className="flex-1 border rounded-lg px-3 py-2 text-sm"
+            />
+          </div>
+        </div>
+
+        {/* 処分機関 */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1.5">処分を行った機関</label>
+          <select
+            value={formInput.authority}
+            onChange={(e) => update("authority", e.target.value)}
+            className="w-full border rounded-lg px-3 py-2 text-sm bg-white"
+          >
+            {AUTHORITY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </div>
+
+        {/* 処分種別 */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1.5">処分種別</label>
+          <select
+            value={formInput.action_type}
+            onChange={(e) => update("action_type", e.target.value)}
+            className="w-full border rounded-lg px-3 py-2 text-sm bg-white"
+          >
+            <option value="">指定なし</option>
+            {gyoseiShobunConfig.actionTypes.map((t) => (
+              <option key={t.slug} value={t.slug}>{t.icon} {t.label}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* 業種 */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1.5">業種</label>
+          <select
+            value={formInput.industry}
+            onChange={(e) => update("industry", e.target.value)}
+            className="w-full border rounded-lg px-3 py-2 text-sm bg-white"
+          >
+            <option value="">指定なし</option>
+            {gyoseiShobunConfig.industries.map((i) => (
+              <option key={i.slug} value={i.slug}>{i.icon} {i.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* ボタン + ソート */}
+      <div className="flex items-center justify-between mt-5 pt-4 border-t border-gray-100 flex-wrap gap-3">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onSearch}
+            className="px-6 py-2 bg-[#1F6FB2] text-white font-bold text-sm rounded-lg hover:bg-[#1B5F99] transition-colors"
+          >
+            🔍 検索
+          </button>
+          <button
+            onClick={onReset}
+            className="px-5 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            リセット
+          </button>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-gray-500">並び替え</label>
+          <select
+            value={sort}
+            onChange={(e) => onSortChange(e.target.value)}
+            className="text-xs border rounded-lg px-2.5 py-1.5 bg-white"
+          >
+            {gyoseiShobunConfig.sorts.map((s) => (
+              <option key={s.key} value={s.key}>{s.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── 統計ダッシュボード（非使用・残置） ─────────────────────
+// eslint-disable-next-line no-unused-vars
 function StatsDashboard({ stats, hasFilters, filters, onFilterChange }) {
   const { totalCount, countsByYear, countsByOrganization, countsByIndustry, countsByActionType, countsByPrefecture } = stats;
   const maxYearCount = Math.max(...(countsByYear || []).map((r) => r.count), 1);
@@ -576,6 +721,9 @@ const FILTER_CHIP_DEFS = [
   { key: "action_type", label: "処分種別", resolve: (v) => gyoseiShobunConfig.actionTypes.find((t) => t.slug === v)?.label || v },
   { key: "industry", label: "業種", resolve: (v) => gyoseiShobunConfig.industries.find((i) => i.slug === v)?.label || v },
   { key: "prefecture", label: "都道府県" },
+  { key: "authority", label: "処分機関" },
+  { key: "date_from", label: "処分日From" },
+  { key: "date_to", label: "処分日To" },
   { key: "year", label: "年度" },
   { key: "organization", label: "事業者" },
 ];
