@@ -220,7 +220,13 @@ function shouldSkipAsCompanyName(name) {
   if (!name || typeof name !== "string") return "empty";
   const s = name.trim();
   if (s.length < 2) return "too-short";
-  if (s.length > 60) return "too-long"; // 長文は処分理由の本文が混入している
+  if (s.length > 100) return "too-long-extreme"; // 100文字超は確実に文章
+  // 短くてあいまいな単語も除外（処分理由の見出し語等が誤抽出されたケース）
+  const ambiguousShort = new Set([
+    "公告", "公示", "事案", "概要", "詳細", "本文", "別紙", "添付", "様式",
+    "備考", "頁", "項", "号", "目次", "前項", "後項", "本項", "条文",
+  ]);
+  if (s.length <= 4 && ambiguousShort.has(s)) return `ambiguous-short(${s})`;
   // 年月日だけのパターン
   if (/^令和\d+年\d+月?$/.test(s) || /^平成\d+年\d+月?$/.test(s)) return "date-only";
   if (/^\d+年\d+月/.test(s)) return "date-only";
@@ -255,6 +261,20 @@ function shouldSkipAsCompanyName(name) {
 function buildSearchQueries(rawName) {
   const queries = [];
   let s = String(rawName || "").trim();
+
+  // 長文の場合: 最初に出現する法人格までを切り出して使う
+  // （「株式会社川崎工業曽於市株式会社川崎工業の代表取締役は…」等の対策）
+  if (s.length > 40) {
+    const corpMatch = s.match(/^(.{1,25}?(?:株式会社|有限会社|合同会社|合資会社|合名会社))/);
+    if (corpMatch) {
+      const trimmed = corpMatch[1];
+      // さらに重複法人格を除く: 「株式会社X株式会社」→「株式会社X」
+      const cleaned = trimmed.replace(/(株式会社|有限会社|合同会社|合資会社|合名会社).+(株式会社|有限会社|合同会社|合資会社|合名会社)$/, "$1");
+      queries.push(cleaned);
+    } else {
+      queries.push(s.slice(0, 30));
+    }
+  }
 
   // 末尾の読み仮名カッコを除去（例: 株式会社XXX（えっくすえっくす））
   const kanaStripped = s.replace(/[（(][^）)]*[）)]$/, "").trim();
@@ -305,8 +325,21 @@ function pickBestMatch(hits, queryName, queryPref) {
 }
 
 function upsertOrganizationCorporateNumber(db, row, corporateNumber, hojinInfo) {
+  // 既に同じ corporate_number を持つ organization があるか確認（UNIQUE 制約衝突の事前回避）
+  const existing = db.prepare(
+    "SELECT id FROM organizations WHERE corporate_number = ? LIMIT 1"
+  ).get(corporateNumber);
+
+  if (existing) {
+    // 既に登録されている → 何もしない（既に正しく紐付けされている）
+    // ただし行政処分の元 row.org_id が異なる場合は administrative_actions の
+    // organization_id を既存organization に張り直すことも検討の余地あり。
+    // 今回は副作用を避けて何もしない。
+    return;
+  }
+
   if (row.org_id) {
-    // 既存organizationを更新
+    // 既存organizationを更新（このorgはまだcorporate_numberを持っていない）
     db.prepare(`
       UPDATE organizations
       SET corporate_number = ?, updated_at = datetime('now')
