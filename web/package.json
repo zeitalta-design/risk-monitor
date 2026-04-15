@@ -43,7 +43,9 @@
     "fetch:prefecture-pdf": "node scripts/fetch-prefecture-pdf.mjs",
     "fetch:hojokin": "node scripts/fetch-hojokin.mjs",
     "fetch:kyoninka": "node scripts/fetch-kyoninka.mjs",
-    "fetch:kyoninka:preview": "node scripts/fetch-kyoninka.mjs --preview"
+    "fetch:kyoninka:preview": "node scripts/fetch-kyoninka.mjs --preview",
+    "fetch:sanpai": "node scripts/fetch-sanpai.mjs",
+    "fetch:sanpai:dry": "node scripts/fetch-sanpai.mjs --dry-run"
   },
   "dependencies": {
     "@libsql/client": "^0.17.2",
@@ -56,7 +58,8 @@
     "nodemailer": "^8.0.2",
     "pdf-parse": "^2.4.5",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
