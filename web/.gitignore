@@ -3,6 +3,10 @@ data/*.db
 data/*.db-shm
 data/*.db-wal
 
+# SQLite dumps（local → Turso 移行時の一時ファイル）
+dump.sql
+*.dump.sql
+
 # env
 .env*
 !.env.example
