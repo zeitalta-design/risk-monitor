@@ -286,3 +286,183 @@ export function updateNyusatsuItem(id, item) {
   `).run({ qualification: null, announcement_url: null, contact_info: null, delivery_location: null, has_attachment: 0, announcement_date: null, contract_period: null, ...item, id });
   return { id };
 }
+
+// ─── 落札結果 (nyusatsu_results) ─────────────────────
+
+/**
+ * 落札結果の一覧取得（フィルタ + ページネーション）
+ */
+export function listNyusatsuResults({
+  keyword = "",
+  category = "",
+  area = "",
+  winner = "",
+  issuer = "",
+  year = "",
+  award_date_from = "",
+  award_date_to = "",
+  sort = "newest",
+  page = 1,
+  pageSize = 20,
+} = {}) {
+  const db = getDb();
+  const where = ["is_published = 1"];
+  const params = {};
+
+  if (keyword) {
+    where.push("(title LIKE @kw OR winner_name LIKE @kw OR issuer_name LIKE @kw)");
+    params.kw = `%${keyword}%`;
+  }
+  if (category) { where.push("category = @category"); params.category = category; }
+  if (area) { where.push("target_area LIKE @area"); params.area = `%${area}%`; }
+  if (winner) { where.push("winner_name = @winner"); params.winner = winner; }
+  if (issuer) { where.push("issuer_name = @issuer"); params.issuer = issuer; }
+  if (year) { where.push("SUBSTR(award_date, 1, 4) = @year"); params.year = year; }
+  if (award_date_from) { where.push("award_date >= @award_date_from"); params.award_date_from = award_date_from; }
+  if (award_date_to) { where.push("award_date <= @award_date_to"); params.award_date_to = award_date_to; }
+
+  const whereClause = `WHERE ${where.join(" AND ")}`;
+
+  let orderBy;
+  switch (sort) {
+    case "newest": orderBy = "award_date DESC, id DESC"; break;
+    case "amount_desc": orderBy = "COALESCE(award_amount, 0) DESC"; break;
+    case "amount_asc": orderBy = "CASE WHEN award_amount IS NULL OR award_amount = 0 THEN 1 ELSE 0 END, award_amount ASC"; break;
+    default: orderBy = "id DESC";
+  }
+
+  const total = db.prepare(`SELECT COUNT(*) as c FROM nyusatsu_results ${whereClause}`).get(params).c;
+  const totalPages = Math.ceil(total / pageSize) || 1;
+  const offset = (Math.max(1, page) - 1) * pageSize;
+
+  const items = db.prepare(`
+    SELECT * FROM nyusatsu_results ${whereClause}
+    ORDER BY ${orderBy}
+    LIMIT @limit OFFSET @offset
+  `).all({ ...params, limit: pageSize, offset });
+
+  return { items, total, totalPages };
+}
+
+/**
+ * 落札結果の統計ダッシュボード
+ */
+export function getNyusatsuResultStats({
+  keyword = "", category = "", area = "", winner = "", issuer = "", year = "",
+} = {}) {
+  const db = getDb();
+  const where = ["is_published = 1"];
+  const params = {};
+  if (keyword) { where.push("(title LIKE @kw OR winner_name LIKE @kw OR issuer_name LIKE @kw)"); params.kw = `%${keyword}%`; }
+  if (category) { where.push("category = @category"); params.category = category; }
+  if (winner) { where.push("winner_name = @winner"); params.winner = winner; }
+  if (issuer) { where.push("issuer_name = @issuer"); params.issuer = issuer; }
+  if (year) { where.push("SUBSTR(award_date, 1, 4) = @year"); params.year = year; }
+  const whereClause = `WHERE ${where.join(" AND ")}`;
+
+  const totalCount = db.prepare(`SELECT COUNT(*) c FROM nyusatsu_results ${whereClause}`).get(params).c;
+
+  const countsByYear = db.prepare(`
+    SELECT SUBSTR(award_date, 1, 4) AS year, COUNT(*) AS count
+    FROM nyusatsu_results ${whereClause}
+      AND award_date IS NOT NULL AND SUBSTR(award_date, 1, 4) != ''
+    GROUP BY year ORDER BY year DESC
+  `).all(params);
+
+  const countsByWinner = db.prepare(`
+    SELECT winner_name AS name, COUNT(*) AS count, SUM(award_amount) AS total_amount
+    FROM nyusatsu_results ${whereClause}
+      AND winner_name IS NOT NULL AND winner_name != ''
+    GROUP BY winner_name ORDER BY count DESC, winner_name ASC LIMIT 10
+  `).all(params);
+
+  const countsByIssuer = db.prepare(`
+    SELECT issuer_name AS name, COUNT(*) AS count
+    FROM nyusatsu_results ${whereClause}
+      AND issuer_name IS NOT NULL AND issuer_name != ''
+    GROUP BY issuer_name ORDER BY count DESC, issuer_name ASC LIMIT 10
+  `).all(params);
+
+  const avgAwardRate = db.prepare(`
+    SELECT AVG(award_rate) AS avg_rate, COUNT(*) AS count
+    FROM nyusatsu_results ${whereClause}
+      AND award_rate IS NOT NULL AND award_rate > 0
+  `).get(params);
+
+  return { totalCount, countsByYear, countsByWinner, countsByIssuer, avgAwardRate };
+}
+
+/**
+ * 落札結果の upsert（slug ベース）
+ */
+export function upsertNyusatsuResult(result) {
+  const db = getDb();
+  const existing = result.slug
+    ? db.prepare("SELECT id FROM nyusatsu_results WHERE slug = ?").get(result.slug)
+    : null;
+
+  if (existing) {
+    db.prepare(`
+      UPDATE nyusatsu_results SET
+        nyusatsu_item_id = @nyusatsu_item_id, title = @title,
+        issuer_name = @issuer_name, winner_name = @winner_name,
+        winner_corporate_number = @winner_corporate_number,
+        award_amount = @award_amount, award_date = @award_date,
+        num_bidders = @num_bidders, award_rate = @award_rate,
+        budget_amount = @budget_amount, category = @category,
+        target_area = @target_area, bidding_method = @bidding_method,
+        result_url = @result_url, source_name = @source_name,
+        source_url = @source_url, summary = @summary,
+        is_published = @is_published, updated_at = datetime('now')
+      WHERE id = @id
+    `).run({ ...result, id: existing.id });
+    return { action: "update", id: existing.id };
+  }
+
+  const r = db.prepare(`
+    INSERT INTO nyusatsu_results
+      (slug, nyusatsu_item_id, title, issuer_name, winner_name,
+       winner_corporate_number, award_amount, award_date,
+       num_bidders, award_rate, budget_amount, category,
+       target_area, bidding_method, result_url, source_name,
+       source_url, summary, is_published, created_at, updated_at)
+    VALUES
+      (@slug, @nyusatsu_item_id, @title, @issuer_name, @winner_name,
+       @winner_corporate_number, @award_amount, @award_date,
+       @num_bidders, @award_rate, @budget_amount, @category,
+       @target_area, @bidding_method, @result_url, @source_name,
+       @source_url, @summary, @is_published, datetime('now'), datetime('now'))
+  `).run(result);
+  return { action: "insert", id: r.lastInsertRowid };
+}
+
+/**
+ * 入札公告と落札結果を紐付け + ライフサイクル更新
+ */
+export function linkResultToItem(itemId, resultId) {
+  const db = getDb();
+  db.prepare(`
+    UPDATE nyusatsu_items SET
+      result_id = @resultId,
+      lifecycle_status = 'awarded',
+      updated_at = datetime('now')
+    WHERE id = @itemId
+  `).run({ itemId, resultId });
+}
+
+/**
+ * 期限切れの公告を自動 closed に更新
+ */
+export function closeExpiredItems() {
+  const db = getDb();
+  const today = new Date().toISOString().slice(0, 10);
+  const r = db.prepare(`
+    UPDATE nyusatsu_items SET
+      lifecycle_status = 'closed',
+      updated_at = datetime('now')
+    WHERE lifecycle_status = 'active'
+      AND deadline IS NOT NULL
+      AND deadline < @today
+  `).run({ today });
+  return r.changes;
+}

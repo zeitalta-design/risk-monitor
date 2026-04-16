@@ -71,6 +71,17 @@ db.exec(`
     id INTEGER PRIMARY KEY, event_id INTEGER, placement_type TEXT,
     impression_date TEXT, impressions INTEGER DEFAULT 0, clicks INTEGER DEFAULT 0
   );
+  CREATE TABLE IF NOT EXISTS nyusatsu_results (
+    id INTEGER PRIMARY KEY, nyusatsu_item_id INTEGER, slug TEXT NOT NULL UNIQUE,
+    title TEXT NOT NULL, issuer_name TEXT, winner_name TEXT,
+    winner_corporate_number TEXT, award_amount INTEGER, award_date TEXT,
+    num_bidders INTEGER, award_rate REAL, budget_amount INTEGER,
+    category TEXT, target_area TEXT, bidding_method TEXT,
+    result_url TEXT, source_name TEXT, source_url TEXT, summary TEXT,
+    is_published INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
 
 db.close();
