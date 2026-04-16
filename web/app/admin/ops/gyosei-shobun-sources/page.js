@@ -26,10 +26,10 @@ const CATEGORIES = [
     description: "宅建・建設・建築士・金融・消費者・独禁・個情・税理士・労基・運送 の行政処分情報源",
   },
   { id: "sanpai", label: "産廃処分", registrySectors: ["sanpai"], description: "産業廃棄物処理業の行政処分情報源" },
-  { id: "nyusatsu", label: "入札", dbDomain: "nyusatsu", description: "官公庁・自治体の入札・公募情報源" },
-  { id: "shitei", label: "指定管理", dbDomain: "shitei", description: "自治体の指定管理者公募情報源" },
-  { id: "hojokin", label: "補助金", dbDomain: "hojokin", description: "国・自治体の補助金・助成金情報源" },
-  { id: "kyoninka", label: "許認可", dbDomain: "kyoninka", description: "許認可・登録事業者情報源" },
+  { id: "nyusatsu", label: "入札", registrySectors: ["nyusatsu"], description: "官公庁・自治体の入札・公募情報源（6省庁横断）" },
+  { id: "shitei", label: "指定管理", registrySectors: ["shitei"], description: "自治体の指定管理者公募情報源" },
+  { id: "hojokin", label: "補助金", registrySectors: ["hojokin"], description: "国・自治体の補助金・助成金情報源（J-Grants）" },
+  { id: "kyoninka", label: "許認可", registrySectors: ["kyoninka"], description: "許認可・登録事業者情報源（gBizINFO）" },
 ];
 
 // ─── バッジ ─────────────────────

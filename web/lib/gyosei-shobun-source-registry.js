@@ -25,6 +25,11 @@ export const SECTORS = {
   tax_agent: { label: "税理士業", short: "税理士" },
   labor: { label: "労働基準法違反", short: "労基" },
   transport_jidosha: { label: "自動車運送業", short: "運送" },
+  // 入札・指定管理・補助金・許認可
+  nyusatsu: { label: "入札・公募", short: "入札" },
+  shitei: { label: "指定管理者", short: "指定管理" },
+  hojokin: { label: "補助金・助成金", short: "補助金" },
+  kyoninka: { label: "許認可・登録", short: "許認可" },
 };
 
 // ─── ソース種別ラベル ─────────────────────
@@ -1681,6 +1686,147 @@ const NATIONAL_SECTOR_SOURCES = [
   },
 ];
 
+// ─── 入札ソース（6省庁横断） ─────────────────────
+
+const NYUSATSU_SOURCES = [
+  {
+    id: "nyusatsu_maff", sector: "nyusatsu", authorityLevel: "national",
+    authorityName: "農林水産省", prefecture: null,
+    sourceName: "農水省 補助・公募・入札",
+    url: "https://www.maff.go.jp/j/supply/hozyo/index.html",
+    sourceType: "official_list", coverageScope: "full",
+    discoveryStatus: "confirmed", expectedCoverage: "national_full",
+    complements: "農林水産省の補助事業・入札公告を一覧化。",
+    publicationWindow: "current", updateFrequency: "weekly", acquisitionMethod: "html",
+    active: true, notes: "scrapeMaff() で巡回中。",
+  },
+  {
+    id: "nyusatsu_meti", sector: "nyusatsu", authorityLevel: "national",
+    authorityName: "経済産業省", prefecture: null,
+    sourceName: "経産省 入札情報",
+    url: "https://www.meti.go.jp/information_2/publicoffer/00_bid_news_list.html",
+    sourceType: "official_list", coverageScope: "full",
+    discoveryStatus: "confirmed", expectedCoverage: "national_full",
+    complements: "経済産業省の入札公告。",
+    publicationWindow: "current", updateFrequency: "weekly", acquisitionMethod: "html",
+    active: true, notes: "scrapeMeti() で巡回中。",
+  },
+  {
+    id: "nyusatsu_soumu", sector: "nyusatsu", authorityLevel: "national",
+    authorityName: "総務省", prefecture: null,
+    sourceName: "総務省 公募公告",
+    url: "https://www.soumu.go.jp/menu_sinsei/cyoutatsu/koubo.html",
+    sourceType: "official_list", coverageScope: "full",
+    discoveryStatus: "confirmed", expectedCoverage: "national_full",
+    complements: "総務省の公募公告（Shift_JIS配信）。kikaku_koubo.html も併用。",
+    publicationWindow: "current", updateFrequency: "weekly", acquisitionMethod: "html",
+    active: true, notes: "scrapeSoumu() で巡回中。",
+  },
+  {
+    id: "nyusatsu_mhlw", sector: "nyusatsu", authorityLevel: "national",
+    authorityName: "厚生労働省", prefecture: null,
+    sourceName: "厚労省 関東信越厚生局 入札公告",
+    url: "https://kouseikyoku.mhlw.go.jp/kantoshinetsu/chotatsu/nyusatsu/index.html",
+    sourceType: "official_list", coverageScope: "partial",
+    discoveryStatus: "confirmed", expectedCoverage: "national_full",
+    complements: "地方厚生局の年度別 PDF 公告を集約。",
+    publicationWindow: "current", updateFrequency: "weekly", acquisitionMethod: "pdf",
+    active: true, notes: "scrapeMhlw() で巡回中。",
+  },
+  {
+    id: "nyusatsu_env", sector: "nyusatsu", authorityLevel: "national",
+    authorityName: "環境省", prefecture: null,
+    sourceName: "環境省 調達情報（物品/役務/工事/参加者確認）",
+    url: "https://www.env.go.jp/kanbo/chotatsu/index_buppin.html",
+    sourceType: "official_list", coverageScope: "full",
+    discoveryStatus: "confirmed", expectedCoverage: "national_full",
+    complements: "物品・役務・工事・公募の4サブページを横断。",
+    publicationWindow: "current", updateFrequency: "weekly", acquisitionMethod: "html",
+    active: true, notes: "scrapeEnv() で巡回中。",
+  },
+  {
+    id: "nyusatsu_mlit", sector: "nyusatsu", authorityLevel: "national",
+    authorityName: "国土交通省", prefecture: null,
+    sourceName: "国交省 官庁営繕 発注見通し（Excel）",
+    url: "https://www.mlit.go.jp/gobuild/gobuild_tk1_000007.html",
+    sourceType: "official_list", coverageScope: "partial",
+    discoveryStatus: "confirmed", expectedCoverage: "national_full",
+    complements: "GEPS 集約後の代替手段として官庁営繕の Excel をパース。",
+    publicationWindow: "current", updateFrequency: "monthly", acquisitionMethod: "xlsx",
+    active: true, notes: "scrapeMlit() で巡回中。",
+  },
+];
+
+// ─── 指定管理者ソース ─────────────────────
+
+const SHITEI_SOURCES = [
+  {
+    id: "shitei_tokyo_seikatsu", sector: "shitei", authorityLevel: "prefecture",
+    authorityName: "東京都", prefecture: "東京都",
+    sourceName: "東京都 生活文化スポーツ局 指定管理者",
+    url: "https://www.seikatubunka.metro.tokyo.lg.jp/bunka/bunka_shisetsu/0000001437.html",
+    sourceType: "official_list", coverageScope: "partial",
+    discoveryStatus: "confirmed", expectedCoverage: "pref_primary",
+    complements: "東京都生活文化スポーツ局管轄施設の指定管理者公募・選定情報。",
+    publicationWindow: "current", updateFrequency: "as_needed", acquisitionMethod: "html",
+    active: true, notes: "ingestTokyoSeikatsu() で巡回中。",
+  },
+  {
+    id: "shitei_tokyo_park", sector: "shitei", authorityLevel: "prefecture",
+    authorityName: "東京都", prefecture: "東京都",
+    sourceName: "東京都 建設局 都立公園 指定管理者",
+    url: "https://www.kensetsu.metro.tokyo.lg.jp/park/tokyo_kouen/shitei_koubo",
+    sourceType: "official_list", coverageScope: "partial",
+    discoveryStatus: "confirmed", expectedCoverage: "pref_primary",
+    complements: "東京都立公園・庭園・霊園等の指定管理者公募。",
+    publicationWindow: "current", updateFrequency: "as_needed", acquisitionMethod: "html",
+    active: true, notes: "ingestTokyoPark() で巡回中。",
+  },
+  {
+    id: "shitei_kanagawa", sector: "shitei", authorityLevel: "prefecture",
+    authorityName: "神奈川県", prefecture: "神奈川県",
+    sourceName: "神奈川県 指定管理者制度導入施設一覧",
+    url: "https://www.pref.kanagawa.jp/docs/hy8/cnt/f5586/p1200074.html",
+    sourceType: "official_list", coverageScope: "full",
+    discoveryStatus: "confirmed", expectedCoverage: "pref_primary",
+    complements: "神奈川県の指定管理者制度導入施設を網羅。",
+    publicationWindow: "current", updateFrequency: "as_needed", acquisitionMethod: "html",
+    active: true, notes: "ingestKanagawa() で巡回中。",
+  },
+];
+
+// ─── 補助金ソース ─────────────────────
+
+const HOJOKIN_SOURCES = [
+  {
+    id: "hojokin_jgrants", sector: "hojokin", authorityLevel: "national",
+    authorityName: "デジタル庁（J-Grants）", prefecture: null,
+    sourceName: "J-Grants（補助金・助成金 横断検索 公開API）",
+    url: "https://api.jgrants-portal.go.jp/exp/v1/public/subsidies",
+    sourceType: "aggregated_search", coverageScope: "full",
+    discoveryStatus: "confirmed", expectedCoverage: "national_full",
+    complements: "国・自治体の補助金/助成金を横断検索する政府公式API。",
+    publicationWindow: "current", updateFrequency: "daily", acquisitionMethod: "api",
+    active: true, notes: "fetchAndUpsertHojokin() で複数キーワード検索→ingest。約2,650件保有。",
+  },
+];
+
+// ─── 許認可ソース ─────────────────────
+
+const KYONINKA_SOURCES = [
+  {
+    id: "kyoninka_gbizinfo", sector: "kyoninka", authorityLevel: "national",
+    authorityName: "経済産業省（gBizINFO）", prefecture: null,
+    sourceName: "gBizINFO（法人情報・許認可検索 公開API）",
+    url: "https://info.gbiz.go.jp/",
+    sourceType: "aggregated_search", coverageScope: "full",
+    discoveryStatus: "confirmed", expectedCoverage: "national_full",
+    complements: "全法人の基本情報・許認可・届出認定を横断取得する公開API。",
+    publicationWindow: "current", updateFrequency: "as_needed", acquisitionMethod: "api",
+    active: true, notes: "fetchAndUpsertKyoninka() で行政処分対象企業を起点に certification 取得。",
+  },
+];
+
 // ─── 統合台帳 ─────────────────────
 
 export const SOURCE_REGISTRY = [
@@ -1690,6 +1836,10 @@ export const SOURCE_REGISTRY = [
   ...ARCHITECT_OFFICE_SOURCES,
   ...SANPAI_CENTRAL_SOURCES,
   ...NATIONAL_SECTOR_SOURCES,
+  ...NYUSATSU_SOURCES,
+  ...SHITEI_SOURCES,
+  ...HOJOKIN_SOURCES,
+  ...KYONINKA_SOURCES,
 ];
 
 // ─── ヘルパー ─────────────────────
