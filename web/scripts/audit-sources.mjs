@@ -45,15 +45,28 @@ const elapsed = ((Date.now() - start) / 1000).toFixed(1);
 const counts = { ok: 0, warn: 0, error: 0, unknown: 0 };
 results.forEach((r) => { counts[r.status] = (counts[r.status] || 0) + 1; });
 
+// 補完対象（manual_review）のエラーは「想定内」（URLが死んでいる前提でsanpainet等が補完）
+// それ以外のエラー（確認済 / 要対応）は「真のエラー」として扱う
+const errorResults = results.filter((r) => r.status === "error");
+const expectedErrors = errorResults.filter((r) => {
+  const src = SOURCE_REGISTRY.find((s) => s.id === r.sourceId);
+  return src?.discoveryStatus === "manual_review";
+});
+const realErrors = errorResults.filter((r) => {
+  const src = SOURCE_REGISTRY.find((s) => s.id === r.sourceId);
+  return src?.discoveryStatus !== "manual_review";
+});
+
 console.log(`\n=== 監査結果（${elapsed}s） ===`);
-console.log(`  到達OK    : ${counts.ok}`);
-console.log(`  警告      : ${counts.warn}`);
-console.log(`  エラー    : ${counts.error}`);
-console.log(`  不明      : ${counts.unknown || 0}`);
+console.log(`  到達OK            : ${counts.ok}`);
+console.log(`  警告              : ${counts.warn}`);
+console.log(`  エラー（要対応）   : ${realErrors.length}`);
+console.log(`  エラー（想定内）   : ${expectedErrors.length} ※補完対象。URL復活したら要対応に戻す候補`);
+console.log(`  不明              : ${counts.unknown || 0}`);
 console.log();
 
-// エラー詳細
-const errors = results.filter((r) => r.status === "error");
+// 真のエラーのみアラート対象
+const errors = realErrors;
 const warns = results.filter((r) => r.status === "warn");
 
 if (errors.length > 0) {
@@ -91,12 +104,21 @@ if (process.env.GITHUB_STEP_SUMMARY) {
     "|------|------|",
     `| 🟢 到達OK | ${counts.ok} |`,
     `| 🟡 警告 | ${counts.warn} |`,
-    `| 🔴 エラー | ${counts.error} |`,
+    `| 🔴 エラー（要対応） | ${realErrors.length} |`,
+    `| ⚪ エラー（想定内・補完対象） | ${expectedErrors.length} |`,
     "",
   ];
 
+  if (expectedErrors.length > 0) {
+    lines.push(
+      `> 想定内エラー${expectedErrors.length}件は **補完対象（国集約で充当）** のため、`,
+      `> sanpainet_torikeshi 等で補完される前提。URL が復活した場合は要対応に戻す候補。`,
+      "",
+    );
+  }
+
   if (errors.length > 0) {
-    lines.push(`### 🔴 エラー (${errors.length}件)`, "");
+    lines.push(`### 🔴 エラー（要対応） (${errors.length}件)`, "");
     lines.push("| セクター | 登録状態 | ID | 理由 | URL |", "|---|---|---|---|---|");
     for (const r of errors) {
       const src = SOURCE_REGISTRY.find((s) => s.id === r.sourceId);
