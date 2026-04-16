@@ -13,6 +13,10 @@ export function listNyusatsuItems({
   budget_range = "",
   deadline_within = "",
   status = "",
+  issuer = "",
+  year = "",
+  deadline_from = "",
+  deadline_to = "",
   sort = "popular",
   page = 1,
   pageSize = 20,
@@ -64,6 +68,22 @@ export function listNyusatsuItems({
     where.push("status = @status");
     params.status = status;
   }
+  if (issuer) {
+    where.push("issuer_name = @issuer");
+    params.issuer = issuer;
+  }
+  if (year) {
+    where.push("SUBSTR(deadline, 1, 4) = @year");
+    params.year = year;
+  }
+  if (deadline_from) {
+    where.push("deadline >= @deadline_from");
+    params.deadline_from = deadline_from;
+  }
+  if (deadline_to) {
+    where.push("deadline <= @deadline_to");
+    params.deadline_to = deadline_to;
+  }
 
   const whereClause = `WHERE ${where.join(" AND ")}`;
 
@@ -102,14 +122,20 @@ export function listNyusatsuItems({
 export function getNyusatsuStats({
   keyword = "", category = "", area = "", bidding_method = "",
   budget_range = "", deadline_within = "", status = "",
+  issuer = "", year = "", deadline_from = "", deadline_to = "",
 } = {}) {
   const db = getDb();
   const where = ["is_published = 1"];
   const params = {};
   if (keyword) { where.push("(title LIKE @kw OR summary LIKE @kw OR issuer_name LIKE @kw)"); params.kw = `%${keyword}%`; }
   if (category) { where.push("category = @category"); params.category = category; }
-  if (area) { where.push("target_area = @area"); params.area = area; }
+  if (area) { where.push("target_area LIKE @area"); params.area = `%${area}%`; }
+  if (bidding_method) { where.push("bidding_method = @bidding_method"); params.bidding_method = bidding_method; }
   if (status) { where.push("status = @status"); params.status = status; }
+  if (issuer) { where.push("issuer_name = @issuer"); params.issuer = issuer; }
+  if (year) { where.push("SUBSTR(deadline, 1, 4) = @year"); params.year = year; }
+  if (deadline_from) { where.push("deadline >= @deadline_from"); params.deadline_from = deadline_from; }
+  if (deadline_to) { where.push("deadline <= @deadline_to"); params.deadline_to = deadline_to; }
   const whereClause = `WHERE ${where.join(" AND ")}`;
 
   const totalCount = db.prepare(`SELECT COUNT(*) c FROM nyusatsu_items ${whereClause}`).get(params).c;

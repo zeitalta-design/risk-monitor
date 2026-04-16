@@ -13,6 +13,14 @@ import { getDb } from "@/lib/db";
 export function listHojokinItems({
   keyword = "",
   category = "",
+  target_type = "",
+  status = "",
+  provider = "",
+  year = "",
+  deadline_from = "",
+  deadline_to = "",
+  amount_min = "",
+  amount_max = "",
   sort = "popular",
   page = 1,
   pageSize = 20,
@@ -28,6 +36,38 @@ export function listHojokinItems({
   if (category) {
     where.push("category = @category");
     params.category = category;
+  }
+  if (target_type) {
+    where.push("target_type = @target_type");
+    params.target_type = target_type;
+  }
+  if (status) {
+    where.push("status = @status");
+    params.status = status;
+  }
+  if (provider) {
+    where.push("provider_name = @provider");
+    params.provider = provider;
+  }
+  if (year) {
+    where.push("SUBSTR(deadline, 1, 4) = @year");
+    params.year = year;
+  }
+  if (deadline_from) {
+    where.push("deadline >= @deadline_from");
+    params.deadline_from = deadline_from;
+  }
+  if (deadline_to) {
+    where.push("deadline <= @deadline_to");
+    params.deadline_to = deadline_to;
+  }
+  if (amount_min) {
+    where.push("max_amount >= @amount_min");
+    params.amount_min = parseInt(amount_min, 10);
+  }
+  if (amount_max) {
+    where.push("max_amount <= @amount_max");
+    params.amount_max = parseInt(amount_max, 10);
   }
 
   const whereClause = `WHERE ${where.join(" AND ")}`;
@@ -61,12 +101,23 @@ export function listHojokinItems({
 }
 
 /** 統計ダッシュボード用の集計データ */
-export function getHojokinStats({ keyword = "", category = "" } = {}) {
+export function getHojokinStats({
+  keyword = "", category = "", target_type = "", status = "", provider = "",
+  year = "", deadline_from = "", deadline_to = "", amount_min = "", amount_max = "",
+} = {}) {
   const db = getDb();
   const where = ["is_published = 1"];
   const params = {};
   if (keyword) { where.push("(title LIKE @kw OR summary LIKE @kw OR provider_name LIKE @kw)"); params.kw = `%${keyword}%`; }
   if (category) { where.push("category = @category"); params.category = category; }
+  if (target_type) { where.push("target_type = @target_type"); params.target_type = target_type; }
+  if (status) { where.push("status = @status"); params.status = status; }
+  if (provider) { where.push("provider_name = @provider"); params.provider = provider; }
+  if (year) { where.push("SUBSTR(deadline, 1, 4) = @year"); params.year = year; }
+  if (deadline_from) { where.push("deadline >= @deadline_from"); params.deadline_from = deadline_from; }
+  if (deadline_to) { where.push("deadline <= @deadline_to"); params.deadline_to = deadline_to; }
+  if (amount_min) { where.push("max_amount >= @amount_min"); params.amount_min = parseInt(amount_min, 10); }
+  if (amount_max) { where.push("max_amount <= @amount_max"); params.amount_max = parseInt(amount_max, 10); }
   const whereClause = `WHERE ${where.join(" AND ")}`;
 
   const totalCount = db.prepare(`SELECT COUNT(*) c FROM hojokin_items ${whereClause}`).get(params).c;

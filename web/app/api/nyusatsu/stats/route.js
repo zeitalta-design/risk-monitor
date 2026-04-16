@@ -14,6 +14,10 @@ export async function GET(request) {
       budget_range: searchParams.get("budget_range") || "",
       deadline_within: searchParams.get("deadline_within") || "",
       status: searchParams.get("status") || "",
+      issuer: searchParams.get("issuer") || "",
+      year: searchParams.get("year") || "",
+      deadline_from: searchParams.get("deadline_from") || "",
+      deadline_to: searchParams.get("deadline_to") || "",
     });
     return NextResponse.json(stats);
   } catch (error) {

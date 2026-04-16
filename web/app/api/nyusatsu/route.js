@@ -19,9 +19,13 @@ export async function GET(request) {
       budget_range: searchParams.get("budget_range") || "",
       deadline_within: searchParams.get("deadline_within") || "",
       status: searchParams.get("status") || "",
+      issuer: searchParams.get("issuer") || "",
+      year: searchParams.get("year") || "",
+      deadline_from: searchParams.get("deadline_from") || "",
+      deadline_to: searchParams.get("deadline_to") || "",
       sort: searchParams.get("sort") || "popular",
       page: parseInt(searchParams.get("page") || "1"),
-      pageSize: parseInt(searchParams.get("page_size") || "20"),
+      pageSize: parseInt(searchParams.get("page_size") || searchParams.get("pageSize") || "20"),
     });
     return NextResponse.json(result);
   } catch (error) {

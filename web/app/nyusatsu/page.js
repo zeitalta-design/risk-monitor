@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import DomainListPage from "@/components/core/DomainListPage";
 import CategoryPageHeader from "@/components/CategoryPageHeader";
 import DomainCompareBar from "@/components/core/DomainCompareBar";
 import DomainCompareButton from "@/components/core/DomainCompareButton";
 import DomainFavoriteButton from "@/components/core/DomainFavoriteButton";
 import StatsDashboard from "@/components/StatsDashboard";
+import SearchForm from "@/components/search/SearchForm";
+import ActiveFilterChips from "@/components/search/ActiveFilterChips";
+import Pagination from "@/components/search/Pagination";
 import "@/lib/domains";
 import { getDomain } from "@/lib/core/domain-registry";
 import {
@@ -22,6 +25,23 @@ import {
 } from "@/lib/nyusatsu-config";
 
 const nyusatsuDomain = getDomain("nyusatsu");
+const PAGE_SIZE = 20;
+
+const INITIAL_FILTERS = {
+  keyword: "",
+  category: "",
+  area: "",
+  bidding_method: "",
+  budget_range: "",
+  deadline_within: "",
+  status: "",
+  issuer: "",
+  year: "",
+  deadline_from: "",
+  deadline_to: "",
+  sort: "deadline",
+  page: 1,
+};
 
 function CardBadges({ item }) {
   const sb = getStatusBadge(item.status);
@@ -75,238 +95,317 @@ function NyusatsuCard({ item }) {
 }
 
 export default function NyusatsuListPage() {
-  const [keyword, setKeyword] = useState("");
-  const [category, setCategory] = useState("");
-  const [area, setArea] = useState("");
-  const [biddingMethod, setBiddingMethod] = useState("");
-  const [budgetRange, setBudgetRange] = useState("");
-  const [deadlineWithin, setDeadlineWithin] = useState("");
-  const [status, setStatus] = useState("");
-  const [sort, setSort] = useState("deadline");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const fetchItems = useCallback(async () => {
+  const [filters, setFilters] = useState({
+    keyword: searchParams.get("keyword") || "",
+    category: searchParams.get("category") || "",
+    area: searchParams.get("area") || "",
+    bidding_method: searchParams.get("bidding_method") || "",
+    budget_range: searchParams.get("budget_range") || "",
+    deadline_within: searchParams.get("deadline_within") || "",
+    status: searchParams.get("status") || "",
+    issuer: searchParams.get("issuer") || "",
+    year: searchParams.get("year") || "",
+    deadline_from: searchParams.get("deadline_from") || "",
+    deadline_to: searchParams.get("deadline_to") || "",
+    sort: searchParams.get("sort") || "deadline",
+    page: Math.max(1, parseInt(searchParams.get("page") || "1", 10)),
+  });
+
+  const [formInput, setFormInput] = useState(filters);
+
+  const syncUrl = useCallback((f) => {
+    const params = new URLSearchParams();
+    if (f.keyword) params.set("keyword", f.keyword);
+    if (f.category) params.set("category", f.category);
+    if (f.area) params.set("area", f.area);
+    if (f.bidding_method) params.set("bidding_method", f.bidding_method);
+    if (f.budget_range) params.set("budget_range", f.budget_range);
+    if (f.deadline_within) params.set("deadline_within", f.deadline_within);
+    if (f.status) params.set("status", f.status);
+    if (f.issuer) params.set("issuer", f.issuer);
+    if (f.year) params.set("year", f.year);
+    if (f.deadline_from) params.set("deadline_from", f.deadline_from);
+    if (f.deadline_to) params.set("deadline_to", f.deadline_to);
+    if (f.sort && f.sort !== "deadline") params.set("sort", f.sort);
+    if (f.page > 1) params.set("page", String(f.page));
+    const qs = params.toString();
+    router.replace(`/nyusatsu${qs ? `?${qs}` : ""}`, { scroll: false });
+  }, [router]);
+
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (keyword) params.set("keyword", keyword);
-      if (category) params.set("category", category);
-      if (area) params.set("area", area);
-      if (biddingMethod) params.set("bidding_method", biddingMethod);
-      if (budgetRange) params.set("budget_range", budgetRange);
-      if (deadlineWithin) params.set("deadline_within", deadlineWithin);
-      if (status) params.set("status", status);
-      if (sort) params.set("sort", sort);
-      params.set("page", String(page));
-
+      const listParams = new URLSearchParams();
       const statsParams = new URLSearchParams();
-      if (keyword) statsParams.set("keyword", keyword);
-      if (category) statsParams.set("category", category);
-      if (area) statsParams.set("area", area);
-      if (biddingMethod) statsParams.set("bidding_method", biddingMethod);
-      if (budgetRange) statsParams.set("budget_range", budgetRange);
-      if (deadlineWithin) statsParams.set("deadline_within", deadlineWithin);
-      if (status) statsParams.set("status", status);
+      const setBoth = (k, v) => { if (v) { listParams.set(k, v); statsParams.set(k, v); } };
+      setBoth("keyword", filters.keyword);
+      setBoth("category", filters.category);
+      setBoth("area", filters.area);
+      setBoth("bidding_method", filters.bidding_method);
+      setBoth("budget_range", filters.budget_range);
+      setBoth("deadline_within", filters.deadline_within);
+      setBoth("status", filters.status);
+      setBoth("issuer", filters.issuer);
+      setBoth("year", filters.year);
+      setBoth("deadline_from", filters.deadline_from);
+      setBoth("deadline_to", filters.deadline_to);
+      listParams.set("sort", filters.sort);
+      listParams.set("page", String(filters.page));
+      listParams.set("pageSize", String(PAGE_SIZE));
 
       const [listRes, statsRes] = await Promise.all([
-        fetch(`/api/nyusatsu?${params}`),
+        fetch(`/api/nyusatsu?${listParams}`),
         fetch(`/api/nyusatsu/stats?${statsParams}`),
       ]);
-      const data = await listRes.json();
+      const listData = await listRes.json();
       const statsData = await statsRes.json();
-      setItems(data.items || []);
-      setTotal(data.total || 0);
-      setTotalPages(data.totalPages || 1);
+
+      setItems(listData.items || []);
+      setTotal(listData.total || 0);
+      setTotalPages(listData.totalPages || 1);
       setStats(statsData.error ? null : statsData);
     } catch (err) {
-      console.error("Failed to fetch nyusatsu items:", err);
+      console.error("Failed to fetch nyusatsu:", err);
+      setItems([]);
+      setStats(null);
     } finally {
       setLoading(false);
     }
-  }, [keyword, category, area, biddingMethod, budgetRange, deadlineWithin, status, sort, page]);
+  }, [filters]);
 
-  useEffect(() => { fetchItems(); }, [fetchItems]);
+  useEffect(() => {
+    fetchData();
+    syncUrl(filters);
+  }, [fetchData, syncUrl, filters]);
 
-  function resetFilters() {
-    setKeyword(""); setCategory(""); setArea(""); setBiddingMethod("");
-    setBudgetRange(""); setDeadlineWithin(""); setStatus(""); setSort("deadline"); setPage(1);
-  }
+  const goToPage = (p) => {
+    const clamped = Math.max(1, Math.min(p, totalPages));
+    setFilters((prev) => ({ ...prev, page: clamped }));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const hasFilters = !!(
+    filters.keyword || filters.category || filters.area || filters.bidding_method ||
+    filters.budget_range || filters.deadline_within || filters.status ||
+    filters.issuer || filters.year || filters.deadline_from || filters.deadline_to
+  );
+
+  const startItem = total === 0 ? 0 : (filters.page - 1) * PAGE_SIZE + 1;
+  const endItem = Math.min(filters.page * PAGE_SIZE, total);
+
+  const handleSearch = () => setFilters({ ...formInput, page: 1 });
+  const handleReset = () => {
+    setFormInput(INITIAL_FILTERS);
+    setFilters(INITIAL_FILTERS);
+  };
+
+  const searchFields = useMemo(() => [
+    {
+      type: "text",
+      name: "keyword",
+      label: "案件名・発注機関",
+      placeholder: "例: 庁舎建設工事",
+    },
+    {
+      type: "select",
+      name: "category",
+      label: "案件種別",
+      options: nyusatsuConfig.categories.map((c) => ({ value: c.slug, label: c.label, icon: c.icon })),
+    },
+    {
+      type: "select",
+      name: "area",
+      label: "対象地域",
+      options: nyusatsuConfig.areas.map((a) => ({ value: a.value, label: a.label })),
+    },
+    {
+      type: "select",
+      name: "bidding_method",
+      label: "入札方式",
+      options: nyusatsuConfig.biddingMethods.map((m) => ({ value: m.value, label: m.label })),
+    },
+    {
+      type: "dateRange",
+      name: ["deadline_from", "deadline_to"],
+      label: "締切（期間）",
+    },
+    {
+      type: "select",
+      name: "status",
+      label: "ステータス",
+      options: nyusatsuConfig.statusOptions.map((s) => ({ value: s.value, label: s.label })),
+    },
+  ], []);
+
+  const chipDefs = useMemo(() => [
+    { key: "keyword", label: "キーワード" },
+    {
+      key: "category",
+      label: "案件種別",
+      resolve: (v) => nyusatsuConfig.categories.find((c) => c.slug === v)?.label || v,
+    },
+    {
+      key: "area",
+      label: "対象地域",
+      resolve: (v) => nyusatsuConfig.areas.find((a) => a.value === v)?.label || v,
+    },
+    {
+      key: "bidding_method",
+      label: "入札方式",
+      resolve: (v) => nyusatsuConfig.biddingMethods.find((m) => m.value === v)?.label || v,
+    },
+    {
+      key: "status",
+      label: "ステータス",
+      resolve: (v) => nyusatsuConfig.statusOptions.find((s) => s.value === v)?.label || v,
+    },
+    { key: "issuer", label: "発注機関" },
+    { key: "year", label: "年度（締切年）" },
+    { key: "deadline_from", label: "締切From" },
+    { key: "deadline_to", label: "締切To" },
+  ], []);
+
+  const onChipRemove = (key, value) => {
+    setFilters((p) => ({ ...p, [key]: value, page: 1 }));
+    setFormInput((p) => ({ ...p, [key]: value }));
+  };
+
+  const onStatsToggle = (key, value) => {
+    setFilters((p) => ({ ...p, [key]: value, page: 1 }));
+    setFormInput((p) => ({ ...p, [key]: value }));
+  };
 
   return (
-    <DomainListPage
-      headerSlot={<CategoryPageHeader categoryId="nyusatsu" />}
-      title="入札ナビ"
-      subtitle={loading ? "読み込み中..." : `${total}件の案件`}
-      items={items}
-      loading={loading}
-      page={page}
-      totalPages={totalPages}
-      onPageChange={setPage}
-      renderItem={(item) => <NyusatsuCard key={item.id} item={item} />}
-      renderFilters={() => (
-        <div className="card p-4 mb-4 space-y-3">
-          {/* キーワード検索 */}
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={keyword}
-              onChange={(e) => { setKeyword(e.target.value); setPage(1); }}
-              placeholder="案件名・発注機関で検索..."
-              className="flex-1 border rounded-lg px-4 py-2.5 text-sm"
-            />
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-5xl mx-auto px-4 py-6">
+        <CategoryPageHeader categoryId="nyusatsu" />
+
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">入札ナビ</h1>
+          <p className="text-sm text-gray-500">
+            官公庁・自治体の入札・公募情報を横断検索
+          </p>
+        </div>
+
+        <SearchForm
+          fields={searchFields}
+          values={formInput}
+          onChange={(name, value) => setFormInput((p) => ({ ...p, [name]: value }))}
+          onSearch={handleSearch}
+          onReset={handleReset}
+          sortOptions={nyusatsuConfig.sorts}
+          sort={filters.sort}
+          onSortChange={(v) => {
+            setFormInput((p) => ({ ...p, sort: v }));
+            setFilters((p) => ({ ...p, sort: v, page: 1 }));
+          }}
+        />
+
+        {hasFilters && (
+          <ActiveFilterChips chipDefs={chipDefs} filters={filters} onRemove={onChipRemove} />
+        )}
+
+        {stats && stats.totalCount > 0 && (
+          <StatsDashboard
+            totalCount={stats.totalCount}
+            hasFilters={hasFilters}
+            filters={filters}
+            onFilterChange={onStatsToggle}
+            accent="#7C3AED"
+            sections={[
+              {
+                title: "年別件数（公告/締切）",
+                type: "bar",
+                filterKey: "year",
+                rows: (stats.countsByYear || []).map((r) => ({
+                  value: r.year,
+                  label: r.year,
+                  count: r.count,
+                  isUnknown: !r.year || r.year === "不明",
+                })),
+              },
+              {
+                title: "発注機関 TOP10",
+                type: "ranking",
+                filterKey: "issuer",
+                rows: (stats.countsByIssuer || []).map((r) => ({
+                  value: r.name,
+                  label: r.name,
+                  count: r.count,
+                })),
+              },
+              {
+                title: "案件種別",
+                type: "ranking",
+                filterKey: "category",
+                rows: (stats.countsByCategory || []).map((r) => ({
+                  value: r.category,
+                  label: getCategoryLabel(r.category),
+                  count: r.count,
+                })),
+              },
+              {
+                title: "ステータス別",
+                type: "ranking",
+                filterKey: "status",
+                rows: (stats.countsByStatus || []).map((r) => ({
+                  value: r.status,
+                  label: r.status,
+                  count: r.count,
+                })),
+              },
+            ]}
+          />
+        )}
+
+        {!loading && (
+          <p className="text-sm text-gray-500 mb-4">
+            {total}件中 {startItem}-{endItem}件を表示
+          </p>
+        )}
+
+        {loading && (
+          <div className="flex justify-center py-12">
+            <div className="w-8 h-8 border-2 border-gray-900 border-t-transparent rounded-full animate-spin" />
           </div>
+        )}
 
-          {/* フィルタ行1: カテゴリ + 地域 + 入札方式 */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <select value={category} onChange={(e) => { setCategory(e.target.value); setPage(1); }} className="border rounded-lg px-3 py-2 text-sm">
-              <option value="">すべてのカテゴリ</option>
-              {nyusatsuConfig.categories.map((c) => (
-                <option key={c.slug} value={c.slug}>{c.icon} {c.label}</option>
-              ))}
-            </select>
-
-            <select value={area} onChange={(e) => { setArea(e.target.value); setPage(1); }} className="border rounded-lg px-3 py-2 text-sm">
-              <option value="">すべての地域</option>
-              {nyusatsuConfig.areas.map((a) => (
-                <option key={a.value} value={a.value}>{a.label}</option>
-              ))}
-            </select>
-
-            <select value={biddingMethod} onChange={(e) => { setBiddingMethod(e.target.value); setPage(1); }} className="border rounded-lg px-3 py-2 text-sm">
-              <option value="">すべての入札方式</option>
-              {nyusatsuConfig.biddingMethods.map((m) => (
-                <option key={m.value} value={m.value}>{m.label}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* フィルタ行2: 予算帯 + 締切 + ステータス */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <select value={budgetRange} onChange={(e) => { setBudgetRange(e.target.value); setPage(1); }} className="border rounded-lg px-3 py-2 text-sm">
-              <option value="">すべての予算帯</option>
-              {nyusatsuConfig.budgetRanges.map((r) => (
-                <option key={r.value} value={r.value}>{r.label}</option>
-              ))}
-            </select>
-
-            <select value={deadlineWithin} onChange={(e) => { setDeadlineWithin(e.target.value); setPage(1); }} className="border rounded-lg px-3 py-2 text-sm">
-              <option value="">すべての締切</option>
-              {nyusatsuConfig.deadlineOptions.map((d) => (
-                <option key={d.value} value={d.value}>{d.label}</option>
-              ))}
-            </select>
-
-            <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} className="border rounded-lg px-3 py-2 text-sm">
-              <option value="">すべてのステータス</option>
-              {nyusatsuConfig.statusOptions.map((s) => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* ソート */}
-          <div className="flex items-center gap-1 flex-wrap">
-            <span className="text-xs text-gray-500 mr-1">並び順:</span>
-            {nyusatsuConfig.sorts.map((s) => (
-              <button
-                key={s.key}
-                onClick={() => { setSort(s.key); setPage(1); }}
-                className={`text-xs px-2.5 py-1 rounded-full transition-colors ${
-                  sort === s.key ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
-              >
-                {s.label}
-              </button>
+        {!loading && items.length > 0 && (
+          <div className="space-y-3">
+            {items.map((item) => (
+              <NyusatsuCard key={item.id} item={item} />
             ))}
           </div>
+        )}
 
-          {/* リセット */}
-          {(keyword || category || area || biddingMethod || budgetRange || deadlineWithin || status) && (
-            <button onClick={resetFilters} className="text-xs text-gray-500 hover:text-blue-600">
-              条件をリセット
+        {!loading && items.length === 0 && (
+          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+            <p className="text-gray-500">条件に一致する案件が見つかりません</p>
+            <button onClick={handleReset} className="mt-4 text-sm text-blue-600 hover:underline">
+              フィルタをリセット
             </button>
-          )}
+          </div>
+        )}
 
-          {/* 統計ダッシュボード */}
-          {stats && stats.totalCount > 0 && (
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <StatsDashboard
-                totalCount={stats.totalCount}
-                hasFilters={!!(keyword || category || area || biddingMethod || budgetRange || deadlineWithin || status)}
-                filters={{ category, status }}
-                onFilterChange={(k, v) => {
-                  setPage(1);
-                  if (k === "category") setCategory(v);
-                  else if (k === "status") setStatus(v);
-                }}
-                accent="#7C3AED"
-                sections={[
-                  {
-                    title: "年別件数（公告/締切）",
-                    type: "bar",
-                    filterKey: "year",
-                    rows: (stats.countsByYear || []).map((r) => ({ value: r.year, label: r.year, count: r.count })),
-                  },
-                  {
-                    title: "発注機関 TOP10",
-                    type: "ranking",
-                    filterKey: "issuer",
-                    rows: (stats.countsByIssuer || []).map((r) => ({ value: r.name, label: r.name, count: r.count })),
-                  },
-                  {
-                    title: "カテゴリ別",
-                    type: "ranking",
-                    filterKey: "category",
-                    rows: (stats.countsByCategory || []).map((r) => ({ value: r.category, label: getCategoryLabel(r.category), count: r.count })),
-                  },
-                  {
-                    title: "ステータス別",
-                    type: "ranking",
-                    filterKey: "status",
-                    rows: (stats.countsByStatus || []).map((r) => ({ value: r.status, label: r.status, count: r.count })),
-                  },
-                ]}
-              />
-            </div>
-          )}
-        </div>
-      )}
-      emptyState={
-        <div className="card p-8 text-center">
-          <p className="text-gray-500">条件に一致する案件が見つかりません</p>
-          <button onClick={resetFilters} className="btn-secondary mt-4">フィルタをリセット</button>
-        </div>
-      }
-      footerSlot={
-        <div className="mt-10 pt-8 border-t border-gray-100 space-y-6">
-          <div>
-            <h2 className="text-sm font-bold text-gray-700 mb-3">カテゴリから探す</h2>
-            <div className="flex flex-wrap gap-2">
-              {nyusatsuConfig.categories.map((c) => (
-                <Link key={c.slug} href={`/nyusatsu/category/${c.slug}`} className="inline-block px-3 py-1.5 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-full hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all">
-                  {c.icon} {c.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-          <div>
-            <h2 className="text-sm font-bold text-gray-700 mb-3">地域から探す</h2>
-            <div className="flex flex-wrap gap-2">
-              {nyusatsuConfig.areas.map((a) => (
-                <Link key={a.value} href={`/nyusatsu/area/${encodeURIComponent(a.value)}`} className="inline-block px-3 py-1.5 text-xs text-gray-600 bg-gray-50 border border-gray-200 rounded-full hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition-all">
-                  {a.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      }
-      bottomBar={<DomainCompareBar domainId="nyusatsu" comparePath="/nyusatsu/compare" label="案件" />}
-    />
+        {!loading && (
+          <Pagination
+            currentPage={filters.page}
+            totalPages={totalPages}
+            onPageChange={goToPage}
+          />
+        )}
+
+        <DomainCompareBar domainId="nyusatsu" comparePath="/nyusatsu/compare" label="案件" />
+      </div>
+    </div>
   );
 }
