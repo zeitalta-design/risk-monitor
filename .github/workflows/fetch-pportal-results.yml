@@ -1,0 +1,77 @@
+name: "Fetch: 調達ポータル落札実績"
+
+# ============================================================
+# 調達ポータル（旧GEPS）の落札実績オープンデータ CSV を取得。
+# 日次差分ファイルで新規落札結果を nyusatsu_results に upsert。
+#
+# スケジュール: 毎日 JST 06:17
+# ============================================================
+
+on:
+  schedule:
+    - cron: "17 21 * * *"   # JST 06:17 = UTC 21:17 (前日)
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "取得モード (diff=日次差分 / all=全件)"
+        required: false
+        default: "diff"
+      year:
+        description: "all モードの年度 (例: 2025)"
+        required: false
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: fetch-pportal-results
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    name: "落札実績 CSV 取得"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: web/package-lock.json
+
+      - name: "Install dependencies"
+        working-directory: web
+        run: npm ci --prefer-offline --no-audit
+
+      - name: "Run migration (ensure table exists)"
+        working-directory: web
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: node scripts/migrate-nyusatsu-results.mjs
+
+      - name: "Fetch results"
+        working-directory: web
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: |
+          MODE="${{ github.event.inputs.mode || 'diff' }}"
+          YEAR="${{ github.event.inputs.year || '' }}"
+          ARGS="--mode $MODE"
+          if [ -n "$YEAR" ]; then ARGS="$ARGS --year $YEAR"; fi
+          node scripts/fetch-pportal-results.mjs $ARGS
+
+      - name: "Alert on failure"
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          TITLE="[PPortal] 落札実績取得失敗 $(date -u '+%Y-%m-%d')"
+          BODY="## 調達ポータル落札実績CSVの取得に失敗\n\n[詳細](${RUN_URL})"
+          EXISTING=$(gh issue list --state open --search "in:title [PPortal]" --limit 1 --json number --jq '.[0].number // empty' 2>/dev/null || true)
+          if [ -n "$EXISTING" ]; then gh issue comment "$EXISTING" --body "$BODY"; else gh issue create --title "$TITLE" --body "$BODY" --label "ops" 2>/dev/null || gh issue create --title "$TITLE" --body "$BODY"; fi
