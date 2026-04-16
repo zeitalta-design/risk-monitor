@@ -1757,6 +1757,99 @@ const NYUSATSU_SOURCES = [
   },
 ];
 
+// ─── 入札ソース 第2弾: 集約ポータル + 中央省庁追加 + 自治体（要対応） ─────────────────────
+//
+// fetcher は未実装。registry に「要対応（調査中）」として登録し、
+// 順次 fetcher 化していくバックログ。
+
+const NYUSATSU_BACKLOG_SOURCES = [
+  // ─ 集約ポータル ─
+  {
+    id: "nyusatsu_geps", sector: "nyusatsu", authorityLevel: "national",
+    authorityName: "デジタル庁（GEPS）", prefecture: null,
+    sourceName: "GEPS 政府電子調達システム",
+    url: "https://www.geps.go.jp/",
+    sourceType: "aggregated_search", coverageScope: "full",
+    discoveryStatus: "candidate", expectedCoverage: "national_full",
+    complements: "全省庁の調達情報を集約。最ROI候補。要 fetcher 実装。",
+    publicationWindow: "current", updateFrequency: "daily", acquisitionMethod: "html",
+    active: true, notes: "実装優先度: 最高（1ソースで数千件）。",
+  },
+  {
+    id: "nyusatsu_kankouju", sector: "nyusatsu", authorityLevel: "national",
+    authorityName: "中小企業庁（官公需情報ポータル）", prefecture: null,
+    sourceName: "官公需情報ポータル",
+    url: "https://kankouju.go.jp/",
+    sourceType: "aggregated_search", coverageScope: "full",
+    discoveryStatus: "candidate", expectedCoverage: "national_full",
+    complements: "中小企業向け官公需情報を全国集約。",
+    publicationWindow: "current", updateFrequency: "daily", acquisitionMethod: "html",
+    active: true, notes: "実装優先度: 高。",
+  },
+
+  // ─ 中央省庁追加（残り8省庁） ─
+  ...[
+    { id: "nyusatsu_mod", name: "防衛省 調達情報", url: "https://www.mod.go.jp/j/procurement/" },
+    { id: "nyusatsu_mof", name: "財務省 調達・公募", url: "https://www.mof.go.jp/budget/topics/sponsorship/" },
+    { id: "nyusatsu_cao", name: "内閣府 調達情報", url: "https://www.cao.go.jp/access/japanese/procure/" },
+    { id: "nyusatsu_mext", name: "文部科学省 調達情報", url: "https://www.mext.go.jp/b_menu/about/chotatsu/" },
+    { id: "nyusatsu_mofa", name: "外務省 調達情報", url: "https://www.mofa.go.jp/mofaj/annai/shocho/page22_001052.html" },
+    { id: "nyusatsu_moj", name: "法務省 調達・契約情報", url: "https://www.moj.go.jp/keiyaku/" },
+    { id: "nyusatsu_npa", name: "警察庁 公告", url: "https://www.npa.go.jp/koukoku/" },
+    { id: "nyusatsu_reconstruction", name: "復興庁 調達情報", url: "https://www.reconstruction.go.jp/topics/koukoku/" },
+  ].map((s) => ({
+    id: s.id, sector: "nyusatsu", authorityLevel: "national",
+    authorityName: s.name.split(" ")[0], prefecture: null,
+    sourceName: s.name, url: s.url,
+    sourceType: "official_list", coverageScope: "full",
+    discoveryStatus: "candidate", expectedCoverage: "national_full",
+    complements: "中央省庁の調達情報。要 fetcher 実装。",
+    publicationWindow: "current", updateFrequency: "weekly", acquisitionMethod: "html",
+    active: true, notes: "既存6省庁と同パターンで実装可能。優先度: 中。",
+  })),
+
+  // ─ 都道府県電子調達（47件） ─
+  ...[
+    "北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県",
+    "茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県",
+    "新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県",
+    "岐阜県", "静岡県", "愛知県", "三重県",
+    "滋賀県", "京都府", "大阪府", "兵庫県", "奈良県", "和歌山県",
+    "鳥取県", "島根県", "岡山県", "広島県", "山口県",
+    "徳島県", "香川県", "愛媛県", "高知県",
+    "福岡県", "佐賀県", "長崎県", "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県",
+  ].map((pref) => ({
+    id: `nyusatsu_${pref.replace(/[県府都道]/, "").toLowerCase()}_pref`,
+    sector: "nyusatsu", authorityLevel: "prefecture",
+    authorityName: pref, prefecture: pref,
+    sourceName: `${pref} 電子調達システム`,
+    url: null,
+    sourceType: "official_list", coverageScope: "full",
+    discoveryStatus: "candidate", expectedCoverage: "pref_primary",
+    complements: `${pref}の電子調達システム。fetcher 未実装。`,
+    publicationWindow: "current", updateFrequency: "daily", acquisitionMethod: "html",
+    active: true, notes: "URL調査要。CAPTCHAやログイン要件の有無も要確認。",
+  })),
+
+  // ─ 政令指定都市電子調達（20市） ─
+  ...[
+    "札幌市", "仙台市", "さいたま市", "千葉市", "横浜市", "川崎市", "相模原市",
+    "新潟市", "静岡市", "浜松市", "名古屋市", "京都市", "大阪市", "堺市",
+    "神戸市", "岡山市", "広島市", "北九州市", "福岡市", "熊本市",
+  ].map((city) => ({
+    id: `nyusatsu_${city.replace(/市/, "").toLowerCase()}_city`,
+    sector: "nyusatsu", authorityLevel: "municipal",
+    authorityName: city, prefecture: null,
+    sourceName: `${city} 電子調達`,
+    url: null,
+    sourceType: "official_list", coverageScope: "full",
+    discoveryStatus: "candidate", expectedCoverage: "pref_primary",
+    complements: `${city}の電子調達。政令指定都市。fetcher 未実装。`,
+    publicationWindow: "current", updateFrequency: "daily", acquisitionMethod: "html",
+    active: true, notes: "URL調査要。",
+  })),
+];
+
 // ─── 指定管理者ソース ─────────────────────
 
 const SHITEI_SOURCES = [
@@ -1837,6 +1930,7 @@ export const SOURCE_REGISTRY = [
   ...SANPAI_CENTRAL_SOURCES,
   ...NATIONAL_SECTOR_SOURCES,
   ...NYUSATSU_SOURCES,
+  ...NYUSATSU_BACKLOG_SOURCES,
   ...SHITEI_SOURCES,
   ...HOJOKIN_SOURCES,
   ...KYONINKA_SOURCES,
