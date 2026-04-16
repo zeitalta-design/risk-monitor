@@ -57,17 +57,20 @@ export async function fetchKkjAnnouncements({
   const log = (msg) => logger(`[kkj-fetcher] ${msg}`);
 
   // 日付レンジ決定（KKJ の CftIssueDate は JST なので JST で計算）
-  let dateRange;
+  let rangeFrom, rangeTo;
   if (mode === "daily") {
-    const todayJst = fmtDateJst(Date.now());
-    const yestJst = fmtDateJst(Date.now() - 86400000);
-    dateRange = `${yestJst}/${todayJst}`;
+    rangeFrom = fmtDateJst(Date.now() - 86400000);
+    rangeTo   = fmtDateJst(Date.now());
   } else {
     if (!fromDate) throw new Error("range モードは fromDate 必須");
-    dateRange = `${fromDate}/${toDate || fromDate}`;
+    rangeFrom = fromDate;
+    rangeTo   = toDate || fromDate;
   }
+  const dateRange = `${rangeFrom}/${rangeTo}`;
+  const days = enumerateDates(rangeFrom, rangeTo); // [YYYY-MM-DD, ...]
   const targetLgs = (lgCodes && lgCodes.length) ? lgCodes : LG_CODES;
-  log(`mode=${mode} dateRange=${dateRange} lg=${targetLgs.length}件`);
+  log(`mode=${mode} dateRange=${dateRange} days=${days.length} lg=${targetLgs.length}`);
+  log(`total API calls planned: ${days.length * targetLgs.length}`);
 
   const db = getDb();
   const selectBySlug = db.prepare("SELECT id FROM nyusatsu_items WHERE slug = ?");
@@ -100,41 +103,46 @@ export async function fetchKkjAnnouncements({
 
   let totalFetched = 0, inserted = 0, updated = 0, skipped = 0;
   const today = fmtDateJst(Date.now());
-  const perLg = [];
+  const perDay = [];
 
-  for (const lg of targetLgs) {
-    try {
-      const items = await fetchOneSlice({ lg, dateRange, logger: log });
-      totalFetched += items.length;
-      perLg.push({ lg, count: items.length });
-      if (items.length >= 1000) {
-        log(`⚠ LG=${lg} が1000件以上: ${dateRange} を細分化する必要あり（現在は先頭1000件のみ）`);
-      }
+  // 日付 × LG_Code の 2重ループ。各 (day, lg) で SearchHits が 1,000 未満になる想定。
+  for (const day of days) {
+    let dayFetched = 0;
+    for (const lg of targetLgs) {
+      try {
+        const items = await fetchOneSlice({ lg, dateRange: day, logger: log });
+        dayFetched += items.length;
+        totalFetched += items.length;
+        if (items.length >= 1000) {
+          log(`⚠ ${day} LG=${lg} が1000件以上: Category で追加分割が必要`);
+        }
 
-      if (!dryRun) {
-        for (const row of items) {
-          if (!row.projectName || row.projectName.length < 3) { skipped++; continue; }
-          const item = buildDbRow(row, today);
-          try {
-            const existing = selectBySlug.get(item.slug);
-            if (existing) {
-              updateStmt.run(item);
-              updated++;
-            } else {
-              insertStmt.run(item);
-              inserted++;
+        if (!dryRun) {
+          for (const row of items) {
+            if (!row.projectName || row.projectName.length < 3) { skipped++; continue; }
+            const item = buildDbRow(row, today);
+            try {
+              const existing = selectBySlug.get(item.slug);
+              if (existing) {
+                updateStmt.run(item);
+                updated++;
+              } else {
+                insertStmt.run(item);
+                inserted++;
+              }
+            } catch (e) {
+              log(`  ! ${row.projectName.slice(0, 40)}: ${e.message}`);
+              skipped++;
             }
-          } catch (e) {
-            log(`  ! ${row.projectName.slice(0, 40)}: ${e.message}`);
-            skipped++;
           }
         }
+      } catch (e) {
+        log(`${day} LG=${lg} 失敗: ${e.message}`);
       }
-    } catch (e) {
-      log(`LG=${lg} 失敗: ${e.message}`);
-      perLg.push({ lg, count: 0, error: e.message });
+      await sleep(SLEEP_MS);
     }
-    await sleep(SLEEP_MS);
+    perDay.push({ day, fetched: dayFetched });
+    log(`  ${day}: ${dayFetched}件 (累計 fetched=${totalFetched} inserted=${inserted} updated=${updated})`);
   }
 
   const elapsed = ((Date.now() - start) / 1000).toFixed(1);
@@ -157,9 +165,20 @@ export async function fetchKkjAnnouncements({
     inserted,
     updated,
     skipped,
-    perLg,
+    perDay,
     elapsed,
   };
+}
+
+/** "YYYY-MM-DD" から "YYYY-MM-DD" までの日付配列（両端含む） */
+function enumerateDates(fromStr, toStr) {
+  const from = new Date(fromStr + "T00:00:00Z").getTime();
+  const to   = new Date(toStr   + "T00:00:00Z").getTime();
+  const out = [];
+  for (let t = from; t <= to; t += 86400000) {
+    out.push(new Date(t).toISOString().slice(0, 10));
+  }
+  return out;
 }
 
 /** 1 つの (LG_Code, 日付) 組合せで API コール → 構造化配列を返す */
