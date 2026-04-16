@@ -71,6 +71,46 @@ export async function fetchAndUpsertSanpai({ dryRun = false, logger = console.lo
     sources.push({ name: "tokyo", error: e.message, inserted: 0, updated: 0, skipped: 0 });
   }
 
+  try {
+    const r4 = await ingestHokkaido({ db, upsertStmt, dryRun, log });
+    sources.push({ name: "hokkaido", ...r4 });
+  } catch (e) {
+    log(`hokkaido failed: ${e.message}`);
+    sources.push({ name: "hokkaido", error: e.message, inserted: 0, updated: 0, skipped: 0 });
+  }
+
+  try {
+    const r5 = await ingestChiba({ db, upsertStmt, dryRun, log });
+    sources.push({ name: "chiba", ...r5 });
+  } catch (e) {
+    log(`chiba failed: ${e.message}`);
+    sources.push({ name: "chiba", error: e.message, inserted: 0, updated: 0, skipped: 0 });
+  }
+
+  try {
+    const r6 = await ingestSaitama({ db, upsertStmt, dryRun, log });
+    sources.push({ name: "saitama", ...r6 });
+  } catch (e) {
+    log(`saitama failed: ${e.message}`);
+    sources.push({ name: "saitama", error: e.message, inserted: 0, updated: 0, skipped: 0 });
+  }
+
+  try {
+    const r7 = await ingestFukuoka({ db, upsertStmt, dryRun, log });
+    sources.push({ name: "fukuoka", ...r7 });
+  } catch (e) {
+    log(`fukuoka failed: ${e.message}`);
+    sources.push({ name: "fukuoka", error: e.message, inserted: 0, updated: 0, skipped: 0 });
+  }
+
+  try {
+    const r8 = await ingestAichi({ db, upsertStmt, dryRun, log });
+    sources.push({ name: "aichi", ...r8 });
+  } catch (e) {
+    log(`aichi failed: ${e.message}`);
+    sources.push({ name: "aichi", error: e.message, inserted: 0, updated: 0, skipped: 0 });
+  }
+
   const totalInserted = sources.reduce((s, r) => s + (r.inserted || 0), 0);
   const totalUpdated = sources.reduce((s, r) => s + (r.updated || 0), 0);
   const totalSkipped = sources.reduce((s, r) => s + (r.skipped || 0), 0);
@@ -436,7 +476,552 @@ async function ingestTokyo({ db, upsertStmt, dryRun, log }) {
   return { inserted, updated, skipped };
 }
 
+// ─── ソース4: 北海道 単一HTML (dl/dd 集約) ────────────────────────────
+
+async function ingestHokkaido({ db, upsertStmt, dryRun, log }) {
+  const SOURCE_URL = "https://www.pref.hokkaido.lg.jp/ks/jss/sanpai_1/syobun_kouhyou/jyoukyou3.html";
+  log("北海道 廃棄物処理法行政処分（単一HTML集約）");
+
+  const res = await fetch(SOURCE_URL, {
+    headers: { "User-Agent": UA },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new Error(`Hokkaido HTTP ${res.status}`);
+  const html = await res.text();
+
+  // table ブロックを処理。各 table 内の <th>/<td> ペアから entry を構築
+  const entries = [];
+  const tableBlocks = [...html.matchAll(/<table[^>]*>([\s\S]*?)<\/table>/gi)];
+  for (const tm of tableBlocks) {
+    const block = tm[1];
+    const rows = [...block.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)];
+    const entry = {};
+    for (const rm of rows) {
+      const thm = rm[1].match(/<th[^>]*>([\s\S]*?)<\/th>/i);
+      const tdm = rm[1].match(/<td[^>]*>([\s\S]*?)<\/td>/i);
+      if (!thm || !tdm) continue;
+      const k = stripTags(thm[1]).replace(/[\s　]+/g, "");
+      const v = stripTags(tdm[1]);
+      if (k) entry[k] = v;
+    }
+    if (entry["処分の相手方"] || entry["相手方"]) entries.push(entry);
+  }
+  log(`  parsed entries: ${entries.length}`);
+
+  let inserted = 0, updated = 0, skipped = 0;
+  for (const e of entries) {
+    const rawTarget = e["処分の相手方"] || e["相手方"] || "";
+    const dateText = e["処分した日"] || e["処分日"] || "";
+    const baseLaw = e["処分の根拠法令"] || e["根拠法令"] || "";
+    const action = e["処分の内容"] || e["内容"] || "";
+    const violation = e["違反内容"] || e["違反の概要"] || "";
+
+    // 事業者名と住所を分離: 「会社名（住所）」または「会社名 住所」
+    const m = rawTarget.match(/^([^（(]+)[（(]([^）)]+)[）)]/);
+    const company = (m ? m[1] : rawTarget.split(/[\s　]+/)[0]).trim();
+    const address = (m ? m[2] : "").trim();
+    if (!company || company.length < 2) { skipped++; continue; }
+
+    const dateStr = parseJapaneseDate(dateText);
+    const status = /取消/.test(action) ? "revoked" : /停止/.test(action) ? "suspended" : "active";
+    const riskLevel = /取消/.test(action) ? "critical" : "high";
+
+    const slug = toSlug("hokkaido-sanpai", company, dateStr || "");
+    const item = {
+      slug,
+      company_name: company,
+      corporate_number: null,
+      prefecture: "北海道",
+      city: extractCity(address),
+      license_type: normalizeLicenseType(action),
+      waste_category: "industrial",
+      business_area: "北海道",
+      status,
+      risk_level: riskLevel,
+      penalty_count: 1,
+      latest_penalty_date: dateStr,
+      source_name: "北海道 廃棄物処理法行政処分公表",
+      source_url: SOURCE_URL,
+      detail_url: SOURCE_URL,
+      notes: [action, violation, baseLaw && `根拠: ${baseLaw}`].filter(Boolean).join(" / ").slice(0, 300),
+    };
+
+    if (dryRun) { inserted++; continue; }
+    try {
+      const before = db.prepare("SELECT id FROM sanpai_items WHERE slug = ?").get(slug);
+      upsertStmt.run(item);
+      before ? updated++ : inserted++;
+    } catch (err) {
+      log(`  ! ${company}: ${err.message}`);
+      skipped++;
+    }
+  }
+  log(`  hokkaido: inserted=${inserted} updated=${updated} skipped=${skipped}`);
+  return { inserted, updated, skipped };
+}
+
+// ─── ソース5: 千葉県 年度index→個別press ────────────────────────────
+
+async function ingestChiba({ db, upsertStmt, dryRun, log }) {
+  const INDEX_URL = "https://www.pref.chiba.lg.jp/haishi/gyouseishobun/shobun.html";
+  log("千葉県 廃棄物処理法行政処分（press 集約）");
+
+  const indexRes = await fetch(INDEX_URL, {
+    headers: { "User-Agent": UA },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  if (!indexRes.ok) throw new Error(`Chiba HTTP ${indexRes.status}`);
+  const indexHtml = await indexRes.text();
+
+  // 年度別ページ: houdou{YYYY}.html を抽出
+  const yearPages = [...indexHtml.matchAll(/href="([^"]*houdou\d{4}\.html)"/gi)]
+    .map((m) => resolveUrl(m[1], INDEX_URL));
+  // 個別press: shobun{YYYYMMDD}.html を抽出
+  const directPress = [...indexHtml.matchAll(/href="([^"]*\/(?:press|gyouseishobun)\/[^"]*shobun\d{8}\.html)"/gi)]
+    .map((m) => resolveUrl(m[1], INDEX_URL));
+
+  // 年度ページ経由でも press URL を集める
+  const allPress = new Set(directPress);
+  for (const yp of yearPages.slice(0, 6)) { // 直近6年分
+    try {
+      const yres = await fetch(yp, { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+      if (!yres.ok) continue;
+      const yh = await yres.text();
+      [...yh.matchAll(/href="([^"]*shobun\d{8}\.html)"/gi)].forEach((m) => allPress.add(resolveUrl(m[1], yp)));
+      await sleep(300);
+    } catch { /* ignore */ }
+  }
+  log(`  press URLs: ${allPress.size}`);
+
+  let inserted = 0, updated = 0, skipped = 0;
+  for (const url of allPress) {
+    try {
+      const r = await fetch(url, { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+      if (!r.ok) { skipped++; continue; }
+      const h = await r.text();
+
+      // press の URL から日付を抽出
+      const dm = url.match(/shobun(\d{4})(\d{2})(\d{2})/);
+      const dateStr = dm ? `${dm[1]}-${dm[2]}-${dm[3]}` : null;
+
+      // h2/h3 で 事業者ブロックを分割
+      const sections = h.split(/<h[23][^>]*>/);
+      for (const sec of sections.slice(1)) {
+        const titleEnd = sec.indexOf("</h");
+        if (titleEnd < 0) continue;
+        const title = stripTags(sec.slice(0, titleEnd)).trim();
+        if (!title || /目次|お問い合わせ|関連情報|処分基準/.test(title)) continue;
+        // 事業者名らしき行のみ採用（カッコ・有・株 を含むもの）
+        const nameMatch = title.match(/^([^（(\s]+(?:株式会社|有限会社|合同会社)?[^（(\s]*)/);
+        const company = nameMatch ? nameMatch[1].trim() : title.replace(/[（(].*$/, "").trim();
+        if (!company || company.length < 2 || company.length > 60) continue;
+        if (/平成|令和|処分|内容|理由|備考/.test(company)) continue;
+
+        const body = stripTags(sec.slice(titleEnd));
+        const action = (body.match(/処分(?:の)?内容[：:]\s*([^\n]+)/) || [])[1] || "";
+        const address = (body.match(/所在地[：:]\s*([^\n]+)/) || [])[1] || "";
+        const status = /取消/.test(action) ? "revoked" : /停止/.test(action) ? "suspended" : "active";
+        const slug = toSlug("chiba-sanpai", company, dateStr || "");
+
+        const item = {
+          slug,
+          company_name: company,
+          corporate_number: null,
+          prefecture: "千葉県",
+          city: extractCity(address),
+          license_type: normalizeLicenseType(action),
+          waste_category: "industrial",
+          business_area: "千葉県",
+          status,
+          risk_level: /取消/.test(action) ? "critical" : "high",
+          penalty_count: 1,
+          latest_penalty_date: dateStr,
+          source_name: "千葉県 廃棄物処理法関係の行政処分",
+          source_url: INDEX_URL,
+          detail_url: url,
+          notes: action ? action.slice(0, 200) : null,
+        };
+
+        if (dryRun) { inserted++; continue; }
+        try {
+          const before = db.prepare("SELECT id FROM sanpai_items WHERE slug = ?").get(slug);
+          upsertStmt.run(item);
+          before ? updated++ : inserted++;
+        } catch (err) {
+          log(`  ! ${company}: ${err.message}`);
+          skipped++;
+        }
+      }
+
+      await sleep(400);
+    } catch (e) {
+      log(`  ! ${url}: ${e.message}`);
+    }
+  }
+
+  log(`  chiba: inserted=${inserted} updated=${updated} skipped=${skipped}`);
+  return { inserted, updated, skipped };
+}
+
+// ─── ソース6: 埼玉県 一覧→個別press ────────────────────────────
+
+async function ingestSaitama({ db, upsertStmt, dryRun, log }) {
+  const INDEX_URL = "https://www.pref.saitama.lg.jp/a0506/sanpai-syobun2/syobun.html";
+  log("埼玉県 産業廃棄物処理業者等行政処分");
+
+  const indexRes = await fetch(INDEX_URL, {
+    headers: { "User-Agent": UA },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  if (!indexRes.ok) throw new Error(`Saitama HTTP ${indexRes.status}`);
+  const indexHtml = await indexRes.text();
+
+  // 個別press: /sanpai-syobun2/{YYYYMMDDnn}.html or {YYYYMMDD}.html
+  const pressUrls = new Set();
+  [...indexHtml.matchAll(/href="([^"]*sanpai-syobun2\/\d{8,10}\.html)"/gi)]
+    .forEach((m) => pressUrls.add(resolveUrl(m[1], INDEX_URL)));
+
+  log(`  press URLs: ${pressUrls.size}`);
+
+  let inserted = 0, updated = 0, skipped = 0;
+  for (const url of pressUrls) {
+    try {
+      const r = await fetch(url, { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+      if (!r.ok) { skipped++; continue; }
+      const h = await r.text();
+
+      // press の URL から日付を抽出
+      const dm = url.match(/(\d{4})(\d{2})(\d{2})\d{0,2}\.html/);
+      const dateStr = dm ? `${dm[1]}-${dm[2]}-${dm[3]}` : null;
+
+      // タイトル例: 「産業廃棄物処理業者の許可の取消しについて（株式会社ユウキ） - 埼玉県」
+      const titleM = h.match(/<title>([^<]+)<\/title>/);
+      const title = titleM ? titleM[1] : "";
+      const body = stripTags(h.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, ""));
+
+      // 事業者名抽出: タイトル末尾の括弧内から / 本文から
+      const titleParen = title.match(/[（(]([^）)]+)[）)]/);
+      const fromTitle = titleParen ? titleParen[1].trim() : null;
+      const fromBody = body.match(/(?:事業者名|商号(?:又は名称)?)[：:]\s*([^\s（(\n]+)/);
+      const company = (fromTitle || (fromBody ? fromBody[1] : "")).trim();
+      if (!company || company.length < 2 || company.length > 60) { skipped++; continue; }
+
+      // タイトルから処分種別を判定
+      const titleAction = title.match(/(取消し|許可取消|事業停止|改善命令)/);
+      const bodyAction = (body.match(/処分(?:の)?内容[：:]\s*([^\n]{1,80})/) || [])[1] || "";
+      const action = bodyAction || (titleAction ? titleAction[1] : "");
+      const address = (body.match(/所在地[：:]\s*([^\n]{1,80})/) || [])[1] || "";
+      const status = /取消/.test(action) ? "revoked" : /停止/.test(action) ? "suspended" : "active";
+      const slug = toSlug("saitama-sanpai", company, dateStr || "");
+
+      const item = {
+        slug,
+        company_name: company,
+        corporate_number: null,
+        prefecture: "埼玉県",
+        city: extractCity(address),
+        license_type: normalizeLicenseType(action),
+        waste_category: "industrial",
+        business_area: "埼玉県",
+        status,
+        risk_level: /取消/.test(action) ? "critical" : "high",
+        penalty_count: 1,
+        latest_penalty_date: dateStr,
+        source_name: "埼玉県 産業廃棄物処理業者等行政処分",
+        source_url: INDEX_URL,
+        detail_url: url,
+        notes: (action || title).slice(0, 200),
+      };
+
+      if (dryRun) { inserted++; continue; }
+      try {
+        const before = db.prepare("SELECT id FROM sanpai_items WHERE slug = ?").get(slug);
+        upsertStmt.run(item);
+        before ? updated++ : inserted++;
+      } catch (err) {
+        log(`  ! ${company}: ${err.message}`);
+        skipped++;
+      }
+
+      await sleep(400);
+    } catch (e) {
+      log(`  ! ${url}: ${e.message}`);
+    }
+  }
+
+  log(`  saitama: inserted=${inserted} updated=${updated} skipped=${skipped}`);
+  return { inserted, updated, skipped };
+}
+
+// ─── ソース7: 福岡県 一覧→個別press ────────────────────────────
+
+async function ingestFukuoka({ db, upsertStmt, dryRun, log }) {
+  // 福岡県は集約ページが存在しないため、press-release/{YYMMDD}-kanshi.html を
+  // 直近12ヶ月分プローブして発見する戦略
+  const BROWSER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
+  const PRESS_BASE = "https://www.pref.fukuoka.lg.jp/press-release/";
+  log("福岡県 産業廃棄物処理業者等行政処分（press URL プローブ）");
+
+  // 直近12ヶ月の YYMMDD を生成
+  const today = new Date();
+  const yymmdds = [];
+  for (let d = 0; d < 365; d++) {
+    const dt = new Date(today.getTime() - d * 86400000);
+    const yy = String(dt.getFullYear()).slice(2);
+    const mm = String(dt.getMonth() + 1).padStart(2, "0");
+    const dd = String(dt.getDate()).padStart(2, "0");
+    yymmdds.push(`${yy}${mm}${dd}`);
+  }
+
+  const pressUrls = new Set();
+
+  // 並列で HEAD probe (10件ずつ)
+  for (let i = 0; i < yymmdds.length; i += 10) {
+    const batch = yymmdds.slice(i, i + 10);
+    const results = await Promise.all(batch.map(async (d) => {
+      const url = `${PRESS_BASE}${d}-kanshi.html`;
+      try {
+        const r = await fetch(url, {
+          method: "HEAD",
+          headers: { "User-Agent": BROWSER_UA },
+          signal: AbortSignal.timeout(5000),
+        });
+        return r.ok ? url : null;
+      } catch {
+        return null;
+      }
+    }));
+    results.filter(Boolean).forEach((u) => pressUrls.add(u));
+    await sleep(100); // 軽く間を空ける
+  }
+
+  log(`  press URLs found: ${pressUrls.size}`);
+
+  let inserted = 0, updated = 0, skipped = 0;
+  for (const url of pressUrls) {
+    try {
+      const r = await fetch(url, {
+        headers: { "User-Agent": BROWSER_UA },
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      });
+      if (!r.ok) { skipped++; continue; }
+      const h = await r.text();
+
+      // URL から年月日推定 (YYMMDD)
+      const dm = url.match(/\/(\d{6})-kansh?i\.html/);
+      let dateStr = null;
+      if (dm) {
+        const d = dm[1];
+        const yy = parseInt(d.slice(0, 2)) + 2000;
+        dateStr = `${yy}-${d.slice(2, 4)}-${d.slice(4, 6)}`;
+      }
+
+      const titleM = h.match(/<title>([^<]+)<\/title>/);
+      const title = titleM ? titleM[1] : "";
+      const body = stripTags(h.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, ""));
+
+      // 事業者名: タイトル or 本文「事業者名」「商号」から
+      const fromBody = body.match(/(?:事業者名|商号(?:又は名称)?)[：:]\s*([^\s（(]+(?:株式会社|有限会社|合同会社)?[^\s（(]*)/);
+      const fromTitle = title.match(/(株式会社[^\s]+|有限会社[^\s]+|合同会社[^\s]+|[一-龯ァ-ヶー]+株式会社)/);
+      const company = (fromBody ? fromBody[1] : (fromTitle ? fromTitle[1] : "")).trim();
+      if (!company || company.length < 2 || company.length > 60) { skipped++; continue; }
+
+      const action = (body.match(/処分(?:の)?内容[：:]\s*([^\n]{1,100})/) || [])[1] || "";
+      const address = (body.match(/(?:所在地|住所)[：:]\s*([^\n]{1,100})/) || [])[1] || "";
+      const status = /取消/.test(action) ? "revoked" : /停止/.test(action) ? "suspended" : "active";
+      const slug = toSlug("fukuoka-sanpai", company, dateStr || "");
+
+      const item = {
+        slug,
+        company_name: company,
+        corporate_number: null,
+        prefecture: "福岡県",
+        city: extractCity(address),
+        license_type: normalizeLicenseType(action),
+        waste_category: "industrial",
+        business_area: "福岡県",
+        status,
+        risk_level: /取消/.test(action) ? "critical" : "high",
+        penalty_count: 1,
+        latest_penalty_date: dateStr,
+        source_name: "福岡県 産業廃棄物処理業者等行政処分",
+        source_url: PRESS_BASE,
+        detail_url: url,
+        notes: action ? action.slice(0, 200) : null,
+      };
+
+      if (dryRun) { inserted++; continue; }
+      try {
+        const before = db.prepare("SELECT id FROM sanpai_items WHERE slug = ?").get(slug);
+        upsertStmt.run(item);
+        before ? updated++ : inserted++;
+      } catch (err) {
+        log(`  ! ${company}: ${err.message}`);
+        skipped++;
+      }
+
+      await sleep(500);
+    } catch (e) {
+      log(`  ! ${url}: ${e.message}`);
+    }
+  }
+
+  log(`  fukuoka: inserted=${inserted} updated=${updated} skipped=${skipped}`);
+  return { inserted, updated, skipped };
+}
+
+// ─── ソース8: 愛知県 press URL プローブ ────────────────────────────
+
+async function ingestAichi({ db, upsertStmt, dryRun, log }) {
+  log("愛知県 産業廃棄物処理業者行政処分（press URL プローブ）");
+
+  const PRESS_BASE = "https://www.pref.aichi.jp/press-release/";
+  const OLD_BASE = "https://www.pref.aichi.jp/soshiki/junkan-kansi/";
+
+  // YYYY × kansiNN 形式: 直近5年 × 各年30件まで probe
+  const currentYear = new Date().getFullYear();
+  const candidates = [];
+  for (let y = currentYear - 4; y <= currentYear; y++) {
+    for (let n = 1; n <= 30; n++) {
+      const nn = String(n).padStart(2, "0");
+      candidates.push(`${PRESS_BASE}${y}kansi${nn}.html`);
+      if (y <= 2022) candidates.push(`${OLD_BASE}${y}kansi${nn}.html`); // 旧URL
+    }
+  }
+
+  const pressUrls = new Set();
+  for (let i = 0; i < candidates.length; i += 10) {
+    const batch = candidates.slice(i, i + 10);
+    const results = await Promise.all(batch.map(async (url) => {
+      try {
+        const r = await fetch(url, {
+          method: "HEAD",
+          headers: { "User-Agent": UA },
+          signal: AbortSignal.timeout(5000),
+        });
+        return r.ok ? url : null;
+      } catch { return null; }
+    }));
+    results.filter(Boolean).forEach((u) => pressUrls.add(u));
+    await sleep(100);
+  }
+  log(`  press URLs found: ${pressUrls.size}`);
+
+  let inserted = 0, updated = 0, skipped = 0;
+  for (const url of pressUrls) {
+    try {
+      const r = await fetch(url, { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+      if (!r.ok) { skipped++; continue; }
+      const h = await r.text();
+
+      const titleM = h.match(/<title>([^<]+)<\/title>/);
+      const title = titleM ? titleM[1] : "";
+      const body = stripTags(h.replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<style[\s\S]*?<\/style>/gi, ""));
+
+      // 事業者名
+      const titleParen = title.match(/[（(]([^）)]+)[）)]/);
+      const fromTitle = titleParen ? titleParen[1].trim() : null;
+      const fromBody = body.match(/(?:事業者名|商号(?:又は名称)?)[：:]\s*([^\s（(\n]+)/);
+      const company = (fromTitle || (fromBody ? fromBody[1] : "")).trim();
+      if (!company || company.length < 2 || company.length > 60) { skipped++; continue; }
+
+      // 処分日
+      const dateBody = body.match(/(?:処分(?:した)?(?:年月)?日|公表日)[：:]\s*([^\n]{1,40})/);
+      const dateStr = parseJapaneseDate(dateBody ? dateBody[1] : "");
+
+      const titleAction = title.match(/(取消し|許可取消|事業停止|改善命令)/);
+      const bodyAction = (body.match(/処分(?:の)?内容[：:]\s*([^\n]{1,80})/) || [])[1] || "";
+      const action = bodyAction || (titleAction ? titleAction[1] : "");
+      const address = (body.match(/(?:所在地|住所)[：:]\s*([^\n]{1,80})/) || [])[1] || "";
+      const status = /取消/.test(action) ? "revoked" : /停止/.test(action) ? "suspended" : "active";
+      const slug = toSlug("aichi-sanpai", company, dateStr || "");
+
+      const item = {
+        slug,
+        company_name: company,
+        corporate_number: null,
+        prefecture: "愛知県",
+        city: extractCity(address),
+        license_type: normalizeLicenseType(action),
+        waste_category: "industrial",
+        business_area: "愛知県",
+        status,
+        risk_level: /取消/.test(action) ? "critical" : "high",
+        penalty_count: 1,
+        latest_penalty_date: dateStr,
+        source_name: "愛知県 産業廃棄物処理業者行政処分",
+        source_url: PRESS_BASE,
+        detail_url: url,
+        notes: (action || title).slice(0, 200),
+      };
+
+      if (dryRun) { inserted++; continue; }
+      try {
+        const before = db.prepare("SELECT id FROM sanpai_items WHERE slug = ?").get(slug);
+        upsertStmt.run(item);
+        before ? updated++ : inserted++;
+      } catch (err) {
+        log(`  ! ${company}: ${err.message}`);
+        skipped++;
+      }
+
+      await sleep(400);
+    } catch (e) {
+      log(`  ! ${url}: ${e.message}`);
+    }
+  }
+
+  log(`  aichi: inserted=${inserted} updated=${updated} skipped=${skipped}`);
+  return { inserted, updated, skipped };
+}
+
 // ─── ユーティリティ ────────────────────────────
+
+function stripTags(html) {
+  return String(html || "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function resolveUrl(href, base) {
+  try {
+    if (href.startsWith("http")) return href;
+    if (href.startsWith("/")) {
+      const u = new URL(base);
+      return `${u.protocol}//${u.host}${href}`;
+    }
+    return new URL(href, base).href;
+  } catch {
+    return href;
+  }
+}
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+/** "令和7年（2025年）10月17日" / "令和7年10月17日" / "2025年10月17日" を YYYY-MM-DD に */
+function parseJapaneseDate(str) {
+  if (!str) return null;
+  const s = String(str);
+  // 西暦
+  let m = s.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})\D*日/);
+  if (m) return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
+  m = s.match(/令和(\d+)年(\d+)月(\d+)日/);
+  if (m) {
+    const y = 2018 + parseInt(m[1]);
+    return `${y}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
+  }
+  m = s.match(/平成(\d+)年(\d+)月(\d+)日/);
+  if (m) {
+    const y = 1988 + parseInt(m[1]);
+    return `${y}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
+  }
+  return null;
+}
 
 function toSlug(prefix, name, extra = "") {
   const base = String(name)
