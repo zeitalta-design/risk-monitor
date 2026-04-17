@@ -40,6 +40,9 @@ const db = getDb();
 console.log(`[migrate-entity-links] Start: local=${useLocal}`);
 
 const STEPS = [
+  // Phase 2 Step F: organizations の追加元トラッキング
+  // （ALTER 文は skip 判定を special-case で通すので、失敗メッセージのパターンを調整）
+  `ALTER TABLE organizations ADD COLUMN source TEXT`,
   // entity_links 本体
   `CREATE TABLE IF NOT EXISTS entity_links (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -68,14 +71,17 @@ const STEPS = [
 
 let ok = 0, skipped = 0, failed = 0;
 for (const sql of STEPS) {
-  const name = sql.match(/(TABLE|INDEX) IF NOT EXISTS (\w+)/)?.[2] || "(unknown)";
+  const name =
+    sql.match(/(TABLE|INDEX) IF NOT EXISTS (\w+)/)?.[2] ||
+    sql.match(/ALTER TABLE (\w+) ADD COLUMN (\w+)/)?.slice(1).join(".") ||
+    "(unknown)";
   try {
     db.exec(sql);
     console.log(`  ✓ ${name}`);
     ok++;
   } catch (e) {
     const msg = String(e.message || "");
-    if (msg.includes("already exists")) {
+    if (msg.includes("already exists") || msg.includes("duplicate column")) {
       console.log(`  ⊘ ${name} (already exists)`);
       skipped++;
     } else {

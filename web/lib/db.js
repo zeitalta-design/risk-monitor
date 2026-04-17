@@ -208,6 +208,8 @@ export function getDb() {
       // organizations 連携
       "ALTER TABLE hojokin_items ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
       "ALTER TABLE kyoninka_entities ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
+      // Phase 2 Step F: organizations の追加元を追跡（backfill バッチ判別用）
+      "ALTER TABLE organizations ADD COLUMN source TEXT",
       // Phase 2 Step D: 企業横断参照の JOIN を index 化（/api/companies/[key] 用）
       "CREATE INDEX IF NOT EXISTS idx_nyusatsu_results_winner_corp ON nyusatsu_results(winner_corporate_number)",
       "CREATE INDEX IF NOT EXISTS idx_nyusatsu_results_winner_corp_pub ON nyusatsu_results(winner_corporate_number, is_published)",
