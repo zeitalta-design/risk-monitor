@@ -65,8 +65,54 @@ canonicalizeCompanyName() → "(株)アサオ" （表示用）
 3. 類似度 >= 閾値の変種: layer=fuzzy（既存 entity にマージ、alias 蓄積）
 4. 法人番号が渡された場合: layer=corp_number で確定（以降のすべての変種を束ねる）
 
+## クラスタリング（Step 3.5）
+
+entity よりさらに上位の概念として **cluster_id**（グループ／類似企業の束）を
+付与する。entity_id は「同一法人」、cluster_id は「同一グループや名称類似企業群」。
+
+```
+例: トヨタレンタリース 大分/熊本/兵庫/福岡 → 同一 cluster（prefix シグナル）
+    日本電子サービス / 日本データサービス   → 同一 cluster（similarity シグナル）
+```
+
+### 実装
+
+| | 中身 |
+|---|---|
+| データ | `entity_clusters` テーブル、`resolved_entities.cluster_id` 列 |
+| 判定 | (a) normalized_key が prefixLen(既定 4) 文字以上共通 or (b) similarity ≥ simThreshold(既定 0.7) |
+| アルゴリズム | 先頭2文字バケット + union-find |
+| 冪等性 | 再実行で `entity_clusters` を作り直す（同じ結果を保証） |
+| 単独 entity | cluster_id = NULL（2 件以上のグループのみ cluster 作成） |
+
+### 使い方
+
+```js
+import { assignClusters } from "@/lib/agents/resolver";
+const r = assignClusters({ db, prefixLen: 4, simThreshold: 0.7 });
+// → { entities, clusters, assigned, singletons, largestCluster }
+```
+
+CLI: `node scripts/cluster-entities.mjs [--local] [--prefix 4] [--sim 0.7]`
+
+### 実測（local 965 entities）
+
+| 指標 | 値 |
+|------|---|
+| clusters | 16 |
+| assigned | 38 |
+| singletons | 927 |
+| largestCluster | 4（トヨタレンタリース 大分/熊本/兵庫/福岡） |
+
+### LLM（Layer 4）
+
+- 曖昧ケースのみ / entity 判定ではなく **cluster 判定に使用**
+- 現状 stub。Layer 3 で類似度 0.6-0.7 の曖昧ゾーンに入った候補を
+  LLM でリクエスト → 結果をキャッシュ、という設計を予定
+
 ## 禁止事項
 
 - Analyzer で Resolver を経由しないクエリを書かない
 - Formatter や Collector のスキーマを壊さない
 - LLM を fallback 層以外で使用しない
+- cluster 判定で entity 判定を壊さない（entity_id は cluster より優先）

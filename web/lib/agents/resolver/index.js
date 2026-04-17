@@ -15,3 +15,9 @@ export {
   createDataStore,
   DEFAULT_FUZZY_THRESHOLD,
 } from "./resolve.js";
+
+export {
+  assignClusters,
+  DEFAULT_PREFIX_LEN,
+  DEFAULT_SIM_THRESHOLD,
+} from "./cluster.js";
