@@ -19,6 +19,11 @@ export function listSanpaiItems({
   sort = "newest",
   page = 1,
   pageSize = 20,
+  /**
+   * 同一事業者・同一都道府県・同一処分日を 1 行に統合して表示する。
+   * false にすると旧来の件数そのまま（各ソース個別表示）。
+   */
+  dedup = true,
 } = {}) {
   const db = getDb();
   const where = ["is_published = 1"];
@@ -78,12 +83,50 @@ export function listSanpaiItems({
       orderBy = "id DESC";
   }
 
-  const total = db.prepare(`SELECT COUNT(*) as c FROM sanpai_items ${whereClause}`).get(params).c;
+  if (!dedup) {
+    // 旧来の非 dedup クエリ（source_name 毎に個別表示）
+    const total = db.prepare(`SELECT COUNT(*) as c FROM sanpai_items ${whereClause}`).get(params).c;
+    const totalPages = Math.ceil(total / pageSize) || 1;
+    const offset = (Math.max(1, page) - 1) * pageSize;
+    const items = db.prepare(`
+      SELECT * FROM sanpai_items ${whereClause}
+      ORDER BY ${orderBy}
+      LIMIT @limit OFFSET @offset
+    `).all({ ...params, limit: pageSize, offset });
+    return { items, total, totalPages };
+  }
+
+  // dedup モード: 同一 (company_name 正規化, prefecture, latest_penalty_date) を 1 行に。
+  // 代表は detail_url を持つレコードを優先、それ以外は id 降順で最新。
+  // sources_count に束ねた件数を付与。
+  const clusterKey = `
+    LOWER(TRIM(COALESCE(company_name, ''))) || '|' ||
+    COALESCE(prefecture, '') || '|' ||
+    COALESCE(latest_penalty_date, '')
+  `;
+  const dedupSubquery = `
+    SELECT *,
+      ROW_NUMBER() OVER (
+        PARTITION BY ${clusterKey}
+        ORDER BY CASE WHEN detail_url IS NOT NULL AND detail_url != '' THEN 0 ELSE 1 END,
+                 id DESC
+      ) AS __rn,
+      COUNT(*) OVER (PARTITION BY ${clusterKey}) AS sources_count
+    FROM sanpai_items
+    ${whereClause}
+  `;
+
+  // cluster 数で件数計算
+  const total = db.prepare(`
+    SELECT COUNT(*) AS c FROM (
+      SELECT 1 FROM sanpai_items ${whereClause} GROUP BY ${clusterKey}
+    )
+  `).get(params).c;
   const totalPages = Math.ceil(total / pageSize) || 1;
   const offset = (Math.max(1, page) - 1) * pageSize;
 
   const items = db.prepare(`
-    SELECT * FROM sanpai_items ${whereClause}
+    SELECT * FROM (${dedupSubquery}) WHERE __rn = 1
     ORDER BY ${orderBy}
     LIMIT @limit OFFSET @offset
   `).all({ ...params, limit: pageSize, offset });
@@ -117,7 +160,16 @@ export function getSanpaiStats({
   if (company) { where.push("company_name = @company"); params.company = company; }
   const whereClause = `WHERE ${where.join(" AND ")}`;
 
-  const totalCount = db.prepare(`SELECT COUNT(*) c FROM sanpai_items ${whereClause}`).get(params).c;
+  // totalCount は dedup 後の件数（listSanpaiItems の total と一致させる）
+  const totalCount = db.prepare(`
+    SELECT COUNT(*) AS c FROM (
+      SELECT 1 FROM sanpai_items ${whereClause}
+      GROUP BY
+        LOWER(TRIM(COALESCE(company_name, ''))) || '|' ||
+        COALESCE(prefecture, '') || '|' ||
+        COALESCE(latest_penalty_date, '')
+    )
+  `).get(params).c;
 
   const countsByYear = db.prepare(`
     SELECT SUBSTR(latest_penalty_date, 1, 4) AS year, COUNT(*) AS count
