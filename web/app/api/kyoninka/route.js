@@ -20,7 +20,7 @@ export async function GET(request) {
       has_disciplinary: searchParams.get("has_disciplinary") || "",
       sort: searchParams.get("sort") || "newest",
       page: parseInt(searchParams.get("page") || "1"),
-      pageSize: parseInt(searchParams.get("page_size") || "20"),
+      pageSize: parseInt(searchParams.get("page_size") || searchParams.get("pageSize") || "20"),
     });
     return NextResponse.json(result);
   } catch (error) {

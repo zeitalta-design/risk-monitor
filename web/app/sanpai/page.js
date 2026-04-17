@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
+import { useMemo } from "react";
 import CategoryPageHeader from "@/components/CategoryPageHeader";
-import DomainFavoriteButton from "@/components/core/DomainFavoriteButton";
+import DomainResultCard from "@/components/core/DomainResultCard";
 import StatsDashboard from "@/components/StatsDashboard";
 import SearchForm from "@/components/search/SearchForm";
 import ActiveFilterChips from "@/components/search/ActiveFilterChips";
@@ -12,6 +10,7 @@ import Pagination from "@/components/search/Pagination";
 import { PREFECTURES } from "@/lib/constants/prefectures";
 import "@/lib/domains";
 import { getDomain } from "@/lib/core/domain-registry";
+import { useDomainSearchPage } from "@/lib/core/useDomainSearchPage";
 import {
   sanpaiConfig,
   getLicenseTypeLabel,
@@ -23,6 +22,11 @@ import {
 
 const sanpaiDomain = getDomain("sanpai");
 const PAGE_SIZE = 20;
+
+const FILTER_KEYS = [
+  "keyword", "prefecture", "license_type", "risk_level", "status",
+  "date_from", "date_to", "year", "company",
+];
 
 const INITIAL_FILTERS = {
   keyword: "",
@@ -38,22 +42,20 @@ const INITIAL_FILTERS = {
   page: 1,
 };
 
-function RiskBadge({ level }) {
-  const r = getRiskLevel(level);
-  return <span className={`badge ${r.color}`}>{r.label}</span>;
-}
-
-function CardBadges({ item }) {
+function SanpaiBadges({ item }) {
+  const r = getRiskLevel(item.risk_level);
   const sb = getStatusBadge(item.status);
   const days = getDaysSincePenalty(item.latest_penalty_date);
 
   return (
     <div className="flex items-center gap-2 mt-2 flex-wrap">
-      <RiskBadge level={item.risk_level} />
+      <span className={`badge ${r.color}`}>{r.label}</span>
       <span className={`badge ${sb.color}`}>{sb.label}</span>
       <span className="badge badge-blue">{getLicenseTypeLabel(item.license_type)}</span>
       {item.penalty_count > 0 && (
-        <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">処分{item.penalty_count}件</span>
+        <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">
+          処分{item.penalty_count}件
+        </span>
       )}
       {days && (
         <span className={`text-xs ${days.recent ? "text-red-600 font-bold" : "text-gray-500"}`}>
@@ -64,138 +66,37 @@ function CardBadges({ item }) {
   );
 }
 
-function SanpaiCard({ item }) {
-  return (
-    <div className="card p-4 hover:shadow-md transition-shadow flex gap-4">
-      <Link href={`/sanpai/${item.slug}`} className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-2xl shrink-0">
-        {getLicenseTypeIcon(item.license_type)}
-      </Link>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <Link href={`/sanpai/${item.slug}`} className="block min-w-0">
-            <h3 className="text-sm font-bold text-gray-900 truncate hover:text-blue-600">{item.company_name}</h3>
-          </Link>
-          <div className="flex items-center gap-1 shrink-0">
-            {sanpaiDomain && <DomainFavoriteButton itemId={item.id} domain={sanpaiDomain} />}
-          </div>
-        </div>
-        <p className="text-xs text-gray-500 mt-0.5">{[item.prefecture, item.city].filter(Boolean).join(" ") || "—"}</p>
-        {item.notes && <p className="text-xs text-gray-600 mt-1 line-clamp-2">{item.notes}</p>}
-        <CardBadges item={item} />
-      </div>
-    </div>
-  );
-}
-
 export default function SanpaiListPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const [items, setItems] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  const [filters, setFilters] = useState({
-    keyword: searchParams.get("keyword") || "",
-    prefecture: searchParams.get("prefecture") || "",
-    license_type: searchParams.get("license_type") || "",
-    risk_level: searchParams.get("risk_level") || "",
-    status: searchParams.get("status") || "",
-    date_from: searchParams.get("date_from") || "",
-    date_to: searchParams.get("date_to") || "",
-    year: searchParams.get("year") || "",
-    company: searchParams.get("company") || "",
-    sort: searchParams.get("sort") || "newest",
-    page: Math.max(1, parseInt(searchParams.get("page") || "1", 10)),
+  const {
+    items,
+    total,
+    totalPages,
+    stats,
+    loading,
+    filters,
+    formInput,
+    setFilters,
+    setFormInput,
+    hasFilters,
+    startItem,
+    endItem,
+    handleSearch,
+    handleReset,
+    goToPage,
+    onChipRemove,
+    onStatsToggle,
+    onSortChange,
+    onFormFieldChange,
+  } = useDomainSearchPage({
+    basePath: "/sanpai",
+    listApiPath: "/api/sanpai",
+    statsApiPath: "/api/sanpai/stats",
+    filterKeys: FILTER_KEYS,
+    initialFilters: INITIAL_FILTERS,
+    defaultSort: "newest",
+    pageSize: PAGE_SIZE,
   });
 
-  const [formInput, setFormInput] = useState(filters);
-
-  const syncUrl = useCallback((f) => {
-    const params = new URLSearchParams();
-    if (f.keyword) params.set("keyword", f.keyword);
-    if (f.prefecture) params.set("prefecture", f.prefecture);
-    if (f.license_type) params.set("license_type", f.license_type);
-    if (f.risk_level) params.set("risk_level", f.risk_level);
-    if (f.status) params.set("status", f.status);
-    if (f.date_from) params.set("date_from", f.date_from);
-    if (f.date_to) params.set("date_to", f.date_to);
-    if (f.year) params.set("year", f.year);
-    if (f.company) params.set("company", f.company);
-    if (f.sort && f.sort !== "newest") params.set("sort", f.sort);
-    if (f.page > 1) params.set("page", String(f.page));
-    const qs = params.toString();
-    router.replace(`/sanpai${qs ? `?${qs}` : ""}`, { scroll: false });
-  }, [router]);
-
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const listParams = new URLSearchParams();
-      const statsParams = new URLSearchParams();
-      const setBoth = (k, v) => { if (v) { listParams.set(k, v); statsParams.set(k, v); } };
-      setBoth("keyword", filters.keyword);
-      setBoth("prefecture", filters.prefecture);
-      setBoth("license_type", filters.license_type);
-      setBoth("risk_level", filters.risk_level);
-      setBoth("status", filters.status);
-      setBoth("date_from", filters.date_from);
-      setBoth("date_to", filters.date_to);
-      setBoth("year", filters.year);
-      setBoth("company", filters.company);
-      listParams.set("sort", filters.sort);
-      listParams.set("page", String(filters.page));
-      listParams.set("pageSize", String(PAGE_SIZE));
-
-      const [listRes, statsRes] = await Promise.all([
-        fetch(`/api/sanpai?${listParams}`),
-        fetch(`/api/sanpai/stats?${statsParams}`),
-      ]);
-      const listData = await listRes.json();
-      const statsData = await statsRes.json();
-
-      setItems(listData.items || []);
-      setTotal(listData.total || 0);
-      setTotalPages(listData.totalPages || 1);
-      setStats(statsData.error ? null : statsData);
-    } catch (err) {
-      console.error("Failed to fetch sanpai:", err);
-      setItems([]);
-      setStats(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [filters]);
-
-  useEffect(() => {
-    fetchData();
-    syncUrl(filters);
-  }, [fetchData, syncUrl, filters]);
-
-  const goToPage = (p) => {
-    const clamped = Math.max(1, Math.min(p, totalPages));
-    setFilters((prev) => ({ ...prev, page: clamped }));
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const hasFilters = !!(
-    filters.keyword || filters.prefecture || filters.license_type ||
-    filters.risk_level || filters.status || filters.date_from || filters.date_to ||
-    filters.year || filters.company
-  );
-
-  const startItem = total === 0 ? 0 : (filters.page - 1) * PAGE_SIZE + 1;
-  const endItem = Math.min(filters.page * PAGE_SIZE, total);
-
-  const handleSearch = () => setFilters({ ...formInput, page: 1 });
-  const handleReset = () => {
-    setFormInput(INITIAL_FILTERS);
-    setFilters(INITIAL_FILTERS);
-  };
-
-  // ─── 検索フィールド定義 ────────────────
   const searchFields = useMemo(() => [
     {
       type: "text",
@@ -259,16 +160,11 @@ export default function SanpaiListPage() {
     { key: "company", label: "事業者" },
   ], []);
 
-  const onChipRemove = (key, value) => {
-    setFilters((p) => ({ ...p, [key]: value, page: 1 }));
-    setFormInput((p) => ({ ...p, [key]: value }));
-  };
-
-  // 統計ダッシュボードからのトグル
-  const onStatsToggle = (key, value) => {
-    setFilters((p) => ({ ...p, [key]: value, page: 1 }));
-    setFormInput((p) => ({ ...p, [key]: value }));
-  };
+  // shared card が求める { title, summary } に写像
+  const cardItems = useMemo(
+    () => items.map((item) => ({ ...item, title: item.company_name, summary: item.notes })),
+    [items],
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -285,15 +181,12 @@ export default function SanpaiListPage() {
         <SearchForm
           fields={searchFields}
           values={formInput}
-          onChange={(name, value) => setFormInput((p) => ({ ...p, [name]: value }))}
+          onChange={onFormFieldChange}
           onSearch={handleSearch}
           onReset={handleReset}
           sortOptions={sanpaiConfig.sorts}
           sort={filters.sort}
-          onSortChange={(v) => {
-            setFormInput((p) => ({ ...p, sort: v }));
-            setFilters((p) => ({ ...p, sort: v, page: 1 }));
-          }}
+          onSortChange={onSortChange}
         />
 
         {hasFilters && (
@@ -313,20 +206,16 @@ export default function SanpaiListPage() {
                 type: "bar",
                 filterKey: "year",
                 rows: (stats.countsByYear || []).map((r) => ({
-                  value: r.year,
-                  label: r.year,
-                  count: r.count,
+                  value: r.year, label: r.year, count: r.count,
                   isUnknown: !r.year || r.year === "不明",
                 })),
               },
               {
-                title: "事業者別 TOP10",
+                title: "事業者 TOP10",
                 type: "ranking",
                 filterKey: "company",
                 rows: (stats.countsByCompany || []).map((r) => ({
-                  value: r.name,
-                  label: r.name,
-                  count: r.count,
+                  value: r.name, label: r.name, count: r.count,
                 })),
               },
               {
@@ -340,13 +229,11 @@ export default function SanpaiListPage() {
                 })),
               },
               {
-                title: "都道府県別 TOP10",
+                title: "都道府県 TOP10",
                 type: "ranking",
                 filterKey: "prefecture",
                 rows: (stats.countsByPrefecture || []).map((r) => ({
-                  value: r.prefecture,
-                  label: r.prefecture,
-                  count: r.count,
+                  value: r.prefecture, label: r.prefecture, count: r.count,
                 })),
               },
             ]}
@@ -365,15 +252,24 @@ export default function SanpaiListPage() {
           </div>
         )}
 
-        {!loading && items.length > 0 && (
+        {!loading && cardItems.length > 0 && (
           <div className="space-y-3">
-            {items.map((item) => (
-              <SanpaiCard key={item.id} item={item} />
+            {cardItems.map((item) => (
+              <DomainResultCard
+                key={item.id}
+                item={item}
+                domainId="sanpai"
+                domain={sanpaiDomain}
+                basePath="/sanpai"
+                icon={getLicenseTypeIcon(item.license_type)}
+                secondaryText={[item.prefecture, item.city].filter(Boolean).join(" ") || "—"}
+                renderBadges={SanpaiBadges}
+              />
             ))}
           </div>
         )}
 
-        {!loading && items.length === 0 && (
+        {!loading && cardItems.length === 0 && (
           <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
             <p className="text-gray-500">該当する事業者が見つかりません</p>
             <button onClick={handleReset} className="mt-4 text-sm text-blue-600 hover:underline">
