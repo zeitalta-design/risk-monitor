@@ -203,6 +203,8 @@ export function getDb() {
       "ALTER TABLE hojokin_items ADD COLUMN source_name TEXT",
       "ALTER TABLE hojokin_items ADD COLUMN source_url TEXT",
       "ALTER TABLE hojokin_items ADD COLUMN detail_url TEXT",
+      // hojokin: 管理レビュー状態（generic-review 連携、既存 Turso では運用中）
+      "ALTER TABLE hojokin_items ADD COLUMN review_status TEXT DEFAULT 'approved'",
       // organizations 連携
       "ALTER TABLE hojokin_items ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
       "ALTER TABLE kyoninka_entities ADD COLUMN organization_id INTEGER REFERENCES organizations(id)",
