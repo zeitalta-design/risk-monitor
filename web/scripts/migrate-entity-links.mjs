@@ -63,6 +63,8 @@ const STEPS = [
   // composite で (corp, published) を先に評価させる（single-col だと planner が
   // is_published 側の index を誤って選ぶケースがあったため）
   `CREATE INDEX IF NOT EXISTS idx_nyusatsu_results_winner_corp_pub ON nyusatsu_results(winner_corporate_number, is_published)`,
+  // P1: entity detail API の UNION ALL で winner_name 側も index scan できるように
+  `CREATE INDEX IF NOT EXISTS idx_nyusatsu_results_winner_name_pub ON nyusatsu_results(winner_name, is_published)`,
   `CREATE INDEX IF NOT EXISTS idx_sanpai_items_corp ON sanpai_items(corporate_number)`,
   `CREATE INDEX IF NOT EXISTS idx_hojokin_items_org ON hojokin_items(organization_id)`,
   `CREATE INDEX IF NOT EXISTS idx_kyoninka_entities_org ON kyoninka_entities(organization_id)`,

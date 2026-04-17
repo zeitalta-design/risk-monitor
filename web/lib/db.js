@@ -213,6 +213,10 @@ export function getDb() {
       // Phase 2 Step D: 企業横断参照の JOIN を index 化（/api/companies/[key] 用）
       "CREATE INDEX IF NOT EXISTS idx_nyusatsu_results_winner_corp ON nyusatsu_results(winner_corporate_number)",
       "CREATE INDEX IF NOT EXISTS idx_nyusatsu_results_winner_corp_pub ON nyusatsu_results(winner_corporate_number, is_published)",
+      // Phase 2 P1: entity detail API の UNION ALL ブランチが winner_name 側で
+      // index scan を使えるように composite を追加（既存の idx_winner は
+      // 単一列のみで is_published と組み合わせると planner が idx_published を選ぶ）
+      "CREATE INDEX IF NOT EXISTS idx_nyusatsu_results_winner_name_pub ON nyusatsu_results(winner_name, is_published)",
       "CREATE INDEX IF NOT EXISTS idx_sanpai_items_corp ON sanpai_items(corporate_number)",
       "CREATE INDEX IF NOT EXISTS idx_hojokin_items_org ON hojokin_items(organization_id)",
       "CREATE INDEX IF NOT EXISTS idx_kyoninka_entities_org ON kyoninka_entities(organization_id)",

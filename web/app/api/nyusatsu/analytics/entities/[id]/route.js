@@ -1,18 +1,20 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import {
-  getAwardRanking,
-  getAwardTimeline,
-  getBuyerRelations,
-} from "@/lib/agents/analyzer/nyusatsu";
+  fetchEntityLookup,
+  fetchEntityTimeline,
+  fetchEntityBuyerRelations,
+  fetchClusterMates,
+} from "@/lib/agents/analyzer/nyusatsu/entity-detail";
 
 export const dynamic = "force-dynamic";
 
 /**
  * GET /api/nyusatsu/analytics/entities/[id]
  *
- * entity 単一の集計レスポンス（ranking/1件 + timeline + buyers + cluster情報）。
- * entity detail ページで 1 呼出しに束ねる目的。
+ * entity 単一の集計レスポンス。
+ * Phase 2 Priority 1: 最適化経路（entity-detail.js）を利用し、298k 行の
+ * 全表スキャンを避けて winner_corporate_number + alias name で pushdown。
  */
 export async function GET(request, { params }) {
   try {
@@ -22,52 +24,28 @@ export async function GET(request, { params }) {
     }
     const db = getDb();
 
-    // entity 本体
-    const entity = db.prepare(`
-      SELECT e.*, c.canonical_name AS cluster_canonical_name, c.signal AS cluster_signal, c.size AS cluster_size
-      FROM resolved_entities e
-      LEFT JOIN entity_clusters c ON c.id = e.cluster_id
-      WHERE e.id = ?
-    `).get(entityId);
-
-    if (!entity) {
+    // 1) entity + aliases を1本のラウンドトリップ束で取得（targetedWhere を確定）
+    const lookup = fetchEntityLookup({ db, entityId });
+    if (!lookup.entity) {
       return NextResponse.json({ error: "entity not found" }, { status: 404 });
     }
+    const { entity, aliases, targetedWhere, targetedParams } = lookup;
 
-    // 上位 1 件だけ取得（= この entity の summary）
-    // ranking は by=entity で limit 1 にするより、直接この entity だけ出す用の
-    // getAwardRanking + フィルタが複雑なので、代わりに timeline の集計から
-    // summary を作る
-    const timeline = getAwardTimeline({ db, granularity: "month", entityId });
+    // 2) timeline / buyers / cluster_mates を並列実行
+    //    libsql compat layer は SQL 実行ごとに HTTP round-trip があるため、
+    //    await Promise.all で発火タイミングを重ねる意味がある。
+    const [timeline, buyers, clusterMates] = await Promise.all([
+      Promise.resolve().then(() => fetchEntityTimeline({ db, granularity: "month", targetedWhere, targetedParams })),
+      Promise.resolve().then(() => fetchEntityBuyerRelations({ db, targetedWhere, targetedParams, limit: 10 })),
+      Promise.resolve().then(() => fetchClusterMates({ db, entity })),
+    ]);
+
+    // 3) summary は timeline + buyers から組み立て（追加クエリなし）
     const total_awards = timeline.reduce((s, r) => s + r.total_awards, 0);
     const total_amount = timeline.reduce((s, r) => s + (r.total_amount || 0), 0);
-    const unique_buyers = timeline.length > 0
-      ? Math.max(...timeline.map((r) => r.unique_buyers))
-      : 0; // 大まかな上限値（期間全体の unique は別クエリが必要）
     const active_months = timeline.length;
     const first_award = timeline[0]?.period || null;
     const last_award = timeline[timeline.length - 1]?.period || null;
-
-    const buyers = getBuyerRelations({ db, entityId, limit: 10 });
-
-    // エイリアス（表記ゆれ履歴）
-    const aliases = db.prepare(`
-      SELECT raw_name, seen_count, first_seen, last_seen
-      FROM resolution_aliases
-      WHERE entity_id = ?
-      ORDER BY seen_count DESC, last_seen DESC
-      LIMIT 20
-    `).all(entityId);
-
-    // cluster に所属する仲間 entity（あれば）
-    const clusterMates = entity.cluster_id
-      ? db.prepare(`
-          SELECT id, canonical_name, corporate_number
-          FROM resolved_entities
-          WHERE cluster_id = ? AND id != ?
-          ORDER BY canonical_name
-        `).all(entity.cluster_id, entityId)
-      : [];
 
     return NextResponse.json({
       entity: {
@@ -85,7 +63,7 @@ export async function GET(request, { params }) {
       summary: {
         total_awards,
         total_amount,
-        unique_buyers: buyers.items.length > 0 ? buyers.total_awards > 0 ? (new Set(buyers.items.map((i)=>i.issuer_name))).size : 0 : 0,
+        unique_buyers: buyers.unique_buyers,
         active_months,
         first_award,
         last_award,
@@ -95,7 +73,7 @@ export async function GET(request, { params }) {
       },
       timeline,
       buyers: buyers.items,
-      aliases,
+      aliases: aliases.slice(0, 20),
       cluster_mates: clusterMates,
     });
   } catch (e) {
