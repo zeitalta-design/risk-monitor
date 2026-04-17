@@ -28,10 +28,13 @@ Collector → Formatter → Resolver → Analyzer → UI
 5. **リトライ前提設計**。外部取得失敗は catch してスキップ、pipeline 全体を止めない
 6. **他カテゴリへコピー可能な構造**。入札ラインが固まったら `collector/hojokin/` 等をテンプレから複製する
 
-## 現状（2026-04-17 時点）
+## 現状（2026-04-17 Step 2.5 完了時点）
 
-- **Collector**: 入札ライン（KKJ / 6省庁 / 調達ポータル落札結果）を本ディレクトリ配下で統一登録。実処理は既存 `lib/nyusatsu-*-fetcher.js` に委譲（移行中）
-- **Formatter / Resolver / Analyzer / QA**: stub README のみ。次セッション以降で段階実装
+- **Collector**: 入札ライン（KKJ / 6省庁 / 調達ポータル落札結果）完全登録。各 Collector は pipeline 経由で動作
+- **Formatter**: 3ソース分の統一スキーマ変換実装済
+- **Pipeline**: 3ソースすべて配線完了。cron 経路も pipeline に統一済
+- **fetcher モジュール**: fetch+parse のみに特化。DB 書込みコードは完全削除
+- **Resolver / Analyzer / QA**: stub README のみ。次ステップで段階実装
 
 ## 参照
 

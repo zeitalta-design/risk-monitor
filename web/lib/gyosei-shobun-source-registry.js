@@ -1784,7 +1784,7 @@ const NYUSATSU_BACKLOG_SOURCES = [
     discoveryStatus: "confirmed", expectedCoverage: "national_full",
     complements: "国+都道府県+市区町村を全国横断。XML検索API（無認証）経由で47LG×日付スライス取得。",
     publicationWindow: "current", updateFrequency: "daily", acquisitionMethod: "api",
-    active: true, notes: "fetchKkjAnnouncements() で日次巡回中。SearchHits 1000/回上限あり。",
+    active: true, notes: "runKkjPipeline() で日次巡回中。SearchHits 1000/回上限あり。",
   },
 
   // ─ 中央省庁追加（残り8省庁） ─

@@ -1,45 +1,81 @@
-# Pipeline Layer — 最小実装
+# Pipeline Layer
 
-Collector で取得した生レコードを Formatter で統一スキーマに変換し、DB に保存する配線層。
+Collector が取得した生レコードを Formatter で統一スキーマに変換し、DB に保存する配線層。
 
-## Step 2 時点の実装範囲
+## 状態（Step 2.5 完了時点）
 
 | Collector | Formatter | Pipeline 配線 | 状態 |
 |-----------|-----------|--------------|------|
-| `nyusatsu.kkj` | ✅ | ✅ `processKkjRecords` | **Step 2 で完成** |
-| `nyusatsu.central-ministries` | ✅ | ❌ | **Step 2.5 で配線**（既存 fetcher が fetch+format+save を内部完結しており要リファクタ） |
-| `nyusatsu.p-portal-results` | ✅ | ❌ | **Step 2.5 で配線**（同上） |
+| `nyusatsu.kkj`                | ✅ | ✅ `runKkjPipeline` / `processKkjRecords` | 完了 |
+| `nyusatsu.central-ministries` | ✅ | ✅ `processCentralMinistries`              | 完了 |
+| `nyusatsu.p-portal-results`   | ✅ | ✅ `processPPortalResults`                 | 完了 |
 
-## 使い方（KKJ のみ）
+**入札ドメインの全 fetcher は pipeline 経由に統一**。各 fetcher モジュール
+（`lib/nyusatsu-*-fetcher.js`）は fetch + parse のみを担い、DB 書込みは
+この pipeline 層が一元管理する。
+
+## エクスポート
 
 ```js
-import { processKkjRecords } from "@/lib/agents/pipeline/nyusatsu";
-import { parseKkjXml } from "@/lib/nyusatsu-kkj-fetcher";
+import {
+  // KKJ
+  runKkjPipeline,               // 日付×LG反復 + DB upsert（cron/CLI 推奨）
+  processKkjRecords,            // 生レコード配列 → DB upsert（小バッチ用）
 
-// (1) Collector 相当: HTTP fetch（ここはまだ既存関数を直接叩いているが、
-//     将来は Collector#collectRaw() に一本化）
-const res = await fetch(kkjApiUrl);
-const xml = await res.text();
+  // 中央省庁6省庁
+  processCentralMinistries,     // collectCentralMinistriesRaw の結果を受けて format+DB
 
-// (2) parse
-const raw = parseKkjXml(xml);
-
-// (3) Pipeline: format → DB upsert
-const stats = processKkjRecords(raw, { dryRun: false });
-// → { formatted, inserted, updated, skipped }
+  // 調達ポータル落札結果
+  processPPortalResults,        // collectPPortalRaw の結果を受けて format+DB
+} from "@/lib/agents/pipeline/nyusatsu";
 ```
 
-CLI は `scripts/demo-pipeline-nyusatsu.mjs` 参照。
+## 標準呼び出しパターン（2段）
 
-## 次に埋めること（Step 2.5）
+### KKJ
+```js
+// CLI: scripts/fetch-kkj.mjs
+await runKkjPipeline({ mode: "daily", dryRun: false });
+```
+`runKkjPipeline` が内部で `fetchKkjSlice` (nyusatsu-kkj-fetcher.js) を
+日付 × LG の2重ループで呼び、スライスごとに `processKkjRecords` を実行。
 
-1. `nyusatsu-fetcher.js` と `nyusatsu-result-fetcher.js` を「parse 関数」単位に分解し export
-2. それぞれに対応する `processCentralMinistries` / `processPPortalResults` を追加
-3. CLI / cron を新パイプライン経由に切替
-4. 切替後、旧 fetcher の DB書込みロジックを削除（fetcher は parse 返却のみに）
+### 中央省庁
+```js
+// CLI: scripts/fetch-nyusatsu.mjs
+const collected = await collectCentralMinistriesRaw();
+const stats = processCentralMinistries(collected.perSource, { dryRun });
+```
+
+### 調達ポータル 落札結果
+```js
+// CLI: scripts/fetch-pportal-results.mjs
+const collected = await collectPPortalRaw({ mode: "diff" });
+const stats = processPPortalResults(collected.rawRecords, {
+  sourceUrl: collected.url, dryRun,
+});
+```
+
+## cron との関係
+
+| cron workflow | 呼び出す CLI | 経路 |
+|---------------|-------------|------|
+| `fetch-kkj.yml`              | `scripts/fetch-kkj.mjs`              | → runKkjPipeline |
+| `fetch-nyusatsu.yml`         | `scripts/fetch-nyusatsu.mjs`         | → processCentralMinistries |
+| `fetch-pportal-results.yml`  | `scripts/fetch-pportal-results.mjs`  | → processPPortalResults |
+
+workflow 側は無改変（CLI の引数互換性を保っているため）。
 
 ## 禁止事項
 
-- Formatter / Collector の責務を侵食しない
-- Resolver 相当の名寄せはこの層でやらない（別レイヤー）
-- ドメインをまたぐ処理はしない（`pipeline/nyusatsu.js` は nyusatsu のみ触る）
+- fetcher モジュール（`lib/nyusatsu-*-fetcher.js`）で DB 書込みをしない
+- pipeline を経由せずに nyusatsu_items / nyusatsu_results に upsert するコードを書かない
+- Resolver 相当の名寄せはこの層でやらない
+- ドメインをまたぐ処理はしない
+
+## 次の段階（Step 3 Resolver）
+
+- pipeline は現在 raw → DB upsert を直結しているが、Resolver 導入時は
+  raw → Formatter → **Resolver（名寄せ）** → DB の順に挟まる
+- 法人番号解決・表記ゆれ統合の canonical_id を付与してから保存
+- その際、pipeline の `unified*ToItemRow` はほぼそのまま流用可能
