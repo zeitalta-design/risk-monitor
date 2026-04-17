@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import DomainDetailPage from "@/components/core/DomainDetailPage";
 import DomainFavoriteButton from "@/components/core/DomainFavoriteButton";
+import CrossDomainLinks from "@/components/core/CrossDomainLinks";
 import "@/lib/domains";
 import { getDomain } from "@/lib/core/domain-registry";
 import {
@@ -286,6 +287,12 @@ export default function KyoninkaDetailPage() {
 
       {/* 保有許認可一覧 */}
       <RegistrationList registrations={registrations} />
+
+      {/* 他DB情報（Phase 2 Step E） */}
+      <CrossDomainLinks
+        lookupKey={item.corporate_number || item.normalized_name || item.entity_name}
+        skipDomain="kyoninka"
+      />
 
       {/* 基本情報 */}
       <section className="card p-6 mb-6">
