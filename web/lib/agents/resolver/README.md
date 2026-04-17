@@ -65,44 +65,65 @@ canonicalizeCompanyName() → "(株)アサオ" （表示用）
 3. 類似度 >= 閾値の変種: layer=fuzzy（既存 entity にマージ、alias 蓄積）
 4. 法人番号が渡された場合: layer=corp_number で確定（以降のすべての変種を束ねる）
 
-## クラスタリング（Step 3.5）
+## クラスタリング（Step 3.5 / 3.6）
 
 entity よりさらに上位の概念として **cluster_id**（グループ／類似企業の束）を
 付与する。entity_id は「同一法人」、cluster_id は「同一グループや名称類似企業群」。
 
 ```
 例: トヨタレンタリース 大分/熊本/兵庫/福岡 → 同一 cluster（prefix シグナル）
-    日本電子サービス / 日本データサービス   → 同一 cluster（similarity シグナル）
 ```
+
+### Step 3.6 精度改善 — ストップワード＋安全弁
+
+#### ストップワード（判定前に除去）
+
+```
+HARD_STOPS: 日本 / ジャパン / japan   （全位置から削除）
+SOFT_STOPS: サービス / 建設 / 工業    （末尾でのみ削除）
+```
+
+これにより「日本〇〇系」「〇〇サービス系」の汎用語起因の偽陽性を抑える。
+トヨタ・ニッポン（固有ブランド）・ニチダン等は stoplist に含めないので保持される。
+
+#### 判定条件（OR ではなく AND 強化）
+
+- **(a) prefix 主体**: stripped key で `prefixLen`(既定 4) 文字以上共通 → 許可
+- **(b) similarity 安全弁**: stripped key の similarity ≥ `simThreshold`(既定 0.8) **かつ** 共通 prefix ≥ 1 文字 → 許可
+- **prefix 0 の場合は禁止**（類似度がいくら高くても不可）
+
+precision 最優先、recall は多少犠牲にする方針。
 
 ### 実装
 
 | | 中身 |
 |---|---|
 | データ | `entity_clusters` テーブル、`resolved_entities.cluster_id` 列 |
-| 判定 | (a) normalized_key が prefixLen(既定 4) 文字以上共通 or (b) similarity ≥ simThreshold(既定 0.7) |
-| アルゴリズム | 先頭2文字バケット + union-find |
+| 判定 | `stripForCluster(normalized_key)` → prefix ≥ 4 or (similarity ≥ 0.8 & prefix ≥ 1) |
+| アルゴリズム | stripped key 先頭2文字バケット + union-find |
 | 冪等性 | 再実行で `entity_clusters` を作り直す（同じ結果を保証） |
 | 単独 entity | cluster_id = NULL（2 件以上のグループのみ cluster 作成） |
 
 ### 使い方
 
 ```js
-import { assignClusters } from "@/lib/agents/resolver";
-const r = assignClusters({ db, prefixLen: 4, simThreshold: 0.7 });
+import { assignClusters, stripForCluster } from "@/lib/agents/resolver";
+const r = assignClusters({ db, prefixLen: 4, simThreshold: 0.8 });
 // → { entities, clusters, assigned, singletons, largestCluster }
 ```
 
-CLI: `node scripts/cluster-entities.mjs [--local] [--prefix 4] [--sim 0.7]`
+CLI: `node scripts/cluster-entities.mjs [--local] [--prefix 4] [--sim 0.8]`
 
 ### 実測（local 965 entities）
 
-| 指標 | 値 |
-|------|---|
-| clusters | 16 |
-| assigned | 38 |
-| singletons | 927 |
-| largestCluster | 4（トヨタレンタリース 大分/熊本/兵庫/福岡） |
+| 指標 | Step 3.5 | **Step 3.6** |
+|------|---------|---|
+| clusters | 16 | **13** |
+| assigned | 38 | **31** |
+| singletons | 927 | **934** |
+| largestCluster | 4 | **4** |
+| 日本〇〇サービス 偽陽性 | あり | **消滅** |
+| トヨタ/ニッポン レンタリース | 保持 | **保持** |
 
 ### LLM（Layer 4）
 

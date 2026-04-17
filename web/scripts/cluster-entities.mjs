@@ -8,8 +8,8 @@
  * 使い方:
  *   node scripts/cluster-entities.mjs [--local] [--prefix 4] [--sim 0.7]
  *
- *   --prefix N   前方一致 N 文字以上で同一 cluster 候補（既定 4）
- *   --sim F      Levenshtein 類似度 F 以上で同一 cluster 候補（既定 0.7）
+ *   --prefix N   前方一致 N 文字以上で同一 cluster 候補（既定 4、stripped key ベース）
+ *   --sim F      Levenshtein 類似度 F 以上で同一 cluster 候補（既定 0.8、prefix>0 必須）
  *   --local      ローカル sqlite を対象
  */
 import fs from "node:fs";
@@ -26,7 +26,7 @@ const hasFlag = (name) => argv.includes(`--${name}`);
 
 const useLocal = hasFlag("local");
 const prefixLen = argVal("prefix") ? parseInt(argVal("prefix"), 10) : 4;
-const simThreshold = argVal("sim") ? parseFloat(argVal("sim")) : 0.7;
+const simThreshold = argVal("sim") ? parseFloat(argVal("sim")) : 0.8;
 
 const envPath = path.resolve(process.cwd(), ".env.local");
 if (fs.existsSync(envPath)) {

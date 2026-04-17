@@ -17,9 +17,42 @@
  */
 import { similarity } from "./normalize.js";
 
-export const DEFAULT_PREFIX_LEN = 4;     // 4 文字以上共通 → 候補
-export const DEFAULT_SIM_THRESHOLD = 0.7; // 類似度 0.7 以上 → 候補
-export const MIN_KEY_LEN_FOR_CLUSTER = 2; // 短すぎるキーは除外
+export const DEFAULT_PREFIX_LEN = 4;     // stripped key で 4 文字以上共通 → 候補
+export const DEFAULT_SIM_THRESHOLD = 0.8; // 類似度 0.8 以上 + prefix>0 → 候補（Step 3.6 強化）
+export const MIN_KEY_LEN_FOR_CLUSTER = 2; // 短すぎる stripped key は除外
+
+/**
+ * クラスタ判定から完全除去する汎用語（Step 3.6）。
+ * normalized_key は既に lowercase/全半角統一済なので、そのまま match する。
+ *
+ * 「日本〇〇系」「ジャパン〇〇系」の誤クラスタを防ぐ目的。
+ * トヨタ・ニッポン（レンタカー）等は意図的に除外（固有ブランドとして残す）。
+ */
+export const HARD_STOPS = ["日本", "ジャパン", "japan"];
+
+/**
+ * 末尾限定で除去する汎用サフィックス語（Step 3.6、重み低扱い）。
+ * 「〇〇サービス(株)」「〇〇工業(株)」などの後置語は identity を曖昧にする。
+ */
+export const SOFT_STOPS = ["サービス", "建設", "工業"];
+
+/**
+ * クラスタ判定用に normalized_key から汎用語を除去する。
+ * - HARD_STOPS は全位置から削除
+ * - SOFT_STOPS は末尾にあれば削除（前半に現れるケースは idex を持つので保持）
+ *
+ * @param {string} key normalized_key（normalize.js の normalizeCompanyKey 出力）
+ * @returns {string}
+ */
+export function stripForCluster(key) {
+  if (!key) return "";
+  let s = String(key);
+  for (const w of HARD_STOPS) s = s.split(w).join("");
+  for (const w of SOFT_STOPS) {
+    if (s.endsWith(w)) s = s.slice(0, -w.length);
+  }
+  return s;
+}
 
 /**
  * 全 entity をクラスタ化し、cluster_id を割当て、entity_clusters 行を作成/更新。
@@ -41,8 +74,13 @@ export function assignClusters({
   if (!db) throw new TypeError("assignClusters: db is required");
   const log = (msg) => logger(`[cluster] ${msg}`);
 
-  const entities = db.prepare("SELECT id, canonical_name, normalized_key, cluster_id FROM resolved_entities").all();
-  log(`対象 entity: ${entities.length}件`);
+  const raw = db.prepare("SELECT id, canonical_name, normalized_key, cluster_id FROM resolved_entities").all();
+  // stripped key を事前計算。2 文字未満になったら cluster 対象外
+  const entities = raw.map((e) => ({
+    ...e,
+    cluster_key: stripForCluster(e.normalized_key),
+  }));
+  log(`対象 entity: ${entities.length}件（stripped key 算出済）`);
 
   // Union-Find
   const parent = new Map(); // id -> id
@@ -62,18 +100,23 @@ export function assignClusters({
 
   for (const e of entities) ensure(e.id);
 
-  // normalized_key の先頭 2 文字でバケット化して枝刈り
+  // cluster_key（stopword 除去後）の先頭 2 文字でバケット化して枝刈り
   const buckets = new Map();
+  let excluded = 0;
   for (const e of entities) {
-    if (!e.normalized_key || e.normalized_key.length < MIN_KEY_LEN_FOR_CLUSTER) continue;
-    const b = e.normalized_key.slice(0, 2);
+    if (!e.cluster_key || e.cluster_key.length < MIN_KEY_LEN_FOR_CLUSTER) {
+      excluded++;
+      continue;
+    }
+    const b = e.cluster_key.slice(0, 2);
     if (!buckets.has(b)) buckets.set(b, []);
     buckets.get(b).push(e);
   }
-  log(`バケット数: ${buckets.size}`);
+  log(`バケット数: ${buckets.size}（stopword 除去後に短すぎる ${excluded}件 は対象外）`);
 
   let pairsChecked = 0;
-  let pairsUnioned = 0;
+  let pairsUnionedPrefix = 0;
+  let pairsUnionedSimilarity = 0;
 
   for (const bucket of buckets.values()) {
     for (let i = 0; i < bucket.length; i++) {
@@ -81,25 +124,30 @@ export function assignClusters({
       for (let j = i + 1; j < bucket.length; j++) {
         const b = bucket[j];
         pairsChecked++;
-        const shared = commonPrefixLen(a.normalized_key, b.normalized_key);
+
+        // 判定はすべて stripped key（cluster_key）で行う
+        const shared = commonPrefixLen(a.cluster_key, b.cluster_key);
+
+        // (a) prefix 主体: stripped key で prefixLen 以上一致
         if (shared >= prefixLen) {
           union(a.id, b.id);
-          pairsUnioned++;
+          pairsUnionedPrefix++;
           continue;
         }
-        // 類似度（共通 prefix が短くても、誤字・短縮で似ている可能性）
-        // 片側が短すぎる場合は誤判定の原因になるので最低3文字
-        if (a.normalized_key.length >= 3 && b.normalized_key.length >= 3) {
-          const sim = similarity(a.normalized_key, b.normalized_key);
+
+        // (b) similarity 安全弁: prefix が 0 なら禁止、1 以上 && sim>=0.8 のみ許可
+        // 片側が短すぎる場合は誤判定回避で最低 3 文字
+        if (shared >= 1 && a.cluster_key.length >= 3 && b.cluster_key.length >= 3) {
+          const sim = similarity(a.cluster_key, b.cluster_key);
           if (sim >= simThreshold) {
             union(a.id, b.id);
-            pairsUnioned++;
+            pairsUnionedSimilarity++;
           }
         }
       }
     }
   }
-  log(`比較: ${pairsChecked}ペア、結合: ${pairsUnioned}ペア`);
+  log(`比較: ${pairsChecked}ペア（prefix結合=${pairsUnionedPrefix} / similarity結合=${pairsUnionedSimilarity}）`);
 
   // Union-Find の root ごとにグループ化
   const groups = new Map(); // root -> [entityId,...]
@@ -177,12 +225,12 @@ function commonPrefixLen(a, b) {
 
 /**
  * グループ内のシグナル種別を判定（何によって結合されたか）。
- * 簡易版: 任意2者の prefix シェアが全ペアで prefixLen 以上なら "prefix"
- *         それ以外は "similarity"
+ * cluster_key（stripped）ベースで判定。全ペアが prefixLen 以上共有で "prefix"、
+ * それ以外は "similarity"（少なくとも 1 ペアは similarity 経由で結合されている）。
  */
 function detectSignal(group, prefixLen /* , simThreshold */) {
   for (let i = 0; i < group.length - 1; i++) {
-    const shared = commonPrefixLen(group[i].normalized_key, group[i + 1].normalized_key);
+    const shared = commonPrefixLen(group[i].cluster_key, group[i + 1].cluster_key);
     if (shared < prefixLen) return "similarity";
   }
   return "prefix";

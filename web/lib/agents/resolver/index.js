@@ -18,6 +18,9 @@ export {
 
 export {
   assignClusters,
+  stripForCluster,
   DEFAULT_PREFIX_LEN,
   DEFAULT_SIM_THRESHOLD,
+  HARD_STOPS,
+  SOFT_STOPS,
 } from "./cluster.js";
