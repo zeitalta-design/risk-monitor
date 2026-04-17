@@ -1,40 +1,66 @@
-# QA Layer — 【未実装・Stub】Phase 3 で着手
+# QA Layer — 最小実装（Phase 3）
 
-**責務**: 横断的監査。すべてのレイヤーを監視する。
+入札ラインの異常を**早期検知**するための監査層。
+同じ構造は補助金など他ドメインへコピーして再利用する前提で設計。
 
-## 監査項目（予定）
+## データ
 
-### データ矛盾検知
-- `latest_penalty_date > today` のような未来日付混入（実測：2402-01-01 事件相当）
-- `prefecture` が 47都道府県リストに含まれない値
-- 法人番号の 13桁チェックディジット検証
-- 同一 slug の論理重複（これは本来発生しないはずだがサニティチェック）
+| テーブル | 役割 |
+|---------|------|
+| `qa_snapshots` | 日次メトリクス値（件数系）の履歴。UNIQUE(captured_on, metric) |
+| `qa_findings`  | 検知された問題（severity × category × message + optional detail） |
 
-### 運用監査
-- **DB容量モニタ**（Turso の用量、テーブルごとの件数推移）
-- **Secrets ローテ推奨時期**（Turso トークン 6ヶ月、GitHub Secrets の lifespan）
-- **sync_runs 履歴**（各 Collector の成功率・失敗連続回数）
+## チェック一覧
 
-### 情報源監査（既存）
-- `scripts/audit-sources.mjs` をこの層に統合
-- 週次で URL 生存確認・リンク切れ検知
+| ID | 関数 | 対象 |
+|----|------|------|
+| count snapshots | `captureCountSnapshots` | nyusatsu_items / nyusatsu_results / resolved_entities / entity_clusters / resolution_aliases の件数 |
+| freshness       | `checkFreshness`        | sync_runs の最終実行時刻が古すぎないか（既定 30h） |
+| delta           | `checkDelta`            | 前日比 ±30% 警告 / ±50% critical（かつ絶対差が 10 以上） |
+| resolver-growth | `checkResolverGrowth`   | resolved_entities / entity_clusters / resolution_aliases の増分（delta のより厳しい版） |
+| api-health      | `checkApiHealth`        | `getAwardRanking` / `getAwardTimeline` が空を返していないか |
+| capacity        | `checkCapacity`         | テーブル行数。50万 warn / 200万 critical |
 
-## インターフェイス案
+## 重要度ラベル
 
+- `info`     : 参考情報
+- `warn`     : 注意。運用ログで追えばよい
+- `critical` : 検知即日の対応が望ましい
+
+## 使い方
+
+### 単発チェック
 ```js
-export async function runQaCheck({ categories }) {
-  // categories: ["data_consistency", "ops", "source_audit"]
-  return {
-    issues: [
-      { severity: "high", layer: "collector", detail: "...", count: 3 },
-      ...
-    ]
-  };
-}
+import { createQaStore, captureCountSnapshots, checkDelta, todayJst }
+  from "@/lib/agents/qa";
+
+const store = createQaStore(db);
+const day = todayJst();
+captureCountSnapshots({ db, store, day });
+checkDelta({ store, day });
 ```
+
+### 一括実行
+```js
+import { runAllChecks } from "@/lib/agents/qa";
+import * as analyzer from "@/lib/agents/analyzer/nyusatsu";
+
+const result = await runAllChecks({ db, analyzer });
+// result.findings に当日分の finding 一覧
+```
+
+CLI: `node scripts/qa-snapshot.mjs [--local]`
+
+## 他ドメインへの展開（補助金等）
+
+1. `NYUSATSU_COUNT_METRICS` と同形式で `HOJOKIN_COUNT_METRICS` を定義
+2. `runAllChecks` に `metrics` パラメータを渡すか、domain 専用の runner を追加
+3. `checkFreshness` の domains に `hojokin` を追加
+
+`checks.js` 内はドメインをハードコードせず配列駆動にしてあるので、コピー＆切り替えで動く。
 
 ## 禁止事項
 
-- 自動修正をしない（検知のみ。修正は人間または他レイヤーの責務）
-- 他レイヤーの実装に依存せず、DB レベル・ファイルレベルで検証
-- エラーを握り潰さず、必ず issue / Slack 等に通知
+- 自動修正しない（検知のみ）
+- 検知結果を他層にフィードバックしない（Resolver や pipeline の動作を QA が変えない）
+- Tool 外部通信（Slack/Webhook 等）は未実装。cron の alert に任せる
