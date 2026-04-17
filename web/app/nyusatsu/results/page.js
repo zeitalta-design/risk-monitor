@@ -263,12 +263,20 @@ export default function NyusatsuResultsPage() {
           </Link>
         </div>
 
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">落札結果データベース</h1>
-          <p className="text-sm text-gray-500">
-            全省庁の落札実績を横断検索。落札者名・金額・調達方式を掲載。
-            <span className="text-xs text-gray-400 ml-2">出典: 調達ポータル オープンデータ</span>
-          </p>
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">落札結果データベース</h1>
+            <p className="text-sm text-gray-500">
+              全省庁の落札実績を横断検索。落札者名・金額・調達方式を掲載。
+              <span className="text-xs text-gray-400 ml-2">出典: 調達ポータル オープンデータ</span>
+            </p>
+          </div>
+          <Link
+            href="/nyusatsu/dashboard"
+            className="shrink-0 inline-flex items-center gap-1 bg-[#2F9FD3] text-white text-sm font-medium px-3 py-2 rounded-md hover:bg-[#3AABDC] transition-colors"
+          >
+            📊 落札者分析ダッシュボード
+          </Link>
         </div>
 
         <SearchForm
