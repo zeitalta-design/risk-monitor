@@ -55,11 +55,12 @@ if (!useLocal && (!process.env.TURSO_DATABASE_URL || !process.env.TURSO_AUTH_TOK
 
 register("./_alias-loader.mjs", pathToFileURL(import.meta.filename).href);
 
-const { fetchKkjAnnouncements } = await import("../lib/nyusatsu-kkj-fetcher.js");
+// 新パイプライン経由: runKkjPipeline が内部で日付×LG反復 + fetchKkjSlice + processKkjRecords を実行
+const { runKkjPipeline } = await import("../lib/agents/pipeline/nyusatsu.js");
 
 console.log(`[fetch-kkj] Start: mode=${mode} dryRun=${dryRun} local=${useLocal}`);
 
-const result = await fetchKkjAnnouncements({
+const result = await runKkjPipeline({
   mode,
   fromDate: fromDate || undefined,
   toDate: toDate || undefined,

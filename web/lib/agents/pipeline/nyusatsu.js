@@ -14,6 +14,10 @@ import { getDb } from "@/lib/db";
 import { upsertNyusatsuResult } from "@/lib/repositories/nyusatsu";
 import { METHOD_LABELS, guessCategoryFromTitle } from "@/lib/nyusatsu-result-fetcher";
 import { toSlug, inferCategory } from "@/lib/nyusatsu-fetcher";
+import {
+  fetchKkjSlice, enumerateDates, fmtDateJst, sleep,
+  LG_CODES, SLEEP_MS,
+} from "@/lib/nyusatsu-kkj-fetcher";
 import kkjFormat from "@/lib/agents/formatter/nyusatsu/kkj";
 import ppFormat from "@/lib/agents/formatter/nyusatsu/p-portal-results";
 import cmFormat from "@/lib/agents/formatter/nyusatsu/central-ministries";
@@ -352,6 +356,107 @@ function unifiedCentralMinistriesToItemRow(unified, today) {
     has_attachment: unified.detail_url ? 1 : 0,
     announcement_date: unified.published_at || null,
     contract_period: null,
+  };
+}
+
+// ─── KKJ フルレンジ pipeline (orchestration) ─────────────────────
+
+/**
+ * KKJ を 日付 × LG_Code の 2重ループで走らせるパイプライン全体。
+ * 各 (day, lg) スライスで fetchKkjSlice → processKkjRecords を呼び出す。
+ *
+ * @param {Object}  opts
+ * @param {"daily"|"range"} [opts.mode="daily"]
+ * @param {string}  [opts.fromDate] range 時の開始日
+ * @param {string}  [opts.toDate]   range 時の終了日（省略時は from と同日）
+ * @param {string[]}[opts.lgCodes]  絞り込み（既定: 全47）
+ * @param {boolean} [opts.dryRun]
+ * @param {Function}[opts.logger]
+ */
+export async function runKkjPipeline({
+  mode = "daily",
+  fromDate,
+  toDate,
+  lgCodes,
+  dryRun = false,
+  logger = console.log,
+} = {}) {
+  const start = Date.now();
+  const log = (msg) => logger(`[pipeline.nyusatsu.kkj] ${msg}`);
+
+  // 日付レンジ決定（KKJ の CftIssueDate は JST なので JST で計算）
+  let rangeFrom, rangeTo;
+  if (mode === "daily") {
+    rangeFrom = fmtDateJst(Date.now() - 86400000);
+    rangeTo   = fmtDateJst(Date.now());
+  } else {
+    if (!fromDate) throw new Error("range モードは fromDate 必須");
+    rangeFrom = fromDate;
+    rangeTo   = toDate || fromDate;
+  }
+  const dateRange = `${rangeFrom}/${rangeTo}`;
+  const days = enumerateDates(rangeFrom, rangeTo);
+  const targetLgs = (lgCodes && lgCodes.length) ? lgCodes : LG_CODES;
+  log(`mode=${mode} dateRange=${dateRange} days=${days.length} lg=${targetLgs.length}`);
+  log(`total API calls planned: ${days.length * targetLgs.length}`);
+
+  let totalFetched = 0, totalFormatted = 0, totalInserted = 0, totalUpdated = 0, totalSkipped = 0;
+  const perDay = [];
+
+  for (const day of days) {
+    let dayFetched = 0;
+    for (const lg of targetLgs) {
+      let raw = [];
+      try {
+        raw = await fetchKkjSlice({ lg, dateRange: day, logger });
+        dayFetched += raw.length;
+        totalFetched += raw.length;
+        if (raw.length >= 1000) {
+          log(`⚠ ${day} LG=${lg} が1000件以上: Category で追加分割が必要`);
+        }
+      } catch (e) {
+        log(`${day} LG=${lg} 失敗: ${e.message}`);
+      }
+
+      if (raw.length > 0) {
+        // スライスごとに processKkjRecords を呼ぶ（progress 可視性優先）
+        const s = processKkjRecords(raw, { dryRun, logger });
+        totalFormatted += s.formatted;
+        totalInserted  += s.inserted;
+        totalUpdated   += s.updated;
+        totalSkipped   += s.skipped;
+      }
+      await sleep(SLEEP_MS);
+    }
+    perDay.push({ day, fetched: dayFetched });
+    log(`  ${day}: ${dayFetched}件 (累計 fetched=${totalFetched} inserted=${totalInserted} updated=${totalUpdated})`);
+  }
+
+  // sync_runs はパイプライン全体で 1 行
+  if (!dryRun) {
+    try {
+      const db = getDb();
+      db.prepare(`
+        INSERT INTO sync_runs (domain_id, run_type, run_status, fetched_count, created_count, updated_count, started_at, finished_at)
+        VALUES ('nyusatsu_kkj', 'scheduled', 'completed', ?, ?, ?, datetime('now'), datetime('now'))
+      `).run(totalFetched, totalInserted, totalUpdated);
+    } catch { /* sync_runs が無いDBなら無視 */ }
+  }
+
+  const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+  log(`Done: fetched=${totalFetched} inserted=${totalInserted} updated=${totalUpdated} skipped=${totalSkipped} (${elapsed}s)`);
+
+  return {
+    ok: true,
+    mode,
+    dateRange,
+    totalFetched,
+    formatted: totalFormatted,
+    inserted: totalInserted,
+    updated: totalUpdated,
+    skipped: totalSkipped,
+    perDay,
+    elapsed,
   };
 }
 

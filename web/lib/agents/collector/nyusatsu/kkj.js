@@ -2,10 +2,10 @@
  * Collector: nyusatsu.kkj
  * 官公需情報ポータル（中小企業庁）— 全国47都道府県の入札公告
  *
- * 現時点は既存 lib/nyusatsu-kkj-fetcher.js を委譲呼出し。
- * Formatter 層実装時に生レコード返却型へ移行予定。
+ * 新パイプライン経由: runKkjPipeline が内部で 日付 × LG の
+ * 2重ループで fetchKkjSlice → processKkjRecords を実行する。
  */
-import { fetchKkjAnnouncements } from "@/lib/nyusatsu-kkj-fetcher";
+import { runKkjPipeline } from "@/lib/agents/pipeline/nyusatsu";
 
 /** @type {import("../../types.js").Collector} */
 const collector = {
@@ -15,7 +15,7 @@ const collector = {
   async collect({ dryRun = false, logger = console.log, mode = "daily", fromDate, toDate, lgCodes } = {}) {
     const start = Date.now();
     try {
-      const r = await fetchKkjAnnouncements({ mode, fromDate, toDate, lgCodes, dryRun, logger });
+      const r = await runKkjPipeline({ mode, fromDate, toDate, lgCodes, dryRun, logger });
       return {
         id: "nyusatsu.kkj",
         domain: "nyusatsu",
