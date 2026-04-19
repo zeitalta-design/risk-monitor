@@ -89,7 +89,18 @@ function ResultCard({ item }) {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-gray-400 w-16 shrink-0">発注機関</span>
-              <span className="text-gray-600 truncate">{item.issuer_name || "—"}</span>
+              <span className="text-gray-600 truncate">
+                {item.issuer_dept_hint ? (
+                  <>
+                    <span className="text-gray-900">{item.issuer_dept_hint}</span>
+                    <span className="ml-1 text-[10px] text-gray-400" title="title 先頭の【...】から抽出（正式機関名ではなくヒント）">
+                      ヒント
+                    </span>
+                  </>
+                ) : (
+                  <span className="font-mono">{item.issuer_code || item.issuer_name || "—"}</span>
+                )}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-gray-400 w-16 shrink-0">落札日</span>

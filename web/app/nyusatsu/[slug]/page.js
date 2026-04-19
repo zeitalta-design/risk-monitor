@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import DomainDetailPage from "@/components/core/DomainDetailPage";
 import DomainCompareButton from "@/components/core/DomainCompareButton";
 import DomainFavoriteButton from "@/components/core/DomainFavoriteButton";
+import SaveDealButton from "@/components/SaveDealButton";
 import "@/lib/domains";
 import { getDomain } from "@/lib/core/domain-registry";
 import {
@@ -78,8 +79,33 @@ function NyusatsuInfoBanner({ item }) {
 
 export default function NyusatsuDetailPage() {
   const { slug } = useParams();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const entityIdParam = searchParams.get("entityId");
+  const entityId = entityIdParam && /^\d+$/.test(entityIdParam) ? parseInt(entityIdParam, 10) : null;
+
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Phase I 先行: items 用 Deal Score（entityId 指定時のみ計算）
+  const [dealScore, setDealScore] = useState(null);
+  const [dealScoreLoading, setDealScoreLoading] = useState(false);
+
+  // Phase J-14: 保存状態。ログイン中のみ取得、未ログインは false のまま。
+  const [initialSaved, setInitialSaved] = useState(false);
+  useEffect(() => {
+    if (!slug) return;
+    let cancelled = false;
+    fetch("/api/deals/saved?mode=set")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled || !d) return;
+        const set = new Set(d.slugs || []);
+        setInitialSaved(set.has(slug));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [slug]);
 
   useEffect(() => {
     async function load() {
@@ -96,6 +122,16 @@ export default function NyusatsuDetailPage() {
     }
     load();
   }, [slug]);
+
+  useEffect(() => {
+    if (!item?.id || !entityId) { setDealScore(null); return; }
+    setDealScoreLoading(true);
+    fetch(`/api/nyusatsu/analytics/deal-score?entityId=${entityId}&dealId=${item.id}&source=items`)
+      .then((r) => r.json())
+      .then((d) => setDealScore(d?.error ? null : d))
+      .catch(() => setDealScore(null))
+      .finally(() => setDealScoreLoading(false));
+  }, [item?.id, entityId]);
 
   if (loading) return <DomainDetailPage loading />;
 
@@ -127,6 +163,7 @@ export default function NyusatsuDetailPage() {
       }
       actions={
         <>
+          <SaveDealButton dealSlug={slug} initialSaved={initialSaved} />
           {nyusatsuDomain && <DomainFavoriteButton itemId={item.id} domain={nyusatsuDomain} variant="button" />}
           <DomainCompareButton domainId="nyusatsu" itemId={item.id} variant="compact" />
         </>
@@ -134,6 +171,20 @@ export default function NyusatsuDetailPage() {
       footerSlot={<div className="flex gap-3 mt-2"><Link href="/nyusatsu" className="btn-secondary text-sm">← 一覧に戻る</Link></div>}
     >
       <NyusatsuInfoBanner item={item} />
+
+      {/* Phase I 先行: Deal Score（?entityId=X で評価対象企業を指定） */}
+      <ItemDealScoreSection
+        item={item}
+        entityId={entityId}
+        data={dealScore}
+        loading={dealScoreLoading}
+        onSelectEntity={(eid) => {
+          const sp = new URLSearchParams(searchParams.toString());
+          if (eid) sp.set("entityId", String(eid));
+          else sp.delete("entityId");
+          router.replace(`/nyusatsu/${slug}?${sp.toString()}`, { scroll: false });
+        }}
+      />
 
       <section className="card p-6 mb-6">
         <h2 className="text-sm font-bold text-gray-900 mb-3">案件概要</h2>
@@ -233,5 +284,167 @@ export default function NyusatsuDetailPage() {
         )}
       </div>
     </DomainDetailPage>
+  );
+}
+
+// ─── Phase I 先行: items 向け Deal Score カード ───────────────
+// 公告中案件に「ある企業が追う価値」を Deal Score で可視化する。
+// entityId 未指定時は入力フォームのみ表示（スコア計算は任意）。
+function ItemDealScoreSection({ item, entityId, data, loading, onSelectEntity }) {
+  const [inputId, setInputId] = useState(entityId ? String(entityId) : "");
+
+  useEffect(() => {
+    setInputId(entityId ? String(entityId) : "");
+  }, [entityId]);
+
+  function tone(s) {
+    if (s >= 80) return { fg: "#1F7A52", bg: "#E4F6EC", border: "#B5E2C5" };
+    if (s >= 60) return { fg: "#2F9FD3", bg: "#EDF7FC", border: "#DCEAF2" };
+    if (s >= 40) return { fg: "#8A6D00", bg: "#FBF4DC", border: "#EAD9A0" };
+    return { fg: "#B4281E", bg: "#FBECEA", border: "#F0C0BA" };
+  }
+
+  return (
+    <section className="card p-6 mb-6 border border-gray-200">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <h2 className="text-sm font-bold text-gray-900">Deal Score（この企業にとって）</h2>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const v = inputId.trim();
+            if (v && /^\d+$/.test(v)) onSelectEntity(parseInt(v, 10));
+            else onSelectEntity(null);
+          }}
+          className="flex items-center gap-2 text-xs"
+        >
+          <label className="text-gray-500">評価対象 企業ID:</label>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={inputId}
+            onChange={(e) => setInputId(e.target.value)}
+            placeholder="例: 16542"
+            className="px-2 py-1 border border-gray-300 rounded w-24 font-mono"
+          />
+          <button type="submit" className="px-2 py-1 bg-[#2F9FD3] text-white rounded hover:bg-[#2589b8]">
+            評価
+          </button>
+          {entityId && (
+            <button
+              type="button"
+              className="px-2 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50"
+              onClick={() => onSelectEntity(null)}
+            >
+              クリア
+            </button>
+          )}
+        </form>
+      </div>
+
+      {!entityId ? (
+        <p className="text-xs text-gray-500">
+          企業 ID を入力して「評価」するとこの案件の Deal Score を計算します。
+          entity は{" "}
+          <Link href="/nyusatsu/dashboard" className="text-blue-600 hover:underline">
+            落札ランキング
+          </Link>{" "}
+          から選べます。
+        </p>
+      ) : loading ? (
+        <p className="text-xs text-gray-500">Deal Score 計算中…</p>
+      ) : !data ? (
+        <p className="text-xs text-gray-500">この案件 × 企業 ID では Deal Score を取得できませんでした</p>
+      ) : (
+        <ItemDealScoreCardInner data={data} entityId={entityId} tone={tone(data.score)} />
+      )}
+    </section>
+  );
+}
+
+function ItemDealScoreCardInner({ data, entityId, tone }) {
+  const comps = [
+    { key: "entity_score",          label: "企業",   sub: data.sources?.entity?.label ? `「${data.sources.entity.label}」` : null },
+    { key: "market_score",          label: "市場",   sub: data.sources?.market?.label ? `「${data.sources.market.label}」` : null },
+    { key: "category_score",        label: "業種",   sub: data.deal?.category
+        ? `${data.deal.category}${data.sources?.category?.label ? `: 「${data.sources.category.label}」` : ""}`
+        : "category なし → 中立" },
+    { key: "issuer_affinity_score", label: "issuer", sub: !data.deal?.issuer_key
+        ? "識別不能 → 中立"
+        : data.sources?.issuer
+          ? `「${data.sources.issuer.label}」 ${data.sources.issuer.inputs?.count ?? 0}件 / 直近 ${data.sources.issuer.inputs?.last_awarded_year ?? "-"}`
+          : null },
+  ];
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center gap-4 mb-3">
+        <div className="flex items-baseline gap-2">
+          <span className="text-5xl font-bold tabular-nums" style={{ color: tone.fg }}>{data.score}</span>
+          <span className="text-xs text-gray-500">/ 100</span>
+          <span
+            className="inline-block text-xs font-medium px-2 py-0.5 rounded border"
+            style={{ color: tone.fg, backgroundColor: tone.bg, borderColor: tone.border }}
+          >
+            {data.label}
+          </span>
+        </div>
+        <Link
+          href={`/nyusatsu/entities/${entityId}`}
+          className="text-xs text-blue-600 hover:underline ml-auto"
+        >
+          企業 #{entityId} の詳細 →
+        </Link>
+        {data.deal?.issuer_key && data.deal.issuer_key_type === "dept_hint" && (
+          <span className="text-[11px] px-1.5 py-0.5 rounded bg-[#EDF7FC] text-[#2F9FD3]" title="issuer_dept_hint（補助値）">
+            issuerヒント: {data.deal.issuer_key}
+          </span>
+        )}
+        {data.deal?.issuer_key && data.deal.issuer_key_type === "code" && (
+          <span className="text-[11px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-mono" title="issuer_code（元CSVコード）">
+            code: {data.deal.issuer_key}
+          </span>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        {comps.map((c) => {
+          const v = data.components[c.key];
+          const value = v ?? 50;
+          return (
+            <div key={c.key}>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-gray-900">
+                  {c.label}
+                  {c.sub && <span className="text-gray-400 ml-2">{c.sub}</span>}
+                </span>
+                <span className="tabular-nums font-medium text-gray-900">{value}</span>
+              </div>
+              <div className="mt-1 h-1.5 bg-gray-100 rounded overflow-hidden">
+                <div className="h-full" style={{ width: `${value}%`, backgroundColor: tone.fg }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {data.reasons?.length > 0 && (
+        <ul className="mt-4 space-y-1 text-xs text-gray-700">
+          {data.reasons.map((r, i) => (
+            <li key={i} className="flex gap-1.5">
+              <span className="text-gray-400 shrink-0">•</span>
+              <span>{r}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <p className="text-[10px] text-gray-400 mt-3">
+        * 重み: 企業 {(data.weights.entity_score*100).toFixed(0)}% /
+        市場 {(data.weights.market_score*100).toFixed(0)}% /
+        業種 {(data.weights.category_score*100).toFixed(0)}% /
+        issuer {((data.weights.issuer_affinity_score ?? 0)*100).toFixed(0)}%。
+        予算金額はスコア合成には未使用（公告中のため未確定）。
+      </p>
+    </div>
   );
 }

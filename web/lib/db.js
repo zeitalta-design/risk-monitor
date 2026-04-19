@@ -221,6 +221,16 @@ export function getDb() {
       "CREATE INDEX IF NOT EXISTS idx_hojokin_items_org ON hojokin_items(organization_id)",
       "CREATE INDEX IF NOT EXISTS idx_kyoninka_entities_org ON kyoninka_entities(organization_id)",
       "CREATE INDEX IF NOT EXISTS idx_kyoninka_entities_corp ON kyoninka_entities(corporate_number)",
+      // 入札 issuer 正規化 Phase 1: code は正として保持、title からの hint は別列
+      // （意味論的に "code → 省庁名" の 1:1 更新は誤記載になるため、issuer_name は上書きしない）
+      "ALTER TABLE nyusatsu_results ADD COLUMN issuer_code TEXT",
+      "ALTER TABLE nyusatsu_results ADD COLUMN issuer_dept_hint TEXT",
+      "ALTER TABLE nyusatsu_results ADD COLUMN issuer_hint_source TEXT",
+      "ALTER TABLE nyusatsu_items ADD COLUMN issuer_code TEXT",
+      "ALTER TABLE nyusatsu_items ADD COLUMN issuer_dept_hint TEXT",
+      "ALTER TABLE nyusatsu_items ADD COLUMN issuer_hint_source TEXT",
+      "CREATE INDEX IF NOT EXISTS idx_nyusatsu_results_issuer_code ON nyusatsu_results(issuer_code)",
+      "CREATE INDEX IF NOT EXISTS idx_nyusatsu_items_issuer_code ON nyusatsu_items(issuer_code)",
     ];
     for (const sql of migrations) {
       try { _db.exec(sql); } catch { /* duplicate column → ignore */ }
@@ -559,6 +569,11 @@ export function getDb() {
     const userPasswordMigrations = [
       "ALTER TABLE users ADD COLUMN password_changed_at TEXT",
       "ALTER TABLE users ADD COLUMN last_login_at TEXT",
+      // Phase M-4: Stripe 月額課金 (入札ナビ Pro) の加入状態
+      "ALTER TABLE users ADD COLUMN is_pro INTEGER NOT NULL DEFAULT 0",
+      "ALTER TABLE users ADD COLUMN stripe_customer_id TEXT",
+      "ALTER TABLE users ADD COLUMN stripe_subscription_id TEXT",
+      "ALTER TABLE users ADD COLUMN pro_updated_at TEXT",
     ];
     for (const sql of userPasswordMigrations) {
       try { _db.exec(sql); } catch { /* duplicate column → ignore */ }
@@ -1408,6 +1423,74 @@ export function getDb() {
     _db.exec(`CREATE INDEX IF NOT EXISTS idx_watched_orgs_name ON watched_organizations(organization_name)`);
     // 既存テーブルへのカラム追加（冪等）
     try { _db.exec("ALTER TABLE watched_organizations ADD COLUMN last_notified_action_date TEXT"); } catch {}
+    try { _db.exec("ALTER TABLE watched_organizations ADD COLUMN last_notified_award_date TEXT"); } catch {}
+    try { _db.exec("ALTER TABLE watched_organizations ADD COLUMN last_inapp_notified_action_date TEXT"); } catch {}
+    // Phase J-7: watch ごとの Deal Score 通知 threshold
+    try { _db.exec("ALTER TABLE watched_organizations ADD COLUMN deal_score_threshold INTEGER DEFAULT 80"); } catch {}
+    try { _db.exec("UPDATE watched_organizations SET deal_score_threshold = 80 WHERE deal_score_threshold IS NULL"); } catch {}
+    // Phase J-8: watch ごとの通知頻度（realtime / daily / off）
+    try { _db.exec("ALTER TABLE watched_organizations ADD COLUMN notify_frequency TEXT DEFAULT 'realtime'"); } catch {}
+    try { _db.exec("UPDATE watched_organizations SET notify_frequency = 'realtime' WHERE notify_frequency IS NULL"); } catch {}
+
+    // watch_notifications: watched_organizations 由来の通知専用テーブル。
+    // 日次 cron で gyosei-shobun / nyusatsu の新着を検知して INSERT。
+    //
+    // 既存 `notifications` テーブル（user_key ベースの汎用通知パイプ）とは
+    // 別系統として分離。user_id は watched_organizations と揃えて INTEGER。
+    //
+    // 重複防止: (user_id, type, source_slug, event_date) の複合 UNIQUE で
+    // INSERT OR IGNORE により冪等にする。fuzzy / LLM は一切使わない。
+    _db.exec(`
+      CREATE TABLE IF NOT EXISTS watch_notifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        type TEXT NOT NULL,
+        source_slug TEXT NOT NULL,
+        event_date TEXT NOT NULL,
+        organization_name TEXT NOT NULL,
+        title TEXT NOT NULL,
+        summary TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        read_at TEXT,
+        UNIQUE (user_id, type, source_slug, event_date)
+      )
+    `);
+    _db.exec(`CREATE INDEX IF NOT EXISTS idx_watch_notifications_user_unread ON watch_notifications(user_id, read_at)`);
+    _db.exec(`CREATE INDEX IF NOT EXISTS idx_watch_notifications_user_created ON watch_notifications(user_id, created_at DESC)`);
+    // Phase J-9: 通知生成時の frequency をそのまま残して UI 側で「今日のまとめ」を区別する。
+    //   許容値: realtime / daily（NULL は UI で realtime とみなす）
+    //   dedupe キー (user_id, type, source_slug, event_date) は変更しない。
+    try { _db.exec("ALTER TABLE watch_notifications ADD COLUMN frequency TEXT DEFAULT 'realtime'"); } catch {}
+    try { _db.exec("UPDATE watch_notifications SET frequency = 'realtime' WHERE frequency IS NULL"); } catch {}
+
+    // Phase J-14: 有望案件のピン留め / 保存。
+    //   1 user × 1 deal_slug の小さな結合テーブル。
+    //   deal_slug 基準にするのは nyusatsu_items の id が再取り込みで変わる
+    //   可能性がある一方で slug は安定しているため（cron の source_slug と同根拠）。
+    //   UNIQUE(user_id, deal_slug) で冪等 INSERT、他ユーザーの保存には触れない。
+    _db.exec(`
+      CREATE TABLE IF NOT EXISTS saved_deals (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        deal_slug TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        UNIQUE(user_id, deal_slug)
+      )
+    `);
+    _db.exec(`CREATE INDEX IF NOT EXISTS idx_saved_deals_user_created ON saved_deals(user_id, created_at DESC)`);
+    // Phase J-16: status 変化通知用に「前回見た status」を保持。
+    //   - 初回保存時に現在の nyusatsu_items.status を入れる
+    //   - cron で saved_deals.last_seen_status != nyusatsu_items.status のとき通知し、
+    //     last_seen_status を最新値に更新する
+    //   - 既存行（migration 前から存在）は NULL 許容、cron 初回実行時に backfill
+    try { _db.exec("ALTER TABLE saved_deals ADD COLUMN last_seen_status TEXT"); } catch {}
+
+    // Phase J-17: 保存案件の軽量 pin（優先表示用 boolean 1 列）。
+    //   - 0/1 の INTEGER。DEFAULT 0 で既存行は非 pin 扱い。
+    //   - 並び順 (is_pinned DESC, created_at DESC) を最適化する複合 index も追加。
+    try { _db.exec("ALTER TABLE saved_deals ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0"); } catch {}
+    _db.exec(`CREATE INDEX IF NOT EXISTS idx_saved_deals_user_pinned_created
+              ON saved_deals(user_id, is_pinned DESC, created_at DESC)`);
     } // end if (!TURSO_URL) — ローカル専用スキーマ・マイグレーション
   }
   return _db;

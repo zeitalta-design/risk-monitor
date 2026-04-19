@@ -25,6 +25,13 @@ const INDUSTRY_LABELS = {
   transport: "運送業",
 };
 
+// Phase J-8: 通知頻度の選択肢。DB 側の許容値と一致している必要がある。
+const FREQUENCY_OPTIONS = [
+  { value: "realtime", label: "即時" },
+  { value: "daily",    label: "日次まとめ" },
+  { value: "off",      label: "オフ" },
+];
+
 export default function WatchlistPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -57,6 +64,55 @@ export default function WatchlistPage() {
       fetchItems();
     } catch (err) {
       console.error("Remove watch error:", err);
+    }
+  }
+
+  // Phase J-7: threshold をインラインで PATCH。不正値は 400、成功後 list を再取得
+  async function handleUpdateThreshold(item, nextValue) {
+    const parsed = parseInt(nextValue, 10);
+    if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
+      alert("通知する最低スコアは 0〜100 の整数で指定してください");
+      return;
+    }
+    if (parsed === (item.deal_score_threshold ?? 80)) return;
+    try {
+      const res = await fetch("/api/admin/watchlist", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: item.id, deal_score_threshold: parsed }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        alert(`更新に失敗: ${d?.error || res.status}`);
+        return;
+      }
+      fetchItems();
+    } catch (err) {
+      console.error("Update threshold error:", err);
+    }
+  }
+
+  // Phase J-8: frequency を select で PATCH。不正値は 400。成功後 list を再取得
+  async function handleUpdateFrequency(item, nextValue) {
+    if (!FREQUENCY_OPTIONS.some((o) => o.value === nextValue)) {
+      alert("通知頻度は 即時 / 日次まとめ / オフ のいずれかで指定してください");
+      return;
+    }
+    if (nextValue === (item.notify_frequency ?? "realtime")) return;
+    try {
+      const res = await fetch("/api/admin/watchlist", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: item.id, notify_frequency: nextValue }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        alert(`更新に失敗: ${d?.error || res.status}`);
+        return;
+      }
+      fetchItems();
+    } catch (err) {
+      console.error("Update frequency error:", err);
     }
   }
 
@@ -193,6 +249,12 @@ export default function WatchlistPage() {
                 <th className="p-3 text-left text-xs font-bold text-gray-500">最新処分種別</th>
                 <th className="p-3 text-left text-xs font-bold text-gray-500">状態</th>
                 <th className="p-3 text-left text-xs font-bold text-gray-500">通知</th>
+                <th className="p-3 text-left text-xs font-bold text-gray-500" title="Deal Score が指定値以上で通知">
+                  通知する最低スコア
+                </th>
+                <th className="p-3 text-left text-xs font-bold text-gray-500" title="即時 / 日次まとめ / オフ">
+                  通知頻度
+                </th>
                 <th className="p-3 text-left text-xs font-bold text-gray-500">操作</th>
               </tr>
             </thead>
@@ -244,6 +306,34 @@ export default function WatchlistPage() {
                         {item.last_notified_action_date ? "通知済み" : "—"}
                       </span>
                     )}
+                  </td>
+                  <td className="p-3">
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={1}
+                        defaultValue={item.deal_score_threshold ?? 80}
+                        onBlur={(e) => handleUpdateThreshold(item, e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+                        className="w-14 text-xs border border-gray-200 rounded px-1.5 py-0.5 focus:outline-none focus:border-cyan-400 tabular-nums"
+                        aria-label={`${item.organization_name} の通知最低スコア`}
+                      />
+                      <span className="text-xs text-gray-400">以上</span>
+                    </div>
+                  </td>
+                  <td className="p-3">
+                    <select
+                      value={item.notify_frequency ?? "realtime"}
+                      onChange={(e) => handleUpdateFrequency(item, e.target.value)}
+                      className="text-xs border border-gray-200 rounded px-1.5 py-0.5 focus:outline-none focus:border-cyan-400 bg-white"
+                      aria-label={`${item.organization_name} の通知頻度`}
+                    >
+                      {FREQUENCY_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
                   </td>
                   <td className="p-3">
                     <div className="flex gap-2">

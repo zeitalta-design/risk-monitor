@@ -6,6 +6,7 @@ import Link from "next/link";
 import DomainDetailPage from "@/components/core/DomainDetailPage";
 import DomainFavoriteButton from "@/components/core/DomainFavoriteButton";
 import CrossDomainLinks from "@/components/core/CrossDomainLinks";
+import OrganizationHubLink from "@/components/core/OrganizationHubLink";
 import "@/lib/domains";
 import { getDomain } from "@/lib/core/domain-registry";
 import {
@@ -295,18 +296,11 @@ export default function KyoninkaDetailPage() {
       />
 
       {/* 共通企業詳細（cross-domain hub）への導線 */}
-      {(item.organization_id || item.corporate_number) && (
-        <div className="mb-6 text-xs">
-          <Link
-            href={item.organization_id
-              ? `/organizations/${item.organization_id}`
-              : `/organizations?corp=${encodeURIComponent(item.corporate_number)}`}
-            className="inline-flex items-center gap-1 text-blue-600 hover:underline"
-          >
-            企業詳細ページを開く（cross-domain ハブ） →
-          </Link>
-        </div>
-      )}
+      <OrganizationHubLink
+        organizationId={item.organization_id}
+        corp={item.corporate_number}
+        name={item.entity_name}
+      />
 
       {/* 基本情報 */}
       <section className="card p-6 mb-6">

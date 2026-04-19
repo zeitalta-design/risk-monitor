@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import NotificationBell from "./NotificationBell";
+import WatchNotificationBell from "./WatchNotificationBell";
 import { siteConfig } from "@/lib/site-config";
 
 export default function Header() {
@@ -53,6 +54,8 @@ export default function Header() {
   const pathname = usePathname();
   const isLoggedIn = user !== undefined && user !== null;
   const isAdmin = user?.role === "admin";
+  // Phase M-5: 通知は Pro 限定機能。非 Pro には Bell を出さない。
+  const isPro = !!user?.isPro;
 
   useEffect(() => {
     if (isLoggedIn) fetchRiskUnread();
@@ -108,6 +111,11 @@ export default function Header() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
                 </svg>
               </HeaderIconLink>
+              <HeaderIconLink href="/saved-deals" label="保存案件">
+                <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                </svg>
+              </HeaderIconLink>
               {/* リスク監視アイコン（眼→/risk-watch）+ 未読バッジ（→/risk-alerts） */}
               <div className="relative">
                 <Link
@@ -130,6 +138,7 @@ export default function Header() {
                   </Link>
                 )}
               </div>
+              {isPro && <WatchNotificationBell />}
               <NotificationBell />
             </>
           )}
@@ -163,7 +172,12 @@ export default function Header() {
 
         {/* モバイルボタン群 */}
         <div className="flex sm:hidden items-center gap-2">
-          {isLoggedIn && <NotificationBell />}
+          {isLoggedIn && (
+            <>
+              {isPro && <WatchNotificationBell />}
+              <NotificationBell />
+            </>
+          )}
           <button
             onClick={() => setMenuOpen(!menuOpen)}
             className="p-1.5 text-gray-500 hover:text-gray-700"
@@ -198,6 +212,7 @@ export default function Header() {
               <MobileNavLink href="/risk-watch"   label={`ウォッチリスト${riskUnreadCount > 0 ? ` (${riskUnreadCount})` : ""}`} onClick={() => setMenuOpen(false)} />
               <MobileNavLink href="/risk-alerts"  label="リスク通知"    onClick={() => setMenuOpen(false)} />
               <MobileNavLink href="/favorites"    label="お気に入り"    onClick={() => setMenuOpen(false)} />
+              <MobileNavLink href="/saved-deals"  label="保存案件"      onClick={() => setMenuOpen(false)} />
               <MobileNavLink href="/notifications" label="通知一覧"     onClick={() => setMenuOpen(false)} />
               {isAdmin && (
                 <MobileNavLink href="/admin/ops" label="管理" onClick={() => setMenuOpen(false)} className="text-gray-400" />

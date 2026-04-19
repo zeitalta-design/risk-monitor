@@ -9,6 +9,8 @@ import RiskScoreBadge from "@/components/gyosei-shobun/RiskScoreBadge";
 import WatchButton from "@/components/gyosei-shobun/WatchButton";
 import { calculateRiskScore } from "@/lib/risk-score";
 import LegalDisclaimer from "@/components/gyosei-shobun/LegalDisclaimer";
+import CrossDomainLinks from "@/components/core/CrossDomainLinks";
+import OrganizationHubLink from "@/components/core/OrganizationHubLink";
 
 // ─── 動的 metadata ─────────────────────
 
@@ -250,6 +252,18 @@ export default async function GyoseiShobunDetailPage({ params, searchParams }) {
             </p>
           </div>
         )}
+
+        {/* ──── 他DB情報（Phase 2 - cross-domain） ──── */}
+        <CrossDomainLinks
+          lookupKey={item.organization_name_raw}
+          skipDomain="gyosei_shobun"
+        />
+
+        {/* ──── 共通企業詳細（cross-domain hub）への導線 ──── */}
+        <OrganizationHubLink
+          organizationId={item.organization_id}
+          name={item.organization_name_raw}
+        />
 
         {/* ──── 出典 ──── */}
         {(item.source_name || item.source_url) && (

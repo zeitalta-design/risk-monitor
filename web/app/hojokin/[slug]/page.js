@@ -7,6 +7,7 @@ import DomainDetailPage from "@/components/core/DomainDetailPage";
 import DomainCompareButton from "@/components/core/DomainCompareButton";
 import DomainFavoriteButton from "@/components/core/DomainFavoriteButton";
 import CrossDomainLinks from "@/components/core/CrossDomainLinks";
+import OrganizationHubLink from "@/components/core/OrganizationHubLink";
 import "@/lib/domains";
 import { getDomain } from "@/lib/core/domain-registry";
 import {
@@ -147,16 +148,10 @@ export default function HojokinDetailPage() {
       )}
 
       {/* 共通企業詳細（cross-domain hub）への導線 */}
-      {item.organization_id && (
-        <div className="mb-6 text-xs">
-          <Link
-            href={`/organizations/${item.organization_id}`}
-            className="inline-flex items-center gap-1 text-blue-600 hover:underline"
-          >
-            企業詳細ページを開く（cross-domain ハブ） →
-          </Link>
-        </div>
-      )}
+      <OrganizationHubLink
+        organizationId={item.organization_id}
+        name={item.provider_name}
+      />
 
       <section className="card p-6 mb-6">
         <h2 className="text-sm font-bold text-gray-900 mb-3">基本情報</h2>

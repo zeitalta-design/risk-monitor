@@ -76,9 +76,16 @@ export function useDomainSearchPage({
   const [formInput, setFormInput] = useState(filters);
 
   // filters → URL
+  //   Phase J-3: このフックの管轄外（entityId 等）の unknown params は
+  //   保持する。既存の filterKeys / sort / page は従来どおり再構築。
   const syncUrl = useCallback(
     (f) => {
-      const params = new URLSearchParams();
+      const params = typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search)
+        : new URLSearchParams();
+      for (const k of filterKeys) params.delete(k);
+      params.delete("sort");
+      params.delete("page");
       for (const k of filterKeys) {
         if (f[k]) params.set(k, f[k]);
       }

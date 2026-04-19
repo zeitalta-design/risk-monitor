@@ -89,6 +89,11 @@ export function getAwardRanking({
       MAX(${groupNameExpr})              AS group_name,
       COUNT(*)                           AS total_awards,
       COALESCE(SUM(award_amount), 0)     AS total_amount,
+      CASE
+        WHEN COUNT(*) > 0
+          THEN CAST(COALESCE(SUM(award_amount), 0) AS REAL) / COUNT(*)
+        ELSE 0
+      END                                AS avg_amount,
       COUNT(DISTINCT issuer_name)        AS unique_buyers,
       MIN(award_date)                    AS first_award,
       MAX(award_date)                    AS last_award

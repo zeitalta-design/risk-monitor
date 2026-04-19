@@ -46,24 +46,29 @@ const nextConfig = {
       });
     }
 
-    return [
+    const rules = [
       {
         source: "/(.*)",
         headers: securityHeaders,
       },
-      {
+    ];
+    // dev では immutable キャッシュを付けない（編集中のチャンクがブラウザに永久キャッシュされ、
+    // client-side で古いビルドが走り続ける問題が発生するため）。本番のみ immutable。
+    if (isProduction) {
+      rules.push({
         source: "/_next/static/(.*)",
         headers: [
           { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
         ],
-      },
-      {
+      });
+      rules.push({
         source: "/images/(.*)",
         headers: [
           { key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" },
         ],
-      },
-    ];
+      });
+    }
+    return rules;
   },
 
   // 本番ログ最適化

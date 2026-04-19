@@ -86,10 +86,13 @@ export function fetchEntityLookup({ db, entityId }) {
  */
 function targetedFromUnion(params) {
   // params.corp と params.aliasN の有無で SQL 断片を組み立てる
+  // 共通カラムセット: id, award_date, award_amount, issuer_name, category
+  //   （category は Step 1 分析深掘りで追加。既存 caller は必要 col のみ参照するため
+  //    カラム追加は後方互換）
   const branches = [];
   if (params.corp) {
     branches.push(`
-      SELECT r.id, r.award_date, r.award_amount, r.issuer_name
+      SELECT r.id, r.award_date, r.award_amount, r.issuer_name, r.category
       FROM nyusatsu_results r
       WHERE r.is_published = 1 AND r.winner_corporate_number = @corp
     `);
@@ -99,7 +102,7 @@ function targetedFromUnion(params) {
     // 各 alias を個別 UNION ALL に（IN だと idx_winner が使われないことがあるため）
     for (const k of aliasKeys) {
       branches.push(`
-        SELECT r.id, r.award_date, r.award_amount, r.issuer_name
+        SELECT r.id, r.award_date, r.award_amount, r.issuer_name, r.category
         FROM nyusatsu_results r
         WHERE r.is_published = 1 AND r.winner_name = @${k}
       `);
@@ -107,7 +110,7 @@ function targetedFromUnion(params) {
   }
   if (branches.length === 0) return null;
   return `(
-    SELECT DISTINCT id, award_date, award_amount, issuer_name FROM (
+    SELECT DISTINCT id, award_date, award_amount, issuer_name, category FROM (
       ${branches.join(" UNION ALL ")}
     )
   )`;
@@ -199,4 +202,108 @@ export function fetchClusterMates({ db, entity }) {
     WHERE cluster_id = ? AND id != ?
     ORDER BY canonical_name
   `).all(entity.cluster_id, entity.id);
+}
+
+// ─── Step 1 分析深掘り: entity 単位の帯分布 / 業種 TOP / 年度別 ────────
+
+import { BAND_CASE_EXPR, sortByBandOrder } from "./amount-bands.js";
+
+/**
+ * entity 1件の金額帯分布。
+ * @returns {Array<{ band: string, count: number, total_amount: number }>}
+ */
+export function fetchEntityAmountBands({ db, targetedParams }) {
+  const fromUnion = targetedFromUnion(targetedParams);
+  if (!fromUnion) return [];
+  const rows = db.prepare(`
+    SELECT ${BAND_CASE_EXPR} AS band,
+           COUNT(*) AS count,
+           COALESCE(SUM(award_amount), 0) AS total_amount
+    FROM ${fromUnion} x
+    GROUP BY band
+  `).all(targetedParams);
+  return sortByBandOrder(rows);
+}
+
+/**
+ * entity 1件の業種 TOP。
+ * @param {number} [limit=5]
+ * @returns {Array<{ category: string, count: number, total_amount: number }>}
+ */
+export function fetchEntityCategoryTop({ db, targetedParams, limit = 5 }) {
+  const fromUnion = targetedFromUnion(targetedParams);
+  if (!fromUnion) return [];
+  return db.prepare(`
+    SELECT COALESCE(NULLIF(TRIM(category), ''), '未分類') AS category,
+           COUNT(*) AS count,
+           COALESCE(SUM(award_amount), 0) AS total_amount
+    FROM ${fromUnion} x
+    GROUP BY category
+    ORDER BY count DESC, total_amount DESC
+    LIMIT @limit
+  `).all({ ...targetedParams, limit });
+}
+
+/**
+ * Phase H Step 4: entity 1件の最近の案件（deal score 用のサンプル deal 抽出）。
+ * targetedFromUnion と同様の OR 条件を組み立てて、title も含めて取得する。
+ *
+ * @returns {Array<{ id:number, title:string|null, category:string|null,
+ *                   award_date:string|null, award_amount:number|null,
+ *                   issuer_name:string|null }>}
+ */
+export function fetchEntityRecentResults({ db, targetedParams, limit = 3 }) {
+  const branches = [];
+  if (targetedParams?.corp) {
+    branches.push(`
+      SELECT r.id, r.title, r.award_date, r.award_amount, r.issuer_name, r.category
+      FROM nyusatsu_results r
+      WHERE r.is_published = 1 AND r.winner_corporate_number = @corp
+    `);
+  }
+  const aliasKeys = Object.keys(targetedParams || {}).filter((k) => /^alias\d+$/.test(k));
+  for (const k of aliasKeys) {
+    branches.push(`
+      SELECT r.id, r.title, r.award_date, r.award_amount, r.issuer_name, r.category
+      FROM nyusatsu_results r
+      WHERE r.is_published = 1 AND r.winner_name = @${k}
+    `);
+  }
+  if (branches.length === 0) return [];
+  const fromUnion = `(
+    SELECT DISTINCT id, title, award_date, award_amount, issuer_name, category
+    FROM (${branches.join(" UNION ALL ")})
+  )`;
+  return db.prepare(`
+    SELECT id, title, category, award_date, award_amount, issuer_name
+    FROM ${fromUnion} x
+    WHERE award_date IS NOT NULL AND award_date != ''
+    ORDER BY award_date DESC, id DESC
+    LIMIT @limit
+  `).all({ ...targetedParams, limit });
+}
+
+/**
+ * entity 1件の年度別件数・金額（暦年）。
+ * timeline は month 粒度で既に返しているが、こちらは年度粒度で avg も含めた
+ * サマリー用。カード表示向けに簡潔化。
+ * @returns {Array<{ year: string, count: number, total_amount: number, avg_amount: number }>}
+ */
+export function fetchEntityYearlyStats({ db, targetedParams }) {
+  const fromUnion = targetedFromUnion(targetedParams);
+  if (!fromUnion) return [];
+  return db.prepare(`
+    SELECT SUBSTR(award_date, 1, 4) AS year,
+           COUNT(*) AS count,
+           COALESCE(SUM(award_amount), 0) AS total_amount,
+           CASE
+             WHEN COUNT(*) > 0
+               THEN CAST(COALESCE(SUM(award_amount), 0) AS REAL) / COUNT(*)
+             ELSE 0
+           END AS avg_amount
+    FROM ${fromUnion} x
+    WHERE award_date IS NOT NULL AND award_date != ''
+    GROUP BY year
+    ORDER BY year ASC
+  `).all(targetedParams);
 }

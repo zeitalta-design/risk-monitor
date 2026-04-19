@@ -4,8 +4,8 @@
  * 企業詳細ページ（cross-domain hub）
  *
  * - organizations テーブル 1 行を表示
- * - 既存の CrossDomainLinks を使って入札/補助金/許認可/行政処分/産廃の
- *   件数＋検索リンクを列挙
+ * - CrossDomainLinks で入札/補助金/許認可/行政処分/産廃の件数＋検索リンク
+ * - 表記ゆれ（variants）と resolved_entities 接続を整理表示
  *
  * 重い集計や統合ダッシュボードは意図的に載せていない。件数+リンクで十分。
  */
@@ -15,6 +15,42 @@ import Link from "next/link";
 import CrossDomainLinks from "@/components/core/CrossDomainLinks";
 
 export const dynamic = "force-dynamic";
+
+// source_domain / source の値を人間表記に。
+const DOMAIN_META = {
+  nyusatsu:          { label: "入札",     icon: "📝" },
+  nyusatsu_backfill: { label: "入札",     icon: "📝" },
+  hojokin:           { label: "補助金",   icon: "💰" },
+  kyoninka:          { label: "許認可",   icon: "📋" },
+  gyosei_shobun:     { label: "行政処分", icon: "⚠️" },
+  gyosei_shobun_seed:{ label: "行政処分", icon: "⚠️" },
+  sanpai:            { label: "産廃",     icon: "🚛" },
+  seed:              { label: "seed",     icon: "🌱" },
+};
+
+function domainMeta(raw) {
+  if (!raw) return null;
+  const base = String(raw).toLowerCase();
+  // prefix match（_backfill / _seed などを吸収）
+  for (const key of Object.keys(DOMAIN_META)) {
+    if (base === key || base.startsWith(`${key}_`)) return { ...DOMAIN_META[key], raw };
+  }
+  return { label: raw, icon: "•", raw };
+}
+
+function DomainPill({ source, variant = "default" }) {
+  const meta = domainMeta(source);
+  if (!meta) return null;
+  const cls = variant === "solid"
+    ? "bg-blue-50 text-blue-700 border-blue-100"
+    : "bg-gray-50 text-gray-600 border-gray-200";
+  return (
+    <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded border ${cls}`}>
+      <span aria-hidden>{meta.icon}</span>
+      <span>{meta.label}</span>
+    </span>
+  );
+}
 
 export default function OrganizationDetailPage({ params }) {
   const { id } = use(params);
@@ -51,12 +87,41 @@ export default function OrganizationDetailPage({ params }) {
   const lookupKey = org.corporate_number || displayName;
   const prefCity = [org.prefecture, org.city].filter(Boolean).join(" ");
 
+  // variants を raw_name ごとにグルーピング（どのドメインでどう観測されたか）
+  const groupedVariants = (() => {
+    const map = new Map();
+    for (const v of variants || []) {
+      const key = v.raw_name || "(未記録)";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(v);
+    }
+    return [...map.entries()].map(([raw_name, obs]) => ({
+      raw_name,
+      observations: obs,
+      // 代表 confidence は最大値
+      maxConfidence: obs.reduce((m, o) => Math.max(m, o.confidence ?? 0), 0),
+    }));
+  })();
+
+  // 観測ドメイン（variants のソース + links のソース + organizations.source）をユニークに
+  const observedDomains = (() => {
+    const s = new Set();
+    if (org.source) s.add(domainMeta(org.source)?.label);
+    for (const v of variants || []) {
+      const m = domainMeta(v.source_domain);
+      if (m) s.add(m.label);
+    }
+    s.delete(undefined);
+    s.delete(null);
+    return [...s];
+  })();
+
   return (
     <main className="max-w-4xl mx-auto px-4 py-8">
       <nav className="text-sm text-gray-500 mb-4">
         <Link href="/" className="hover:underline">HOME</Link>
         <span className="mx-1">/</span>
-        <span className="text-gray-700 font-medium">企業</span>
+        <Link href="/organizations" className="hover:underline">企業</Link>
         <span className="mx-1">/</span>
         <span className="text-gray-900 font-medium truncate">{displayName}</span>
       </nav>
@@ -64,16 +129,24 @@ export default function OrganizationDetailPage({ params }) {
       {/* ヘッダ */}
       <header className="mb-6">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{displayName}</h1>
-        <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-gray-600">
+        <div className="flex flex-wrap items-center gap-2 mt-2 text-sm text-gray-600">
           {org.corporate_number && (
             <span className="font-mono text-xs bg-gray-100 px-2 py-0.5 rounded">
               法人番号 {org.corporate_number}
             </span>
           )}
-          {prefCity && <span>📍 {prefCity}</span>}
+          {prefCity && <span className="text-xs">📍 {prefCity}</span>}
           {org.source && (
-            <span className="text-xs bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded">
-              初出: {org.source}
+            <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+              <span className="text-gray-400">初出:</span>
+              <DomainPill source={org.source} variant="solid" />
+            </span>
+          )}
+          {observedDomains.length > 0 && (
+            <span className="inline-flex items-center gap-1 text-xs text-gray-500 ml-auto">
+              <span className="text-gray-400">観測ドメイン</span>
+              <span className="font-bold text-gray-700 tabular-nums">{observedDomains.length}</span>
+              <span className="text-gray-400">/5</span>
             </span>
           )}
           {org.is_active === 0 && (
@@ -108,35 +181,45 @@ export default function OrganizationDetailPage({ params }) {
       {/* 他DB情報（cross-domain hub の本体） */}
       <CrossDomainLinks lookupKey={lookupKey} />
 
-      {/* 表記ゆれ */}
-      {variants.length > 0 && (
+      {/* 表記ゆれ（raw_name ごとにグルーピング） */}
+      {groupedVariants.length > 0 && (
         <section className="card p-6 mb-6">
-          <h2 className="text-sm font-bold text-gray-900 mb-3">表記ゆれ履歴</h2>
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+            <h2 className="text-sm font-bold text-gray-900">表記ゆれ履歴</h2>
+            <span className="text-xs text-gray-400 tabular-nums">
+              {groupedVariants.length}通りの表記 / 計 {variants.length}件観測
+            </span>
+          </div>
           <p className="text-xs text-gray-500 mb-3">
             各ドメインでこの企業を観測した際の原文表記と照合方法。
           </p>
-          <table className="w-full text-sm">
-            <thead className="text-gray-500 border-b border-gray-100">
-              <tr>
-                <th className="text-left py-2">原文</th>
-                <th className="text-left py-2">ドメイン</th>
-                <th className="text-left py-2">照合</th>
-                <th className="text-right py-2">信頼度</th>
-              </tr>
-            </thead>
-            <tbody>
-              {variants.map((v, i) => (
-                <tr key={i} className="border-b border-gray-50">
-                  <td className="py-2">{v.raw_name}</td>
-                  <td className="py-2 text-gray-600">{v.source_domain || "—"}</td>
-                  <td className="py-2 text-gray-600">{v.match_method || "—"}</td>
-                  <td className="py-2 text-right tabular-nums text-gray-600">
-                    {v.confidence != null ? v.confidence.toFixed(2) : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <ul className="space-y-2">
+            {groupedVariants.map((g, i) => (
+              <li key={i} className="border-b border-gray-50 last:border-b-0 pb-2 last:pb-0">
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm text-gray-900 break-all">{g.raw_name}</div>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                      {g.observations.map((o, j) => (
+                        <span key={j} className="inline-flex items-center gap-1 text-[11px] text-gray-500">
+                          <DomainPill source={o.source_domain} />
+                          {o.match_method && (
+                            <span className="text-gray-400">· {o.match_method}</span>
+                          )}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-[11px] text-gray-400">max conf</span>
+                    <div className="text-xs tabular-nums text-gray-600">
+                      {g.maxConfidence ? g.maxConfidence.toFixed(2) : "—"}
+                    </div>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 
@@ -145,22 +228,29 @@ export default function OrganizationDetailPage({ params }) {
         <section className="card p-6 mb-6">
           <h2 className="text-sm font-bold text-gray-900 mb-3">resolved_entities 接続</h2>
           <p className="text-xs text-gray-500 mb-3">
-            ある企業が nyusatsu 側の resolver でどの entity として扱われているか。
+            この企業が nyusatsu 側の resolver でどの entity として扱われているか。
           </p>
           <ul className="text-sm space-y-1">
             {links.map((l, i) => (
-              <li key={i} className="flex items-center justify-between border-b border-gray-50 py-1">
-                <span>
+              <li key={i} className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-50 py-1.5 last:border-b-0">
+                <Link
+                  href={`/nyusatsu/entities/${l.resolved_entity_id}`}
+                  className="text-blue-600 hover:underline truncate"
+                >
+                  {l.resolved_canonical_name || `entity #${l.resolved_entity_id}`}
+                </Link>
+                <div className="flex items-center gap-3 shrink-0">
+                  {/* Phase J-4: この entity で /nyusatsu landing に遷移（entity picker が拾う） */}
                   <Link
-                    href={`/nyusatsu/entities/${l.resolved_entity_id}`}
-                    className="text-blue-600 hover:underline"
+                    href={`/nyusatsu?entityId=${l.resolved_entity_id}`}
+                    className="text-xs text-[#2F9FD3] hover:text-[#2789b8] hover:underline"
                   >
-                    {l.resolved_canonical_name || `entity #${l.resolved_entity_id}`}
+                    この企業で有望案件を見る →
                   </Link>
-                </span>
-                <span className="text-xs text-gray-500">
-                  {l.link_type} / {l.source} / conf={l.confidence?.toFixed?.(2) ?? l.confidence}
-                </span>
+                  <span className="text-xs text-gray-400 tabular-nums">
+                    {l.link_type} · {l.source} · conf={l.confidence?.toFixed?.(2) ?? l.confidence}
+                  </span>
+                </div>
               </li>
             ))}
           </ul>

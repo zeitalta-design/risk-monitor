@@ -179,7 +179,8 @@ export async function getCurrentUser() {
     const row = db
       .prepare(
         `SELECT u.id, u.email, u.name, u.role, u.is_active,
-                u.last_login_at, u.password_changed_at, s.expires_at
+                u.last_login_at, u.password_changed_at,
+                u.is_pro, u.stripe_customer_id, s.expires_at
          FROM sessions s
          JOIN users u ON u.id = s.user_id
          WHERE s.session_token = ? AND u.is_active = 1`
@@ -203,6 +204,8 @@ export async function getCurrentUser() {
       userKey: String(row.id),
       lastLoginAt: row.last_login_at,
       passwordChangedAt: row.password_changed_at,
+      isPro: (row.is_pro || 0) === 1,
+      stripeCustomerId: row.stripe_customer_id || null,
     };
   } catch {
     return null;

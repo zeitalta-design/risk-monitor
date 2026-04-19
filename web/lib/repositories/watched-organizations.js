@@ -9,21 +9,57 @@ import { getDb } from "@/lib/db";
 
 // ─── ウォッチ登録 / 解除 ─────────────────────
 
-export function addWatch(userId, organizationName, industry = "") {
+// Phase J-7: threshold は 0..100 の整数に正規化（NaN / 範囲外は null 扱い → DB default 80）
+function normalizeThreshold(raw) {
+  if (raw === null || raw === undefined || raw === "") return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return null;
+  return Math.max(0, Math.min(100, Math.round(n)));
+}
+
+// Phase J-8: notify_frequency は realtime / daily / off のいずれか。
+// null / 空 / 不正値は null を返し、caller 側で default('realtime') に倒す。
+const NOTIFY_FREQUENCIES = new Set(["realtime", "daily", "off"]);
+export function isValidNotifyFrequency(raw) {
+  return typeof raw === "string" && NOTIFY_FREQUENCIES.has(raw);
+}
+function normalizeFrequency(raw) {
+  if (raw === null || raw === undefined || raw === "") return null;
+  return isValidNotifyFrequency(raw) ? raw : undefined; // undefined = invalid
+}
+
+export function addWatch(
+  userId,
+  organizationName,
+  industry = "",
+  dealScoreThreshold = null,
+  notifyFrequency = null,
+) {
   const db = getDb();
+  const freq = normalizeFrequency(notifyFrequency);
+  if (freq === undefined) return { action: "invalid_frequency" };
   try {
+    const th = normalizeThreshold(dealScoreThreshold);
     db.prepare(`
-      INSERT INTO watched_organizations (user_id, organization_name, industry, last_seen_action_date, last_notified_action_date)
+      INSERT INTO watched_organizations (
+        user_id, organization_name, industry,
+        last_seen_action_date, last_notified_action_date,
+        deal_score_threshold, notify_frequency
+      )
       VALUES (@user_id, @organization_name, @industry,
         (SELECT MAX(action_date) FROM administrative_actions
          WHERE organization_name_raw = @organization_name AND industry = @industry),
         (SELECT MAX(action_date) FROM administrative_actions
-         WHERE organization_name_raw = @organization_name AND industry = @industry)
+         WHERE organization_name_raw = @organization_name AND industry = @industry),
+        COALESCE(@threshold, 80),
+        COALESCE(@frequency, 'realtime')
       )
     `).run({
       user_id: userId,
       organization_name: organizationName,
       industry: industry || "",
+      threshold: th,
+      frequency: freq,
     });
     return { action: "added" };
   } catch (err) {
@@ -32,6 +68,37 @@ export function addWatch(userId, organizationName, industry = "") {
     }
     throw err;
   }
+}
+
+// Phase J-7: 既存 watch の threshold を更新。他 user の id は SQL で弾く。
+export function updateWatchThreshold(userId, watchId, dealScoreThreshold) {
+  if (!Number.isInteger(userId) || userId <= 0) throw new Error("userId is required");
+  if (!Number.isInteger(watchId) || watchId <= 0) throw new Error("watchId is required");
+  const th = normalizeThreshold(dealScoreThreshold);
+  if (th === null) return { action: "invalid_threshold" };
+  const db = getDb();
+  const res = db.prepare(`
+    UPDATE watched_organizations
+    SET deal_score_threshold = ?, updated_at = datetime('now')
+    WHERE id = ? AND user_id = ?
+  `).run(th, watchId, userId);
+  return { action: res.changes > 0 ? "updated" : "not_found", deal_score_threshold: th };
+}
+
+// Phase J-8: 既存 watch の notify_frequency を更新。
+//   許容値: realtime / daily / off。それ以外は invalid_frequency。
+//   threshold と同様に他 user の watch は SQL で弾く。
+export function updateWatchFrequency(userId, watchId, notifyFrequency) {
+  if (!Number.isInteger(userId) || userId <= 0) throw new Error("userId is required");
+  if (!Number.isInteger(watchId) || watchId <= 0) throw new Error("watchId is required");
+  if (!isValidNotifyFrequency(notifyFrequency)) return { action: "invalid_frequency" };
+  const db = getDb();
+  const res = db.prepare(`
+    UPDATE watched_organizations
+    SET notify_frequency = ?, updated_at = datetime('now')
+    WHERE id = ? AND user_id = ?
+  `).run(notifyFrequency, watchId, userId);
+  return { action: res.changes > 0 ? "updated" : "not_found", notify_frequency: notifyFrequency };
 }
 
 export function removeWatch(userId, organizationName, industry = "") {
@@ -82,6 +149,8 @@ export function listWatches(userId) {
       w.note,
       w.last_seen_action_date,
       w.last_notified_action_date,
+      w.deal_score_threshold,
+      w.notify_frequency,
       w.created_at,
       w.updated_at,
       COUNT(a.id) AS action_count,

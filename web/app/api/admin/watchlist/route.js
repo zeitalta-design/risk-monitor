@@ -14,6 +14,8 @@ import {
   removeWatch,
   removeWatchById,
   getWatchedOrgSet,
+  updateWatchThreshold,
+  updateWatchFrequency,
 } from "@/lib/repositories/watched-organizations";
 
 export async function GET(request) {
@@ -38,14 +40,82 @@ export async function POST(request) {
   if (error) return error;
 
   const body = await request.json();
-  const { organization_name, industry } = body;
+  const { organization_name, industry, deal_score_threshold, notify_frequency } = body;
 
   if (!organization_name) {
     return NextResponse.json({ error: "organization_name is required" }, { status: 400 });
   }
 
-  const result = addWatch(user.id, organization_name, industry || "");
+  // Phase J-7: deal_score_threshold は任意。未指定時は repo 側で DB default 80。
+  // Phase J-8: notify_frequency は任意。未指定 / 空欄は repo 側で DB default 'realtime'。
+  const result = addWatch(
+    user.id,
+    organization_name,
+    industry || "",
+    deal_score_threshold,
+    notify_frequency ?? null,
+  );
+  if (result.action === "invalid_frequency") {
+    return NextResponse.json(
+      { error: "notify_frequency must be one of realtime | daily | off" },
+      { status: 400 },
+    );
+  }
   return NextResponse.json(result, { status: result.action === "added" ? 201 : 200 });
+}
+
+// Phase J-7/J-8: 既存 watch の設定更新。
+//   body の一方 or 両方を指定する:
+//     - deal_score_threshold: 0..100 の整数
+//     - notify_frequency:     realtime | daily | off
+//   両方省略時のみ 400。各項目のバリデーションは repo 側に委譲。
+export async function PATCH(request) {
+  const { user, error } = await requireAdminApi();
+  if (error) return error;
+
+  const body = await request.json().catch(() => ({}));
+  const id = Number.isInteger(body?.id) ? body.id : parseInt(body?.id, 10);
+  if (!Number.isFinite(id) || id <= 0) {
+    return NextResponse.json({ error: "id is required" }, { status: 400 });
+  }
+
+  const hasThreshold = "deal_score_threshold" in (body || {});
+  const hasFrequency = "notify_frequency" in (body || {});
+  if (!hasThreshold && !hasFrequency) {
+    return NextResponse.json(
+      { error: "deal_score_threshold or notify_frequency is required" },
+      { status: 400 },
+    );
+  }
+
+  const response = {};
+
+  if (hasThreshold) {
+    const r = updateWatchThreshold(user.id, id, body.deal_score_threshold);
+    if (r.action === "invalid_threshold") {
+      return NextResponse.json({ error: "deal_score_threshold must be 0..100" }, { status: 400 });
+    }
+    if (r.action === "not_found") {
+      return NextResponse.json({ error: "not found" }, { status: 404 });
+    }
+    response.deal_score_threshold = r.deal_score_threshold;
+  }
+
+  if (hasFrequency) {
+    const r = updateWatchFrequency(user.id, id, body.notify_frequency);
+    if (r.action === "invalid_frequency") {
+      return NextResponse.json(
+        { error: "notify_frequency must be one of realtime | daily | off" },
+        { status: 400 },
+      );
+    }
+    if (r.action === "not_found") {
+      return NextResponse.json({ error: "not found" }, { status: 404 });
+    }
+    response.notify_frequency = r.notify_frequency;
+  }
+
+  return NextResponse.json({ action: "updated", ...response });
 }
 
 export async function DELETE(request) {

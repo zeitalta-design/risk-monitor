@@ -5,6 +5,10 @@ import {
   fetchEntityTimeline,
   fetchEntityBuyerRelations,
   fetchClusterMates,
+  fetchEntityAmountBands,
+  fetchEntityCategoryTop,
+  fetchEntityYearlyStats,
+  fetchEntityRecentResults,
 } from "@/lib/agents/analyzer/nyusatsu/entity-detail";
 
 export const dynamic = "force-dynamic";
@@ -31,10 +35,10 @@ export async function GET(request, { params }) {
     }
     const { entity, aliases, targetedWhere, targetedParams } = lookup;
 
-    // 2) timeline / buyers / cluster_mates を並列実行
+    // 2) timeline / buyers / cluster_mates + Step 1 追加サマリーを並列実行
     //    libsql compat layer は SQL 実行ごとに HTTP round-trip があるため、
     //    await Promise.all で発火タイミングを重ねる意味がある。
-    const [timeline, buyers, clusterMates, organizationId] = await Promise.all([
+    const [timeline, buyers, clusterMates, organizationId, amountBands, categoryTop, yearlyStats, recentResults] = await Promise.all([
       Promise.resolve().then(() => fetchEntityTimeline({ db, granularity: "month", targetedWhere, targetedParams })),
       Promise.resolve().then(() => fetchEntityBuyerRelations({ db, targetedWhere, targetedParams, limit: 10 })),
       Promise.resolve().then(() => fetchClusterMates({ db, entity })),
@@ -45,11 +49,16 @@ export async function GET(request, { params }) {
         ).get(entity.id);
         return r?.organization_id || null;
       }),
+      Promise.resolve().then(() => fetchEntityAmountBands({ db, targetedParams })),
+      Promise.resolve().then(() => fetchEntityCategoryTop({ db, targetedParams, limit: 5 })),
+      Promise.resolve().then(() => fetchEntityYearlyStats({ db, targetedParams })),
+      Promise.resolve().then(() => fetchEntityRecentResults({ db, targetedParams, limit: 3 })),
     ]);
 
     // 3) summary は timeline + buyers から組み立て（追加クエリなし）
     const total_awards = timeline.reduce((s, r) => s + r.total_awards, 0);
     const total_amount = timeline.reduce((s, r) => s + (r.total_amount || 0), 0);
+    const avg_amount = total_awards > 0 ? Math.round(total_amount / total_awards) : 0;
     const active_months = timeline.length;
     const first_award = timeline[0]?.period || null;
     const last_award = timeline[timeline.length - 1]?.period || null;
@@ -71,6 +80,7 @@ export async function GET(request, { params }) {
       summary: {
         total_awards,
         total_amount,
+        avg_amount,
         unique_buyers: buyers.unique_buyers,
         active_months,
         first_award,
@@ -83,6 +93,12 @@ export async function GET(request, { params }) {
       buyers: buyers.items,
       aliases: aliases.slice(0, 20),
       cluster_mates: clusterMates,
+      // Step 1 分析深掘り
+      amount_bands: amountBands,
+      category_top: categoryTop,
+      yearly_stats: yearlyStats,
+      // Phase H Step 4: Deal Score の対象候補として最近の案件を同梱
+      recent_deals: recentResults,
     });
   } catch (e) {
     console.error("GET /api/nyusatsu/analytics/entities/[id] error:", e);
